@@ -212,7 +212,11 @@ export default function Home() {
           </CardContent>
         </Card>
         <div className="flex gap-4">
-          <Button size="lg">今すぐ始める</Button>
+          <Link href="/swipe">
+            <Button size="lg">
+              楽曲スワイプを始める
+            </Button>
+          </Link>
           <Button variant="secondary" size="lg">
             詳しく見る
           </Button>
