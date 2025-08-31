@@ -30,15 +30,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build and start services with docker-compose
+      - name: Build and start services with docker compose
         run: |
-          docker-compose up --build -d
+          docker compose up --build -d
 
       - name: Wait for services to be ready
         run: |
-          timeout 120s bash -c 'until docker-compose ps backend | grep -q "healthy"; do sleep 5; echo "Waiting..."; done'
+          timeout 120s bash -c 'until docker compose ps backend | grep -q "healthy"; do sleep 5; echo "Waiting..."; done'
           echo "Waiting for API service to be healthy..."
-          timeout 120s bash -c 'until docker-compose ps api | grep -q "healthy"; do sleep 5; echo "Waiting..."; done'
+          timeout 120s bash -c 'until docker compose ps api | grep -q "healthy"; do sleep 5; echo "Waiting..."; done'
 
           echo "Waiting for frontend service to be ready..."
           timeout 60s bash -c 'until curl -f http://localhost:3000 >/dev/null 2>&1; do sleep 5; echo "Waiting for frontend..."; done'
@@ -46,7 +46,7 @@ jobs:
       - name: Run backend Python tests
         run: |
           echo "Running backend Python tests..."
-          docker-compose exec api pytest
+          docker compose exec api pytest
 
       - name: Test API health endpoint
         run: |
@@ -113,16 +113,16 @@ jobs:
         if: always()
         run: |
           echo "=== Docker Compose Services Status ==="
-          docker-compose ps
+          docker compose ps
           echo ""
           echo "=== API Logs ==="
-          docker-compose logs api --tail=20
+          docker compose logs api --tail=20
           echo ""
           echo "=== Frontend Logs ==="
-          docker-compose logs web --tail=20
+          docker compose logs web --tail=20
 
       - name: Cleanup
         if: always()
         run: |
-          docker-compose down -v
+          docker compose down -v
           docker system prune -f
