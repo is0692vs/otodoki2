@@ -1,5 +1,4 @@
-'use client';
-
+"use client";
 
 import React, { useState, useEffect, useCallback } from "react";
 import { AnimatePresence } from "framer-motion";
@@ -14,18 +13,11 @@ import {
   VolumeX,
   Volume2,
 } from "lucide-react";
-
-import { Heart, X, RotateCcw } from "lucide-react";
-import { type Track } from '@/services';
-
-export interface SwipeStackProps {
-  tracks: Track[];
-  onSwipe?: (direction: 'left' | 'right', track: Track) => void;
-
 import { type Track } from "@/services";
 import { useAudioPlayer } from "@/hooks/useAudioPlayer";
 import { useVisibility, usePageVisibility } from "@/hooks/useVisibility";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { saveLikedTrack, saveDislikedTrackId } from "@/lib/storage";
 
 export interface SwipeStackProps {
   tracks: Track[];
@@ -34,7 +26,6 @@ export interface SwipeStackProps {
   className?: string;
 }
 
-export function SwipeStack({ tracks, onSwipe, onStackEmpty, className }: SwipeStackProps) {
 export function SwipeStack({
   tracks,
   onSwipe,
@@ -46,7 +37,6 @@ export function SwipeStack({
 
   const currentTrack = tracks[currentIndex];
   const nextTracks = tracks.slice(currentIndex + 1, currentIndex + 3); // Show next 2 cards behind
-
 
   // Audio player hook with stable options
   const audioPlayer = useAudioPlayer({
@@ -118,13 +108,24 @@ export function SwipeStack({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isPageVisible]);
 
-  const handleSwipe = (direction: 'left' | 'right', track: Track) => {
-    setSwipedTracks(prev => [...prev, track]);
-    setCurrentIndex(prev => {
-
   const handleSwipe = (direction: "left" | "right", track: Track) => {
     // Stop current playback before moving to next
     audioPlayer.stop();
+
+    // Save swipe preference to localStorage
+    if (direction === "right") {
+      // User liked the track
+      const saved = saveLikedTrack(track);
+      if (saved) {
+        console.log(`💖 Saved liked track: ${track.title} by ${track.artist}`);
+      }
+    } else {
+      // User disliked the track
+      const saved = saveDislikedTrackId(track.id);
+      if (saved) {
+        console.log(`👎 Saved disliked track ID: ${track.id}`);
+      }
+    }
 
     // Add swiped track to history
     setSwipedTracks((prev) => [...prev, track]);
@@ -144,7 +145,6 @@ export function SwipeStack({
     onSwipe?.(direction, track);
   };
 
-  const handleButtonSwipe = (direction: 'left' | 'right') => {
   const handleButtonSwipe = (direction: "left" | "right") => {
     if (currentTrack) {
       // If there's an auto-play error, try to play after user interaction
@@ -168,7 +168,6 @@ export function SwipeStack({
   if (!currentTrack) {
     return (
       <div className="text-center py-16 space-y-4">
-        <p className="text-muted-foreground">すべての楽曲をスワイプしました！</p>
         <p className="text-muted-foreground">
           すべての楽曲をスワイプしました！
         </p>
@@ -252,12 +251,9 @@ export function SwipeStack({
             className="absolute inset-0 pointer-events-none"
             style={{
               zIndex: nextTracks.length - index,
-              transform: `scale(${0.95 - index * 0.05}) translateY(${(index + 1) * 10}px)`,
-
               transform: `scale(${0.95 - index * 0.05}) translateY(${
                 (index + 1) * 10
               }px)`,
-
             }}
           >
             <SwipeCard
@@ -288,18 +284,12 @@ export function SwipeStack({
         <Button
           variant="outline"
           size="lg"
-          onClick={() => handleButtonSwipe('left')}
           onClick={() => handleButtonSwipe("left")}
           className="h-14 w-14 rounded-full border-red-200 hover:bg-red-50 hover:border-red-300"
           aria-label="嫌い"
         >
           <X className="h-6 w-6 text-red-500" />
         </Button>
-        
-        <Button
-          variant="outline"
-          size="lg"
-          onClick={() => handleButtonSwipe('right')}
 
         <Button
           variant="outline"
@@ -318,8 +308,6 @@ export function SwipeStack({
           {currentIndex + 1} / {tracks.length}
         </p>
         <div className="w-full bg-muted rounded-full h-2 mt-2">
-          <div 
-            className="bg-primary h-2 rounded-full transition-all duration-300" 
           <div
             className="bg-primary h-2 rounded-full transition-all duration-300"
             style={{ width: `${((currentIndex + 1) / tracks.length) * 100}%` }}
@@ -330,7 +318,6 @@ export function SwipeStack({
       {/* Reset button */}
       {swipedTracks.length > 0 && (
         <div className="mt-4 text-center">
-          <Button onClick={handleReset} variant="ghost" size="sm" className="gap-2">
           <Button
             onClick={handleReset}
             variant="ghost"
@@ -344,5 +331,4 @@ export function SwipeStack({
       )}
     </div>
   );
-}
 }

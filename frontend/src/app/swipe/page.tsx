@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { api, type Track } from "@/services";
+import { getDislikedTrackIds } from "@/lib/storage";
 
 // Fallback demo tracks for when API is unavailable
 const fallbackTracks: Track[] = [
@@ -44,8 +45,6 @@ const fallbackTracks: Track[] = [
   {
     id: "swipe-4",
     title: "Hotel California",
-    artist: "Eagles", 
-    artwork_url: "https://via.placeholder.com/300x300/059669/ffffff?text=Eagles",
     artist: "Eagles",
     artwork_url:
       "https://via.placeholder.com/300x300/f59e0b/ffffff?text=Eagles",
@@ -76,20 +75,42 @@ export default function SwipePage() {
     const fetchTracks = async () => {
       try {
         setLoading(true);
+
+        // Get disliked track IDs to filter out
+        const dislikedIds = new Set(getDislikedTrackIds());
+        console.log(`🚫 Filtering out ${dislikedIds.size} disliked tracks`);
+
         const response = await api.tracks.suggestions({ limit: 20 });
         if (response.error) {
           setError(`Failed to load tracks: ${response.error.error}`);
-          // Use fallback data when API fails
-          setTracks(fallbackTracks);
+          // Use fallback data when API fails, but still filter dislikes
+          const filteredFallback = fallbackTracks.filter(
+            (track) => !dislikedIds.has(Number(track.id))
+          );
+          setTracks(filteredFallback);
         } else {
           const apiTracks = response.data?.data || [];
           // Mix API tracks with fallback tracks for better demo
-          setTracks([...apiTracks, ...fallbackTracks].slice(0, 20));
+          const allTracks = [...apiTracks, ...fallbackTracks];
+          // Filter out disliked tracks
+          const filteredTracks = allTracks.filter(
+            (track) => !dislikedIds.has(Number(track.id))
+          );
+          console.log(
+            `📱 Loaded ${filteredTracks.length} tracks (${
+              allTracks.length - filteredTracks.length
+            } filtered out)`
+          );
+          setTracks(filteredTracks.slice(0, 20));
         }
       } catch (err) {
         setError(`Error loading tracks: ${err}`);
-        // Use fallback data when API fails
-        setTracks(fallbackTracks);
+        // Use fallback data when API fails, but still filter dislikes
+        const dislikedIds = new Set(getDislikedTrackIds());
+        const filteredFallback = fallbackTracks.filter(
+          (track) => !dislikedIds.has(Number(track.id))
+        );
+        setTracks(filteredFallback);
       } finally {
         setLoading(false);
       }
@@ -126,9 +147,7 @@ export default function SwipePage() {
             </Button>
           </Link>
           <h1 className="text-2xl font-bold">楽曲スワイプ</h1>
-          <div /> {/* Spacer for alignment */}
           <div className="w-20" /> {/* Spacer for center alignment */}
-
         </div>
 
         {/* Instructions */}
@@ -152,22 +171,8 @@ export default function SwipePage() {
         {error && (
           <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
             <p className="text-orange-600 text-sm">{error}</p>
-            <p className="text-orange-500 text-xs mt-1">フォールバックデータを使用しています</p>
-
-            カードを左右にスワイプして楽曲を評価してください
-          </p>
-          <div className="flex justify-center gap-4 text-sm">
-            <span className="text-red-500">← 嫌い</span>
-            <span className="text-green-500">好き →</span>
-          </div>
-        </div>
-
-        {/* Error message */}
-        {error && (
-          <div className="text-center">
-            <p className="text-amber-600 text-sm">{error}</p>
-            <p className="text-muted-foreground text-sm">
-              デモ楽曲を表示しています
+            <p className="text-orange-500 text-xs mt-1">
+              フォールバックデータを使用しています
             </p>
           </div>
         )}
