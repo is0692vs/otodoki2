@@ -220,6 +220,11 @@ export default function Home() {
           <Button variant="secondary" size="lg">
             詳しく見る
           </Button>
+          <Link href="/swipe">
+            <Button variant="outline" size="lg">
+              楽曲スワイプ
+            </Button>
+          </Link>
           <Link href="/api-demo">
             <Button variant="outline" size="lg">
               API Demo

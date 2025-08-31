@@ -44,6 +44,8 @@ const fallbackTracks: Track[] = [
   {
     id: "swipe-4",
     title: "Hotel California",
+    artist: "Eagles", 
+    artwork_url: "https://via.placeholder.com/300x300/059669/ffffff?text=Eagles",
     artist: "Eagles",
     artwork_url:
       "https://via.placeholder.com/300x300/f59e0b/ffffff?text=Eagles",
@@ -124,12 +126,34 @@ export default function SwipePage() {
             </Button>
           </Link>
           <h1 className="text-2xl font-bold">楽曲スワイプ</h1>
+          <div /> {/* Spacer for alignment */}
           <div className="w-20" /> {/* Spacer for center alignment */}
+
         </div>
 
         {/* Instructions */}
         <div className="text-center space-y-2">
           <p className="text-muted-foreground">
+            楽曲をスワイプして好みを設定しましょう
+          </p>
+          <div className="flex justify-center gap-4 text-sm">
+            <span className="flex items-center gap-1">
+              <span className="w-3 h-3 bg-red-500 rounded"></span>
+              左スワイプ = 好みではない
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-3 h-3 bg-green-500 rounded"></span>
+              右スワイプ = 好み
+            </span>
+          </div>
+        </div>
+
+        {/* Error Display */}
+        {error && (
+          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+            <p className="text-orange-600 text-sm">{error}</p>
+            <p className="text-orange-500 text-xs mt-1">フォールバックデータを使用しています</p>
+
             カードを左右にスワイプして楽曲を評価してください
           </p>
           <div className="flex justify-center gap-4 text-sm">
