@@ -42,6 +42,8 @@ const fallbackTracks: Track[] = [
     title: "Hotel California",
     artist: "Eagles", 
     artwork_url: "https://via.placeholder.com/300x300/059669/ffffff?text=Eagles",
+    artist: "Eagles",
+    artwork_url: "https://via.placeholder.com/300x300/f59e0b/ffffff?text=Eagles",
     album: "Hotel California",
     duration_ms: 391000,
     genre: "Rock"
@@ -118,6 +120,8 @@ export default function SwipePage() {
           </Link>
           <h1 className="text-2xl font-bold">楽曲スワイプ</h1>
           <div /> {/* Spacer for alignment */}
+          <div className="w-20" /> {/* Spacer for center alignment */}
+
         </div>
 
         {/* Instructions */}
@@ -142,6 +146,20 @@ export default function SwipePage() {
           <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
             <p className="text-orange-600 text-sm">{error}</p>
             <p className="text-orange-500 text-xs mt-1">フォールバックデータを使用しています</p>
+
+            カードを左右にスワイプして楽曲を評価してください
+          </p>
+          <div className="flex justify-center gap-4 text-sm">
+            <span className="text-red-500">← 嫌い</span>
+            <span className="text-green-500">好き →</span>
+          </div>
+        </div>
+
+        {/* Error message */}
+        {error && (
+          <div className="text-center">
+            <p className="text-amber-600 text-sm">{error}</p>
+            <p className="text-muted-foreground text-sm">デモ楽曲を表示しています</p>
           </div>
         )}
 

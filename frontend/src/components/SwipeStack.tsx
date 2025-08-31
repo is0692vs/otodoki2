@@ -1,5 +1,6 @@
 'use client';
 
+
 import React, { useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import { SwipeCard } from "./SwipeCard";
@@ -10,11 +11,22 @@ import { type Track } from '@/services';
 export interface SwipeStackProps {
   tracks: Track[];
   onSwipe?: (direction: 'left' | 'right', track: Track) => void;
+import { type Track } from "@/services";
+
+export interface SwipeStackProps {
+  tracks: Track[];
+  onSwipe?: (direction: "left" | "right", track: Track) => void;
   onStackEmpty?: () => void;
   className?: string;
 }
 
 export function SwipeStack({ tracks, onSwipe, onStackEmpty, className }: SwipeStackProps) {
+export function SwipeStack({
+  tracks,
+  onSwipe,
+  onStackEmpty,
+  className,
+}: SwipeStackProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [swipedTracks, setSwipedTracks] = useState<Track[]>([]);
 
@@ -24,6 +36,15 @@ export function SwipeStack({ tracks, onSwipe, onStackEmpty, className }: SwipeSt
   const handleSwipe = (direction: 'left' | 'right', track: Track) => {
     setSwipedTracks(prev => [...prev, track]);
     setCurrentIndex(prev => {
+  const handleSwipe = (direction: "left" | "right", track: Track) => {
+    console.log(
+      "SwipeStack received swipe:",
+      direction,
+      "for track:",
+      track.title
+    );
+    setSwipedTracks((prev) => [...prev, track]);
+    setCurrentIndex((prev) => {
       const next = prev + 1;
       if (next >= tracks.length) {
         onStackEmpty?.();
@@ -35,6 +56,7 @@ export function SwipeStack({ tracks, onSwipe, onStackEmpty, className }: SwipeSt
   };
 
   const handleButtonSwipe = (direction: 'left' | 'right') => {
+  const handleButtonSwipe = (direction: "left" | "right") => {
     if (currentTrack) {
       handleSwipe(direction, currentTrack);
     }
@@ -49,6 +71,9 @@ export function SwipeStack({ tracks, onSwipe, onStackEmpty, className }: SwipeSt
     return (
       <div className="text-center py-16 space-y-4">
         <p className="text-muted-foreground">すべての楽曲をスワイプしました！</p>
+        <p className="text-muted-foreground">
+          すべての楽曲をスワイプしました！
+        </p>
         <Button onClick={handleReset} variant="outline" className="gap-2">
           <RotateCcw className="h-4 w-4" />
           リセット
@@ -69,6 +94,11 @@ export function SwipeStack({ tracks, onSwipe, onStackEmpty, className }: SwipeSt
             style={{
               zIndex: nextTracks.length - index,
               transform: `scale(${0.95 - index * 0.05}) translateY(${(index + 1) * 10}px)`,
+
+              transform: `scale(${0.95 - index * 0.05}) translateY(${
+                (index + 1) * 10
+              }px)`,
+
             }}
           >
             <SwipeCard
@@ -96,6 +126,7 @@ export function SwipeStack({ tracks, onSwipe, onStackEmpty, className }: SwipeSt
           variant="outline"
           size="lg"
           onClick={() => handleButtonSwipe('left')}
+          onClick={() => handleButtonSwipe("left")}
           className="h-14 w-14 rounded-full border-red-200 hover:bg-red-50 hover:border-red-300"
         >
           <X className="h-6 w-6 text-red-500" />
@@ -105,6 +136,11 @@ export function SwipeStack({ tracks, onSwipe, onStackEmpty, className }: SwipeSt
           variant="outline"
           size="lg"
           onClick={() => handleButtonSwipe('right')}
+
+        <Button
+          variant="outline"
+          size="lg"
+          onClick={() => handleButtonSwipe("right")}
           className="h-14 w-14 rounded-full border-green-200 hover:bg-green-50 hover:border-green-300"
         >
           <Heart className="h-6 w-6 text-green-500" />
@@ -119,6 +155,8 @@ export function SwipeStack({ tracks, onSwipe, onStackEmpty, className }: SwipeSt
         <div className="w-full bg-muted rounded-full h-2 mt-2">
           <div 
             className="bg-primary h-2 rounded-full transition-all duration-300" 
+          <div
+            className="bg-primary h-2 rounded-full transition-all duration-300"
             style={{ width: `${((currentIndex + 1) / tracks.length) * 100}%` }}
           />
         </div>
@@ -128,6 +166,12 @@ export function SwipeStack({ tracks, onSwipe, onStackEmpty, className }: SwipeSt
       {swipedTracks.length > 0 && (
         <div className="mt-4 text-center">
           <Button onClick={handleReset} variant="ghost" size="sm" className="gap-2">
+          <Button
+            onClick={handleReset}
+            variant="ghost"
+            size="sm"
+            className="gap-2"
+          >
             <RotateCcw className="h-4 w-4" />
             リセット
           </Button>
@@ -135,4 +179,5 @@ export function SwipeStack({ tracks, onSwipe, onStackEmpty, className }: SwipeSt
       )}
     </div>
   );
+}
 }
