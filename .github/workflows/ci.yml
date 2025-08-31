@@ -35,7 +35,7 @@ jobs:
           docker-compose up --build -d
 
       - name: Wait for services to be ready
-        run: |
+          timeout 120s bash -c 'until docker-compose ps backend | grep -q "healthy"; do sleep 5; echo "Waiting..."; done'
           echo "Waiting for API service to be healthy..."
           timeout 120s bash -c 'until docker-compose ps api | grep -q "healthy"; do sleep 5; echo "Waiting..."; done'
 
