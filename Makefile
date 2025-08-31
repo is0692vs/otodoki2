@@ -1,7 +1,7 @@
 .PHONY: up logs logs-web down health
 
 up:
-	docker-compose up --build -d
+	docker-compose up --build
 	@echo "\nBackend server started at http://localhost:8000\n"
 	@echo "Frontend server started at http://localhost:3000\n"
 
