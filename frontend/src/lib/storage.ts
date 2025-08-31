@@ -175,14 +175,15 @@ function normalizeTrack(track: Track): StoredTrack {
     collectionName: track.album,
     primaryGenreName: track.genre,
     savedAt: new Date().toISOString(),
-  };
-}
+  if (artworkUrl && !isValidUrl(artworkUrl)) {
+    log.warn(`Invalid artwork URL for track ${track.id}: ${artworkUrl}`);
+    artworkUrl = "";
+  }
 
-/**
- * Load likes from storage with error recovery
- */
-function loadLikes(): LikesStorage {
-  const raw = storage.get(LIKES_KEY);
+  if (previewUrl && !isValidUrl(previewUrl)) {
+    log.warn(`Invalid preview URL for track ${track.id}: ${previewUrl}`);
+    previewUrl = "";
+  }
   if (!raw) {
     return { version: 1, items: [] };
   }
