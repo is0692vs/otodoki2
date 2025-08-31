@@ -233,32 +233,22 @@ class SuggestionsService:
         if queue_size_after < min_threshold:
             if self.worker:
                 try:
-                    # 非同期で補充トリガー実行
-                    asyncio.create_task(self._trigger_refill_async(request_id))
-                    return True
+                    # 補充トリガー実行（同期的に実行して失敗を即座に検出）
+                    success = await self.worker.trigger_refill()
+                    if success:
+                        logger.info(f"[{request_id}] Refill triggered successfully")
+                    else:
+                        logger.info(f"[{request_id}] Refill already in progress")
+                    return success
                 except Exception as e:
-                    logger.warning(
-                        f"[{request_id}] Failed to trigger refill: {e}")
+                    logger.error(f"[{request_id}] Refill trigger failed: {e}")
+                    return False
             else:
                 logger.warning(
                     f"[{request_id}] Worker not available for refill trigger")
 
         return False
 
-    async def _trigger_refill_async(self, request_id: str) -> None:
-        """非同期補充トリガー実行
-
-        Args:
-            request_id: リクエストID
-        """
-        try:
-            success = await self.worker.trigger_refill()
-            if success:
-                logger.info(f"[{request_id}] Refill triggered successfully")
-            else:
-                logger.info(f"[{request_id}] Refill already in progress")
-        except Exception as e:
-            logger.error(f"[{request_id}] Refill trigger failed: {e}")
 
     def _build_response(
         self, delivered_tracks: List[Track], requested: int,
