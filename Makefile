@@ -2,8 +2,8 @@
 
 up:
 	docker-compose up --build -d
-	@echo "\n バックエンドサーバがhttp://localhost:8000で起動しました\n"
-	@echo " フロントエンドサーバがhttp://localhost:3000で起動しました\n"
+	@echo "\nBackend server started at http://localhost:8000\n"
+	@echo "Frontend server started at http://localhost:3000\n"
 
 logs:
 	docker-compose logs -f api
