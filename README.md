@@ -1,267 +1,33 @@
 # otodoki2web# otodoki2web# otodoki2web
 
 楽曲推薦・配信システム。フロントエンドとバックエンドで構成される Web アプリケーションで、Docker でコンテナ化されています。
+# otodoki2web
 
-## プロジェクト構造楽曲推薦・配信システム。フロントエンドとバックエンドで構成される Web アプリケーションで、Docker でコンテナ化されています。楽曲推薦・配信システム。フロントエンドとバックエンドで構成される Web アプリケーションで、Docker でコンテナ化されています。
+楽曲推薦・配信システム。フロントエンドとバックエンドで構成される Web アプリケーションで、Docker でコンテナ化されています。
 
-````text
+## プロジェクト構造
 
+```text
 otodoki2web/
-
-├── backend/           # バックエンドAPI (FastAPI + Python)## プロジェクト構造## プロジェクト構造
-
+├── backend/           # バックエンドAPI (FastAPI + Python)
 │   ├── app/          # アプリケーションコード
-
 │   ├── tests/        # ユニットテスト
-
 │   └── requirements.txt
-
-├── frontend/          # フロントエンド (Next.js + TypeScript)```text```text
-
+├── frontend/          # フロントエンド (Next.js + TypeScript)
 │   ├── src/          # ソースコード
-
-│   ├── public/       # 静的ファイルotodoki2web/otodoki2web/
-
+│   ├── public/       # 静的ファイル
 │   └── package.json
-
-├── scripts/           # 開発・テスト用スクリプト├── backend/           # バックエンドAPI (FastAPI + Python)├── backend/           # バックエンドAPI (FastAPI + Python)
-
+├── scripts/           # 開発・テスト用スクリプト
 │   ├── itunes_test.py
-
-│   ├── itunes_param_test.py│   ├── app/          # アプリケーションコード│   ├── app/          # アプリケーションコード
-
+│   ├── itunes_param_test.py
 │   └── test_queue_worker.py
-
-├── docs/              # ドキュメント│   ├── tests/        # ユニットテスト│   ├── tests/        # ユニットテスト
-
+├── docs/              # ドキュメント
 │   ├── README.md
-
-│   └── WORKER_README.md│   └── requirements.txt│   └── requirements.txt
-
+│   └── WORKER_README.md
 ├── .devcontainer/     # VS Code Dev Container設定
-
-├── .github/           # GitHub Actions設定├── frontend/          # フロントエンド (Next.js + TypeScript)├── frontend/          # フロントエンド (Next.js + TypeScript)
-
+├── .github/           # GitHub Actions設定
 ├── docker-compose.yml # Docker Compose設定
-
-└── Makefile          # 開発用コマンド│   ├── src/          # ソースコード│   ├── src/          # ソースコード
-
-````
-
-│ ├── public/ # 静的ファイル │ ├── public/ # 静的ファイル
-
-## アーキテクチャ
-
-│ └── package.json│ └── package.json
-
-- **フロントエンド:** Next.js アプリケーション (ポート 3000 で動作)
-
-- **バックエンド:** FastAPI アプリケーション (ポート 8000 で動作)├── scripts/ # 開発・テスト用スクリプト ├── scripts/ # 開発・テスト用スクリプト
-
-- **コンテナ化:** Docker と Docker Compose を使用してサービスを構築・実行
-
-│ ├── itunes_test.py│ ├── itunes_test.py
-
-## 開発環境セットアップ
-
-│ ├── itunes_param_test.py│ ├── itunes_param_test.py
-
-### 前提条件
-
-│ └── test_queue_worker.py│ └── test_queue_worker.py
-
-- Docker と Docker Compose がインストールされている
-
-- VS Code（推奨）├── docs/ # ドキュメント ├── docs/ # ドキュメント
-
-### クイックスタート │ ├── README.md│ ├── README.md
-
-```bash│ └── WORKER_README.md│   └── WORKER_README.md
-
-# プロジェクトをクローン
-
-git clone <repository-url>├── .devcontainer/     # VS Code Dev Container設定├── .devcontainer/     # VS Code Dev Container設定
-
-cd otodoki2web
-
-├── .github/           # GitHub Actions設定├── .github/           # GitHub Actions設定
-
-# Docker Composeでサービスを起動
-
-make up├── docker-compose.yml # Docker Compose設定├── docker-compose.yml # Docker Compose設定
-
-
-
-# または直接└── Makefile          # 開発用コマンド└── Makefile          # 開発用コマンド
-
-docker-compose up --build
-
-```
-
-サービスが起動後：
-
-- フロントエンド: <http://localhost:3000>## アーキテクチャ## アーキテクチャ
-
-- バックエンド API: <http://localhost:8000>
-
-- API 仕様: <http://localhost:8000/docs>
-
-### 開発用コマンド- **フロントエンド:** Next.js アプリケーション (ポート 3000 で動作)- **フロントエンド:** Next.js アプリケーション (ポート 3000 で動作)
-
-```bash- **バックエンド:** FastAPI アプリケーション (ポート 8000 で動作)- **バックエンド:** FastAPI アプリケーション (ポート 8000 で動作)
-
-# サービス起動
-
-make up- **コンテナ化:** Docker と Docker Compose を使用してサービスを構築・実行- **コンテナ化:** Docker と Docker Compose を使用してサービスを構築・実行
-
-
-
-# ログ確認
-
-make logs          # バックエンドログ
-
-make logs-web      # フロントエンドログ## 開発環境セットアップ## 開発環境セットアップ
-
-
-
-# ヘルスチェック
-
-make health
-
-### 前提条件### 前提条件
-
-# テストスクリプト実行
-
-make test-itunes      # iTunes API基本テスト
-
-make test-itunes-params # iTunes APIパラメータテスト
-
-make test-worker      # キューワーカーテスト- Docker と Docker Compose がインストールされている- Docker と Docker Compose がインストールされている
-
-
-
-# クリーンアップ- VS Code（推奨）- VS Code（推奨）
-
-make clean        # キャッシュファイル削除
-
-make down         # サービス停止
-
-```
-
-### クイックスタート### クイックスタート
-
-## API 仕様
-
-詳細な API 仕様については、バックエンドサービス起動後に以下を参照してください：
-
-`bash`bash
-
-- Swagger UI: <http://localhost:8000/docs>
-
-- ReDoc: <http://localhost:8000/redoc># プロジェクトをクローン# プロジェクトをクローン
-
-## 開発 git clone <repository-url>git clone <repository-url>
-
-詳細な開発情報については以下を参照してください：cd otodoki2webcd otodoki2web
-
-- [ワーカー仕様書](docs/WORKER_README.md)
-
-- [開発用スクリプト](scripts/README.md)
-
-# Docker Compose でサービスを起動# Docker Compose でサービスを起動
-
-## ライセンス
-
-make upmake up
-
-このプロジェクトは MIT ライセンスの下でライセンスされています。
-
-# または直接# または直接
-
-docker-compose up --builddocker-compose up --build
-
-````
-
-
-
-サービスが起動後：サービスが起動後：
-
-
-
-- フロントエンド: <http://localhost:3000>- フロントエンド: <http://localhost:3000>
-
-- バックエンドAPI: <http://localhost:8000>- バックエンド API: <http://localhost:8000>
-
-- API仕様: <http://localhost:8000/docs>- API 仕様: <http://localhost:8000/docs>
-
-
-
-### 開発用コマンド### 開発用コマンド
-
-
-
-```bash```bash
-
-# サービス起動# サービス起動
-
-make upmake up
-
-
-
-# ログ確認# ログ確認
-
-make logs          # バックエンドログmake logs          # バックエンドログ
-
-make logs-web      # フロントエンドログmake logs-web      # フロントエンドログ
-
-
-
-# ヘルスチェック# ヘルスチェック
-
-make healthmake health
-
-
-
-# テストスクリプト実行# テストスクリプト実行
-
-make test-itunes      # iTunes API基本テストmake test-itunes      # iTunes API基本テスト
-
-make test-itunes-params # iTunes APIパラメータテストmake test-itunes-params # iTunes APIパラメータテスト
-
-make test-worker      # キューワーカーテストmake test-worker      # キューワーカーテスト
-
-
-
-# クリーンアップ# クリーンアップ
-
-make clean        # キャッシュファイル削除make clean        # キャッシュファイル削除
-
-make down         # サービス停止make down         # サービス停止
-
-````
-
-## API 仕様## API 仕様
-
-詳細な API 仕様については、バックエンドサービス起動後に以下を参照してください：詳細な API 仕様については、バックエンドサービス起動後に以下を参照してください：
-
-- Swagger UI: <http://localhost:8000/docs>- Swagger UI: <http://localhost:8000/docs>
-
-- ReDoc: <http://localhost:8000/redoc>- ReDoc: <http://localhost:8000/redoc>
-
-## 開発## 開発
-
-詳細な開発情報については以下を参照してください：詳細な開発情報については以下を参照してください：
-
-- [ワーカー仕様書](docs/WORKER.md)- [ワーカー仕様書](docs/WORKER_README.md)
-
-- [開発用スクリプト](scripts/README.md)- [開発用スクリプト](scripts/README.md)
-
-## ライセンス## ライセンス
-
-このプロジェクトは MIT ライセンスの下でライセンスされています。このプロジェクトは MIT ライセンスの下でライセンスされています。
-
-## アーキテクチャ
-
+└── Makefile          # 開発用コマンド
 - **フロントエンド:** Next.js アプリケーション (ポート 3000 で動作)
 - **バックエンド:** FastAPI アプリケーション (ポート 8000 で動作)
 - **コンテナ化:** Docker と Docker Compose を使用してサービスを構築・実行
