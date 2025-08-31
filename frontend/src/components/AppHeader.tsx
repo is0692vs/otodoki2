@@ -27,6 +27,12 @@ export function AppHeader({ className }: AppHeaderProps) {
             </Link>
             <Link
               className="transition-colors hover:text-foreground/80 text-foreground/60"
+              href="/swipe"
+            >
+              Swipe
+            </Link>
+            <Link
+              className="transition-colors hover:text-foreground/80 text-foreground/60"
               href="/library"
             >
               Library
