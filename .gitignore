@@ -1,2 +1,5 @@
 .gemini/
 gha-creds-*.json
+.github/copilot-instructions.md
+
+venv/
