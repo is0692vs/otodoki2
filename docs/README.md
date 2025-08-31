@@ -1,11 +1,11 @@
 # otodoki2web Documentation
 
-このディレクトリには、otodoki2webプロジェクトのドキュメントが含まれています。
+このディレクトリには、otodoki2web プロジェクトのドキュメントが含まれています。
 
 ## ドキュメント一覧
 
 - [WORKER_README.md](./WORKER_README.md) - iTunes API 非同期補充ワーカーのドキュメント
-- [API.md](./API.md) - API仕様ドキュメント（予定）
+- [API.md](./API.md) - API 仕様ドキュメント（予定）
 - [DEPLOYMENT.md](./DEPLOYMENT.md) - デプロイメントガイド（予定）
 
 ## プロジェクト構造
@@ -23,4 +23,4 @@ otodoki2web/
 
 ## 開発環境
 
-このプロジェクトは、VS Code Dev Containerを使用した開発環境で構築されています。
+このプロジェクトは、VS Code Dev Container を使用した開発環境で構築されています。

@@ -6,8 +6,8 @@
 
 ### iTunes API テスト関連
 
-- **`itunes_test.py`** - iTunes Search APIの基本的な動作テスト
-- **`itunes_param_test.py`** - iTunes APIのパラメータ最適化テスト
+- **`itunes_test.py`** - iTunes Search API の基本的な動作テスト
+- **`itunes_param_test.py`** - iTunes API のパラメータ最適化テスト
 
 ### ワーカーテスト関連
 
@@ -17,8 +17,8 @@
 
 ### 前提条件
 
-- Pythonの依存関係がインストールされている必要があります
-- backendディレクトリ内でパッケージが利用可能である必要があります
+- Python の依存関係がインストールされている必要があります
+- backend ディレクトリ内でパッケージが利用可能である必要があります
 
 ### 実行コマンド
 
@@ -40,4 +40,4 @@ python scripts/test_queue_worker.py
 
 - これらのスクリプトは開発・テスト用です
 - 本番環境では使用しないでください
-- iTunes APIを呼び出すスクリプトは、レート制限に注意してください
+- iTunes API を呼び出すスクリプトは、レート制限に注意してください
