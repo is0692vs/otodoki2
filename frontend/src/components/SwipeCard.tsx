@@ -1,29 +1,51 @@
-'use client';
+"use client";
 
 import React from "react";
 import Image from "next/image";
 import { motion, PanInfo, useMotionValue, useTransform } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { type Track } from '@/services';
+import { type Track } from "@/services";
 
 export interface SwipeCardProps {
   track: Track;
-  onSwipe?: (direction: 'left' | 'right', track: Track) => void;
+  onSwipe?: (direction: "left" | "right", track: Track) => void;
   className?: string;
   isTop?: boolean;
 }
 
-export function SwipeCard({ track, onSwipe, className, isTop = false }: SwipeCardProps) {
+export function SwipeCard({
+  track,
+  onSwipe,
+  className,
+  isTop = false,
+}: SwipeCardProps) {
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-200, 200], [-30, 30]);
   const opacity = useTransform(x, [-200, -150, 0, 150, 200], [0, 1, 1, 1, 0]);
+  const [swipeInfo, setSwipeInfo] = React.useState<{
+    direction: "left" | "right";
+    offsetX: number;
+  } | null>(null);
 
-  const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+  const handleDragEnd = (
+    event: MouseEvent | TouchEvent | PointerEvent,
+    info: PanInfo
+  ) => {
     const swipeThreshold = 100;
-    
+
     if (Math.abs(info.offset.x) > swipeThreshold) {
-      const direction = info.offset.x > 0 ? 'right' : 'left';
+      const direction = info.offset.x > 0 ? "right" : "left";
+      console.log(
+        "Swiped:",
+        direction,
+        "offset.x:",
+        info.offset.x,
+        "current x:",
+        x.get()
+      );
+
+      setSwipeInfo({ direction, offsetX: info.offset.x });
       onSwipe?.(direction, track);
     }
   };
@@ -34,22 +56,21 @@ export function SwipeCard({ track, onSwipe, className, isTop = false }: SwipeCar
         "absolute inset-0 cursor-grab active:cursor-grabbing",
         className
       )}
-      style={{ 
-        x, 
-        rotate, 
+      style={{
+        x,
+        rotate,
         opacity,
         zIndex: isTop ? 10 : 1,
       }}
       drag={isTop ? "x" : false}
-      dragConstraints={{ left: 0, right: 0 }}
       onDragEnd={handleDragEnd}
       whileDrag={{ scale: 1.05 }}
       initial={{ scale: isTop ? 1 : 0.95, y: isTop ? 0 : 10 }}
       animate={{ scale: isTop ? 1 : 0.95, y: isTop ? 0 : 10 }}
       exit={{
-        x: x.get() > 0 ? 1000 : -1000,
+        x: swipeInfo?.offsetX && swipeInfo.offsetX > 0 ? 1000 : -1000,
         opacity: 0,
-        transition: { duration: 0.5 }
+        transition: { duration: 0.5 },
       }}
     >
       <Card className="w-full h-full overflow-hidden shadow-xl border-2">
@@ -69,37 +90,43 @@ export function SwipeCard({ track, onSwipe, className, isTop = false }: SwipeCar
                 <div className="text-white text-2xl font-bold">♪</div>
               </div>
             )}
-            
+
             {/* Swipe indicators */}
             <motion.div
               className="absolute top-8 left-8 bg-red-500 text-white px-4 py-2 rounded-lg font-bold transform -rotate-12"
               style={{
-                opacity: useTransform(x, [-100, 0], [1, 0])
+                opacity: useTransform(x, [-100, 0], [1, 0]),
               }}
             >
               NOPE
             </motion.div>
-            
+
             <motion.div
               className="absolute top-8 right-8 bg-green-500 text-white px-4 py-2 rounded-lg font-bold transform rotate-12"
               style={{
-                opacity: useTransform(x, [0, 100], [0, 1])
+                opacity: useTransform(x, [0, 100], [0, 1]),
               }}
             >
               LIKE
             </motion.div>
           </div>
-          
+
           {/* Track Info */}
           <div className="p-6 bg-white dark:bg-card space-y-2">
             <h3 className="font-bold text-xl truncate" title={track.title}>
               {track.title}
             </h3>
-            <p className="text-muted-foreground text-lg truncate" title={track.artist}>
+            <p
+              className="text-muted-foreground text-lg truncate"
+              title={track.artist}
+            >
               {track.artist}
             </p>
             {track.album && (
-              <p className="text-sm text-muted-foreground truncate" title={track.album}>
+              <p
+                className="text-sm text-muted-foreground truncate"
+                title={track.album}
+              >
                 {track.album}
               </p>
             )}
