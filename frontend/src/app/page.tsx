@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 import {
   Card,
   CardContent,
@@ -54,6 +55,11 @@ export default function Home() {
           <Button variant="secondary" size="lg">
             詳しく見る
           </Button>
+          <Link href="/api-demo">
+            <Button variant="outline" size="lg">
+              API Demo
+            </Button>
+          </Link>
         </div>
       </div>
     </Container>

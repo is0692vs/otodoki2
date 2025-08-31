@@ -1,0 +1,193 @@
+/**
+ * API client for backend communication
+ * Provides typed functions for all backend endpoints
+ */
+
+import {
+  type ApiClientConfig,
+  type ApiResponse,
+  type HealthResponse,
+  type QueueStats,
+  type QueueHealth,
+  type WorkerStats,
+  type WorkerRefillResponse,
+  type SuggestionsResponse,
+  type SuggestionsStats,
+  type ErrorResponse,
+} from './types';
+
+export class ApiClient {
+  private readonly baseUrl: string;
+  private readonly timeout: number;
+
+  constructor(config: ApiClientConfig = {}) {
+    this.baseUrl = config.baseUrl || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    this.timeout = config.timeout || 10000; // 10 seconds default timeout
+  }
+
+  /**
+   * Generic fetch wrapper with error handling and timeout
+   */
+  private async fetchWithTimeout<T>(
+    url: string,
+    options: RequestInit = {}
+  ): Promise<ApiResponse<T>> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), this.timeout);
+
+    try {
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal,
+        headers: {
+          'Content-Type': 'application/json',
+          ...options.headers,
+        },
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        // Try to parse error response
+        let errorData: ErrorResponse;
+        try {
+          errorData = await response.json();
+        } catch {
+          errorData = {
+            error: `HTTP ${response.status}`,
+            detail: response.statusText,
+          };
+        }
+
+        return {
+          error: errorData,
+          status: response.status,
+        };
+      }
+
+      const data = await response.json();
+      return {
+        data,
+        status: response.status,
+      };
+    } catch (error) {
+      clearTimeout(timeoutId);
+      
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          return {
+            error: {
+              error: 'Request timeout',
+              detail: `Request timed out after ${this.timeout}ms`,
+            },
+            status: 408,
+          };
+        }
+
+        return {
+          error: {
+            error: 'Network error',
+            detail: error.message,
+          },
+          status: 0,
+        };
+      }
+
+      return {
+        error: {
+          error: 'Unknown error',
+          detail: 'An unexpected error occurred',
+        },
+        status: 0,
+      };
+    }
+  }
+
+  /**
+   * GET /health - Check backend health
+   */
+  async getHealth(): Promise<ApiResponse<HealthResponse>> {
+    return this.fetchWithTimeout<HealthResponse>(`${this.baseUrl}/health`);
+  }
+
+  /**
+   * GET /queue/stats - Get queue statistics
+   */
+  async getQueueStats(): Promise<ApiResponse<QueueStats>> {
+    return this.fetchWithTimeout<QueueStats>(`${this.baseUrl}/queue/stats`);
+  }
+
+  /**
+   * GET /queue/health - Get queue health status
+   */
+  async getQueueHealth(): Promise<ApiResponse<QueueHealth>> {
+    return this.fetchWithTimeout<QueueHealth>(`${this.baseUrl}/queue/health`);
+  }
+
+  /**
+   * GET /worker/stats - Get worker statistics
+   */
+  async getWorkerStats(): Promise<ApiResponse<WorkerStats>> {
+    return this.fetchWithTimeout<WorkerStats>(`${this.baseUrl}/worker/stats`);
+  }
+
+  /**
+   * POST /worker/trigger-refill - Trigger worker refill
+   */
+  async triggerWorkerRefill(): Promise<ApiResponse<WorkerRefillResponse>> {
+    return this.fetchWithTimeout<WorkerRefillResponse>(`${this.baseUrl}/worker/trigger-refill`, {
+      method: 'POST',
+    });
+  }
+
+  /**
+   * GET /api/v1/tracks/suggestions - Get track suggestions
+   */
+  async getTrackSuggestions(params: {
+    limit?: number;
+    excludeIds?: string;
+  } = {}): Promise<ApiResponse<SuggestionsResponse>> {
+    const searchParams = new URLSearchParams();
+    
+    if (params.limit !== undefined) {
+      searchParams.append('limit', params.limit.toString());
+    }
+    
+    if (params.excludeIds) {
+      searchParams.append('excludeIds', params.excludeIds);
+    }
+
+    const queryString = searchParams.toString();
+    const url = `${this.baseUrl}/api/v1/tracks/suggestions${queryString ? `?${queryString}` : ''}`;
+    
+    return this.fetchWithTimeout<SuggestionsResponse>(url);
+  }
+
+  /**
+   * GET /api/v1/tracks/suggestions/stats - Get suggestions API statistics
+   */
+  async getSuggestionsStats(): Promise<ApiResponse<SuggestionsStats>> {
+    return this.fetchWithTimeout<SuggestionsStats>(`${this.baseUrl}/api/v1/tracks/suggestions/stats`);
+  }
+}
+
+// Default client instance
+export const apiClient = new ApiClient();
+
+// Helper functions for easier usage
+export const api = {
+  health: () => apiClient.getHealth(),
+  queue: {
+    stats: () => apiClient.getQueueStats(),
+    health: () => apiClient.getQueueHealth(),
+  },
+  worker: {
+    stats: () => apiClient.getWorkerStats(),
+    triggerRefill: () => apiClient.triggerWorkerRefill(),
+  },
+  tracks: {
+    suggestions: (params?: { limit?: number; excludeIds?: string }) => 
+      apiClient.getTrackSuggestions(params || {}),
+    stats: () => apiClient.getSuggestionsStats(),
+  },
+};
