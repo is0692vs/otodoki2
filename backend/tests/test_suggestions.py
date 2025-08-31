@@ -44,8 +44,8 @@ class TestSuggestionsService:
     @pytest.mark.asyncio
     async def test_get_suggestions_normal_case(self):
         """正常系: 標準的な楽曲提供テスト"""
-        # テストデータ準備
-        test_tracks = self._create_test_tracks(20)
+        # テストデータ準備（十分な数を用意して閾値を超えるようにする）
+        test_tracks = self._create_test_tracks(50)
         self.queue_manager.enqueue(test_tracks)
 
         # リクエスト実行
@@ -56,11 +56,11 @@ class TestSuggestionsService:
         assert len(response.data) == 10
         assert response.meta.requested == 10
         assert response.meta.delivered == 10
-        assert response.meta.refill_triggered is False
+        assert response.meta.refill_triggered is False  # 40 > 30(threshold)のため補充不要
         assert isinstance(response.meta.ts, str)
 
         # キューサイズチェック
-        assert self.queue_manager.size() == 10  # 20 - 10
+        assert self.queue_manager.size() == 40  # 50 - 10
 
     @pytest.mark.asyncio
     async def test_get_suggestions_with_exclude_ids(self):
