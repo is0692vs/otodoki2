@@ -61,9 +61,9 @@ class iTunesApiClient:
         params = {
             "term": term,
             "media": "music",
-            "entity": "song",
-            "limit": min(limit, 200),  # iTunesの上限は200
-            "country": self.config.get_country()
+            "limit": min(limit, 200),  # 最適化：200件まで取得可能
+            "lang": "ja_jp",           # 最適化：日本語結果の優先
+            "country": self.config.get_country().lower()
         }
         
         # リトライロジック付きでAPIコール

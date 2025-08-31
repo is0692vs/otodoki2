@@ -71,14 +71,14 @@ class WorkerConfig:
         """iTunes検索キーワードリストを取得
         
         Returns:
-            List[str]: 検索キーワードリスト（デフォルト: ["rock", "pop", "jazz"]）
+            List[str]: 検索キーワードリスト（デフォルト: 具体的なアーティスト名）
         """
-        value = os.getenv("OTODOKI_ITUNES_TERMS", "rock,pop,jazz")
+        value = os.getenv("OTODOKI_ITUNES_TERMS", "さくら,YOASOBI,米津玄師,あいみょん,Official髭男dism")
         try:
             terms = [term.strip() for term in value.split(",") if term.strip()]
-            return terms if terms else ["rock", "pop", "jazz"]
+            return terms if terms else ["さくら", "YOASOBI", "米津玄師", "あいみょん", "Official髭男dism"]
         except Exception:
-            return ["rock", "pop", "jazz"]
+            return ["さくら", "YOASOBI", "米津玄師", "あいみょん", "Official髭男dism"]
     
     @staticmethod
     def get_country() -> str:
