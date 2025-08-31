@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 import { Container } from "@/components/Container";
 import { SwipeStack } from "@/components/SwipeStack";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { api, type Track } from '@/services';
+import { api, type Track } from "@/services";
 
 // Fallback demo tracks for when API is unavailable
 const fallbackTracks: Track[] = [
@@ -15,27 +15,31 @@ const fallbackTracks: Track[] = [
     title: "Bohemian Rhapsody",
     artist: "Queen",
     artwork_url: "https://via.placeholder.com/300x300/1f2937/ffffff?text=Queen",
+    preview_url: "https://www.soundjay.com/misc/sounds/beep-07a.mp3", // Demo audio
     album: "A Night at the Opera",
     duration_ms: 355000,
-    genre: "Rock"
+    genre: "Rock",
   },
   {
-    id: "swipe-2", 
+    id: "swipe-2",
     title: "Imagine",
     artist: "John Lennon",
-    artwork_url: "https://via.placeholder.com/300x300/3b82f6/ffffff?text=Imagine",
+    artwork_url:
+      "https://via.placeholder.com/300x300/3b82f6/ffffff?text=Imagine",
+    preview_url: "https://www.soundjay.com/misc/sounds/beep-08a.mp3", // Demo audio
     album: "Imagine",
     duration_ms: 183000,
-    genre: "Pop"
+    genre: "Pop",
   },
   {
     id: "swipe-3",
     title: "Billie Jean",
     artist: "Michael Jackson",
     artwork_url: "https://via.placeholder.com/300x300/8b5cf6/ffffff?text=MJ",
+    preview_url: "https://www.soundjay.com/misc/sounds/beep-09a.mp3", // Demo audio
     album: "Thriller",
     duration_ms: 294000,
-    genre: "Pop"
+    genre: "Pop",
   },
   {
     id: "swipe-4",
@@ -43,10 +47,12 @@ const fallbackTracks: Track[] = [
     artist: "Eagles", 
     artwork_url: "https://via.placeholder.com/300x300/059669/ffffff?text=Eagles",
     artist: "Eagles",
-    artwork_url: "https://via.placeholder.com/300x300/f59e0b/ffffff?text=Eagles",
+    artwork_url:
+      "https://via.placeholder.com/300x300/f59e0b/ffffff?text=Eagles",
+    preview_url: "https://www.soundjay.com/misc/sounds/beep-10a.mp3", // Demo audio
     album: "Hotel California",
     duration_ms: 391000,
-    genre: "Rock"
+    genre: "Rock",
   },
   {
     id: "swipe-5",
@@ -55,8 +61,9 @@ const fallbackTracks: Track[] = [
     artwork_url: "https://via.placeholder.com/300x300/ef4444/ffffff?text=LZ",
     album: "Led Zeppelin IV",
     duration_ms: 482000,
-    genre: "Rock"
-  }
+    genre: "Rock",
+    // No preview_url to test fallback behavior
+  },
 ];
 
 export default function SwipePage() {
@@ -91,10 +98,10 @@ export default function SwipePage() {
     fetchTracks();
   }, []);
 
-  const handleSwipe = (direction: 'left' | 'right', track: Track) => {
+  const handleSwipe = (direction: "left" | "right", track: Track) => {
     console.log(`Swiped ${direction} on track:`, track.title);
     // Here you could implement logic to save likes/dislikes
-    if (direction === 'right') {
+    if (direction === "right") {
       // Track liked
     } else {
       // Track disliked
@@ -102,7 +109,7 @@ export default function SwipePage() {
   };
 
   const handleStackEmpty = () => {
-    console.log('All tracks swiped! Loading more...');
+    console.log("All tracks swiped! Loading more...");
     // Reload tracks or fetch more
     setTracks([...fallbackTracks]);
   };
@@ -159,7 +166,9 @@ export default function SwipePage() {
         {error && (
           <div className="text-center">
             <p className="text-amber-600 text-sm">{error}</p>
-            <p className="text-muted-foreground text-sm">デモ楽曲を表示しています</p>
+            <p className="text-muted-foreground text-sm">
+              デモ楽曲を表示しています
+            </p>
           </div>
         )}
 
@@ -169,7 +178,7 @@ export default function SwipePage() {
             <p className="text-muted-foreground">楽曲を読み込み中...</p>
           </div>
         ) : (
-          <SwipeStack 
+          <SwipeStack
             tracks={tracks}
             onSwipe={handleSwipe}
             onStackEmpty={handleStackEmpty}
