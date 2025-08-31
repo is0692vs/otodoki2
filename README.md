@@ -112,7 +112,7 @@ The CI pipeline (`ci.yml`) performs the following checks:
 4.  **Test CORS functionality:**
     - Open the browser developer tools (F12)
     - Navigate to [http://localhost:3000](http://localhost:3000)
-    - In the console, run:
+      fetch("http://localhost:8000/health")
       ```javascript
       fetch("http://localhost:8000/health")
         .then((response) => response.json())
