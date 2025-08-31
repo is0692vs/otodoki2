@@ -1,7 +1,10 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import { Container } from "@/components/Container";
 import { SearchBar } from "@/components/SearchBar";
 import { Section } from "@/components/Section";
-import { MusicCard } from "@/components/MusicCard";
+import { TrackCard } from "@/components/TrackCard";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import {
@@ -11,20 +14,45 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { api, type Track } from '@/services';
 
-// Mock data for demonstration - in a real app this would come from an API
-const featuredMusic = [
-  { title: "Bohemian Rhapsody", artist: "Queen", album: "A Night at the Opera" },
-  { title: "Hotel California", artist: "Eagles", album: "Hotel California" },
-  { title: "Imagine", artist: "John Lennon", album: "Imagine" },
-  { title: "Stairway to Heaven", artist: "Led Zeppelin", album: "Led Zeppelin IV" },
-];
-
-const recentMusic = [
-  { title: "Shape of You", artist: "Ed Sheeran", album: "÷ (Divide)" },
-  { title: "Blinding Lights", artist: "The Weeknd", album: "After Hours" },
-  { title: "Dance Monkey", artist: "Tones and I", album: "The Kids Are Coming" },
-  { title: "Someone You Loved", artist: "Lewis Capaldi", album: "Divinely Uninspired to a Hellish Extent" },
+// Fallback demo tracks to show when API is unavailable
+const fallbackTracks: Track[] = [
+  {
+    id: "demo-1",
+    title: "Bohemian Rhapsody",
+    artist: "Queen",
+    artwork_url: "https://via.placeholder.com/300x300/1f2937/ffffff?text=Queen",
+    album: "A Night at the Opera",
+    duration_ms: 355000,
+    genre: "Rock"
+  },
+  {
+    id: "demo-2", 
+    title: "Imagine",
+    artist: "John Lennon",
+    artwork_url: "https://via.placeholder.com/300x300/3b82f6/ffffff?text=Imagine",
+    album: "Imagine",
+    duration_ms: 183000,
+    genre: "Pop"
+  },
+  {
+    id: "demo-3",
+    title: "Billie Jean",
+    artist: "Michael Jackson",
+    album: "Thriller",
+    duration_ms: 294000,
+    genre: "Pop"
+  },
+  {
+    id: "demo-4",
+    title: "Hotel California",
+    artist: "Eagles", 
+    artwork_url: "https://via.placeholder.com/300x300/059669/ffffff?text=Eagles",
+    album: "Hotel California",
+    duration_ms: 391000,
+    genre: "Rock"
+  }
 ];
 
 const genres = [
@@ -32,6 +60,66 @@ const genres = [
 ];
 
 export default function Home() {
+  const [featuredTracks, setFeaturedTracks] = useState<Track[]>([]);
+  const [recentTracks, setRecentTracks] = useState<Track[]>([]);
+  const [loadingFeatured, setLoadingFeatured] = useState(true);
+  const [loadingRecent, setLoadingRecent] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch featured tracks
+  useEffect(() => {
+    const fetchFeaturedTracks = async () => {
+      try {
+        setLoadingFeatured(true);
+        const response = await api.tracks.suggestions({ limit: 8 });
+        if (response.error) {
+          setError(`Featured tracks failed: ${response.error.error}`);
+          // Use fallback data when API fails
+          setFeaturedTracks(fallbackTracks);
+        } else {
+          setFeaturedTracks(response.data?.data || []);
+        }
+      } catch (err) {
+        setError(`Featured tracks error: ${err}`);
+        // Use fallback data when API fails
+        setFeaturedTracks(fallbackTracks);
+      } finally {
+        setLoadingFeatured(false);
+      }
+    };
+
+    fetchFeaturedTracks();
+  }, []);
+
+  // Fetch recent tracks (different set)
+  useEffect(() => {
+    const fetchRecentTracks = async () => {
+      try {
+        setLoadingRecent(true);
+        // Use different parameters to get a different set of tracks
+        const response = await api.tracks.suggestions({ limit: 6 });
+        if (response.error) {
+          setError(`Recent tracks failed: ${response.error.error}`);
+          // Use fallback data when API fails
+          setRecentTracks(fallbackTracks.slice(1, 3)); // Different subset
+        } else {
+          // Take a different slice or shuffle to get variety
+          const tracks = response.data?.data || [];
+          setRecentTracks(tracks.slice(-6)); // Take last 6 to get different tracks
+        }
+      } catch (err) {
+        setError(`Recent tracks error: ${err}`);
+        // Use fallback data when API fails
+        setRecentTracks(fallbackTracks.slice(1, 3)); // Different subset
+      } finally {
+        setLoadingRecent(false);
+      }
+    };
+
+    // Delay the second request slightly to avoid hitting rate limits
+    const timer = setTimeout(fetchRecentTracks, 500);
+    return () => clearTimeout(timer);
+  }, []);
   return (
     <Container className="py-8">
       <div className="space-y-8">
@@ -47,6 +135,15 @@ export default function Home() {
             <SearchBar />
           </div>
         </div>
+
+        {/* Error Display */}
+        {error && (
+          <Card className="border-red-200 bg-red-50">
+            <CardContent className="pt-6">
+              <p className="text-red-600">{error}</p>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Genre Categories */}
         <Section title="ジャンル">
@@ -65,30 +162,38 @@ export default function Home() {
 
         {/* Featured Music */}
         <Section title="おすすめの楽曲" showViewAll>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
-            {featuredMusic.map((music, index) => (
-              <MusicCard
-                key={index}
-                title={music.title}
-                artist={music.artist}
-                album={music.album}
-              />
-            ))}
-          </div>
+          {loadingFeatured ? (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">楽曲を読み込み中...</p>
+            </div>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {featuredTracks.slice(0, 4).map((track) => (
+                <TrackCard
+                  key={track.id}
+                  track={track}
+                />
+              ))}
+            </div>
+          )}
         </Section>
 
         {/* Recent/Trending */}
         <Section title="最近人気の楽曲" showViewAll>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
-            {recentMusic.map((music, index) => (
-              <MusicCard
-                key={index}
-                title={music.title}
-                artist={music.artist}
-                album={music.album}
-              />
-            ))}
-          </div>
+          {loadingRecent ? (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">楽曲を読み込み中...</p>
+            </div>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {recentTracks.slice(0, 4).map((track) => (
+                <TrackCard
+                  key={track.id}
+                  track={track}
+                />
+              ))}
+            </div>
+          )}
         </Section>
 
         {/* Quick Actions */}
