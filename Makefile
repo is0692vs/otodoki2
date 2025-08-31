@@ -1,9 +1,10 @@
 .PHONY: up logs logs-web down health
 
 up:
-	docker-compose up --build
-up -d:
 	docker-compose up --build -d
+	@echo "\n バックエンドサーバがhttp://localhost:8000で起動しました\n"
+	@echo " フロントエンドサーバがhttp://localhost:3000で起動しました\n"
+
 logs:
 	docker-compose logs -f api
 
