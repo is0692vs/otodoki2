@@ -152,7 +152,7 @@ jobs:
       - name: Run backend Python tests
         run: |
           echo "Running backend Python tests..."
-          docker compose exec api pytest
+          docker compose exec api env PYTHONPATH=/app pytest
 
       - name: Cleanup
         if: always()
