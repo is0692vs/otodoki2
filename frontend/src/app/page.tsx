@@ -3,6 +3,7 @@ import { SearchBar } from "@/components/SearchBar";
 import { Section } from "@/components/Section";
 import { MusicCard } from "@/components/MusicCard";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 import {
   Card,
   CardContent,
@@ -105,6 +106,17 @@ export default function Home() {
             </div>
           </CardContent>
         </Card>
+        <div className="flex gap-4">
+          <Button size="lg">今すぐ始める</Button>
+          <Button variant="secondary" size="lg">
+            詳しく見る
+          </Button>
+          <Link href="/api-demo">
+            <Button variant="outline" size="lg">
+              API Demo
+            </Button>
+          </Link>
+        </div>
       </div>
     </Container>
   );
