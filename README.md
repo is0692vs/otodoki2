@@ -8,11 +8,59 @@ This is a web application with a frontend and a backend, containerized with Dock
 - **Backend:** FastAPI application running on port 8000.
 - **Containerization:** Docker and Docker Compose are used to build and run the services.
 
+## CI/CD
+
+This project includes a GitHub Actions workflow for continuous integration:
+
+### CI Pipeline
+
+The CI pipeline (`ci.yml`) performs the following checks:
+
+1. **Individual Container Builds**: Each service (frontend and backend) is built separately to ensure they can be built in isolation.
+
+2. **Docker Compose Integration**: Services are built and started using docker-compose to test the integration.
+
+3. **Health Checks**:
+   - Backend health endpoint: `http://localhost:8000/health`
+   - Backend root endpoint: `http://localhost:8000/`
+   - Frontend accessibility: `http://localhost:3000`
+   - Frontend health API: `http://localhost:3000/api/health`
+   - Frontend library page: `http://localhost:3000/library`
+
+### Triggered On
+
+- Push to `main` or `develop` branches
+- Pull requests to `main` branch
+
+### Health Endpoints
+
+- **Backend Health**: `GET /health`
+
+  ```json
+  {
+    "status": "ok",
+    "timestamp": "2025-09-01T12:00:00.000Z",
+    "uptime_seconds": 120.45,
+    "service": "otodoki2-api"
+  }
+  ```
+
+- **Frontend Health**: `GET /api/health`
+  ```json
+  {
+    "status": "ok",
+    "timestamp": "2025-09-01T12:00:00.000Z",
+    "service": "otodoki2-frontend",
+    "version": "1.0.0"
+  }
+  ```
+
 ## Setup and Startup
 
 1.  **Prerequisites:**
-    *   Docker
-    *   Docker Compose
+
+    - Docker
+    - Docker Compose
 
 2.  **Build and start the services:**
 
@@ -53,7 +101,7 @@ This is a web application with a frontend and a backend, containerized with Dock
     You should see the following response:
 
     ```json
-    {"status":"ok"}
+    { "status": "ok" }
     ```
 
 3.  **Check the API documentation:**
@@ -64,8 +112,8 @@ This is a web application with a frontend and a backend, containerized with Dock
 
 - **CORS:** CORS is not configured in this setup. Direct API calls from the frontend to the backend in the browser will fail. This will be addressed in a future update.
 - **Adding Dependencies:**
-    - **Frontend:** Add dependencies to `frontend/package.json` and then rebuild the `web` service: `docker-compose up --build -d web`.
-    - **Backend:** Add dependencies to `backend/requirements.txt` and then rebuild the `api` service: `docker-compose up --build -d api`.
+  - **Frontend:** Add dependencies to `frontend/package.json` and then rebuild the `web` service: `docker-compose up --build -d web`.
+  - **Backend:** Add dependencies to `backend/requirements.txt` and then rebuild the `api` service: `docker-compose up --build -d api`.
 
 ## Directory Structure
 
