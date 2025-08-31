@@ -4,3 +4,11 @@ gha-creds-*.json
 
 venv/
 backend/app/__pycache__
+backend/.pytest_cache/
+backend/*.pyc
+
+frontend/node_modules/
+frontend/.next/
+frontend/npm-debug.log*
+
+.DS_Store
