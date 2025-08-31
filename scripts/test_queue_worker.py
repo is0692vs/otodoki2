@@ -9,8 +9,8 @@ import sys
 import os
 import time
 
-# プロジェクトルートをパスに追加
-sys.path.insert(0, '/Users/hirokimukai/Cloudprojects/otodoki2web/backend')
+# プロジェクトルートをパスに追加（scriptsディレクトリから実行するため）
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'backend'))
 
 from app.core.queue import QueueManager
 from app.services.worker import QueueReplenishmentWorker

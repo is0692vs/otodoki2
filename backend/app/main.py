@@ -1,10 +1,12 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 import time
 import os
 import logging
 from datetime import datetime
 from contextlib import asynccontextmanager
+from typing import Optional
 
 from .dependencies import (
     get_queue_manager,
@@ -15,7 +17,10 @@ from .dependencies import (
     stop_background_tasks
 )
 from .core.queue import QueueManager
+from .core.rate_limit import global_rate_limiter
 from .services.worker import QueueReplenishmentWorker
+from .services.suggestions import SuggestionsService, check_rate_limit
+from .models.suggestions import SuggestionsResponse, ErrorResponse
 
 # ログ設定
 logging.basicConfig(
@@ -31,6 +36,12 @@ async def lifespan(app: FastAPI):
     # 起動時
     logger.info("Starting otodoki2 API application")
     initialize_dependencies()
+
+    # レート制限器を初期化
+    from .core.config import SuggestionsConfig
+    config = SuggestionsConfig()
+    global_rate_limiter.initialize(config.get_rate_limit_per_sec(), 1)
+
     await start_background_tasks()
     yield
     # 終了時
@@ -111,9 +122,71 @@ async def trigger_refill():
     worker = get_worker()
     if worker is None:
         return {"error": "Worker not initialized", "success": False}
-    
+
     success = await worker.trigger_refill()
     return {
         "success": success,
         "message": "Refill completed" if success else "Refill failed or already in progress"
+    }
+
+
+@app.get("/api/v1/tracks/suggestions", response_model=SuggestionsResponse)
+async def get_track_suggestions(
+    limit: Optional[int] = Query(
+        None, ge=1, le=50, description="返却する楽曲数（1-50）"),
+    excludeIds: Optional[str] = Query(None, description="除外する楽曲IDのカンマ区切り文字列"),
+    queue_manager: QueueManager = Depends(get_queue_manager)
+) -> SuggestionsResponse:
+    """楽曲提供APIエンドポイント
+
+    キューから指定された数の楽曲を取得し、excludeIdsで指定された楽曲を除外して返す。
+    必要に応じて補充ワーカーをトリガーする。
+    """
+    # レート制限チェック
+    is_allowed, retry_after = check_rate_limit()
+    if not is_allowed:
+        raise HTTPException(
+            status_code=429,
+            detail="Rate limit exceeded",
+            headers={"Retry-After": str(int(retry_after) + 1)}
+        )
+
+    try:
+        # パラメータバリデーション
+        from .core.config import SuggestionsConfig
+        config = SuggestionsConfig()
+
+        validated_limit = limit if limit is not None else config.get_default_limit()
+        validated_limit = max(1, min(validated_limit, config.get_max_limit()))
+
+        # excludeIdsをリストに変換
+        exclude_ids = []
+        if excludeIds:
+            try:
+                exclude_ids = [id_str.strip()
+                               for id_str in excludeIds.split(',') if id_str.strip()]
+            except Exception:
+                exclude_ids = []
+
+        # SuggestionsServiceでリクエスト処理
+        worker = get_worker()
+        suggestions_service = SuggestionsService(queue_manager, worker)
+        response = await suggestions_service.get_suggestions(validated_limit, exclude_ids)
+
+        return response
+
+    except Exception as e:
+        logger.error(f"Error in get_track_suggestions: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Internal server error"
+        )
+
+
+@app.get("/api/v1/tracks/suggestions/stats")
+async def get_suggestions_stats():
+    """楽曲提供APIの統計情報"""
+    rate_limit_stats = global_rate_limiter.get_stats()
+    return {
+        "rate_limit": rate_limit_stats
     }
