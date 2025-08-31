@@ -98,7 +98,7 @@ class TestWorkerConfig:
     def test_worker_default_values(self):
         """デフォルト値のテスト"""
         with patch.dict(os.environ, {}, clear=True):
-            assert WorkerConfig.get_itunes_terms() == ["rock", "pop", "jazz"]
+            assert WorkerConfig.get_itunes_terms() == ["さくら", "YOASOBI", "米津玄師", "あいみょん", "Official髭男dism"]
             assert WorkerConfig.get_country() == "JP"
             assert WorkerConfig.get_min_threshold() == 30
             assert WorkerConfig.get_batch_size() == 30
@@ -143,7 +143,7 @@ class TestWorkerConfig:
         }
         
         with patch.dict(os.environ, env_vars):
-            assert WorkerConfig.get_itunes_terms() == ["rock", "pop", "jazz"]  # デフォルト
+            assert WorkerConfig.get_itunes_terms() == ["さくら", "YOASOBI", "米津玄師", "あいみょん", "Official髭男dism"]  # デフォルト
             assert WorkerConfig.get_min_threshold() == 30  # デフォルト
             assert WorkerConfig.get_batch_size() == 1  # 最小値
             assert WorkerConfig.get_max_cap() == 300  # デフォルト
@@ -158,7 +158,7 @@ class TestWorkerConfig:
             ("  rock  ,  pop  ,  jazz  ", ["rock", "pop", "jazz"]),  # 空白あり
             ("rock", ["rock"]),  # 単一キーワード
             ("rock,,pop", ["rock", "pop"]),  # 空要素
-            (",,,", ["rock", "pop", "jazz"]),  # 全て空
+            (",,,", ["さくら", "YOASOBI", "米津玄師", "あいみょん", "Official髭男dism"]),  # 全て空
         ]
         
         for terms_str, expected in test_cases:
@@ -177,6 +177,6 @@ class TestWorkerConfig:
             assert set(settings.keys()) == expected_keys
             
             # デフォルト値の確認
-            assert settings["itunes_terms"] == ["rock", "pop", "jazz"]
+            assert settings["itunes_terms"] == ["さくら", "YOASOBI", "米津玄師", "あいみょん", "Official髭男dism"]
             assert settings["country"] == "JP"
             assert settings["min_threshold"] == 30

@@ -26,7 +26,7 @@ class TestiTunesApiClient:
         
         # クールダウンなしでの選択
         term = client.pick_search_term()
-        assert term in ["rock", "pop", "jazz"]
+        assert term in ["さくら", "YOASOBI", "米津玄師", "あいみょん", "Official髭男dism"]
         
         # 同じキーワードが選ばれた場合、クールダウンに追加されているか確認
         assert term in client._keyword_cooldown
