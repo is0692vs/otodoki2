@@ -40,6 +40,12 @@ jobs:
         run: |
           docker compose up --build -d
 
+      - name: Debug after docker compose up
+        run: |
+          echo "--- Docker Compose PS output after up ---"
+          docker compose ps
+          echo "----------------------------------------"
+
       - name: Wait for services to be ready
         run: |
           timeout 120s bash -c 'until docker compose ps backend | grep -q "healthy"; do sleep 5; echo "Waiting..."; done'
