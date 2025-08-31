@@ -1,12 +1,86 @@
+# otodoki2web# otodoki2web# otodoki2web
+
+楽曲推薦・配信システム。フロントエンドとバックエンドで構成される Web アプリケーションで、Docker でコンテナ化されています。
 # otodoki2web
 
-このプロジェクトは、フロントエンドとバックエンドで構成される Web アプリケーションで、Docker でコンテナ化されています。
+楽曲推薦・配信システム。フロントエンドとバックエンドで構成される Web アプリケーションで、Docker でコンテナ化されています。
 
-## アーキテクチャ
+## プロジェクト構造
 
+```text
+otodoki2web/
+├── backend/           # バックエンドAPI (FastAPI + Python)
+│   ├── app/          # アプリケーションコード
+│   ├── tests/        # ユニットテスト
+│   └── requirements.txt
+├── frontend/          # フロントエンド (Next.js + TypeScript)
+│   ├── src/          # ソースコード
+│   ├── public/       # 静的ファイル
+│   └── package.json
+├── scripts/           # 開発・テスト用スクリプト
+│   ├── itunes_test.py
+│   ├── itunes_param_test.py
+│   └── test_queue_worker.py
+├── docs/              # ドキュメント
+│   ├── README.md
+│   └── WORKER_README.md
+├── .devcontainer/     # VS Code Dev Container設定
+├── .github/           # GitHub Actions設定
+├── docker-compose.yml # Docker Compose設定
+└── Makefile          # 開発用コマンド
 - **フロントエンド:** Next.js アプリケーション (ポート 3000 で動作)
 - **バックエンド:** FastAPI アプリケーション (ポート 8000 で動作)
 - **コンテナ化:** Docker と Docker Compose を使用してサービスを構築・実行
+
+## 開発環境セットアップ
+
+### 前提条件
+
+- Docker と Docker Compose がインストールされている
+- VS Code（推奨）
+
+### クイックスタート
+
+```bash
+# プロジェクトをクローン
+git clone <repository-url>
+cd otodoki2web
+
+# Docker Composeでサービスを起動
+make up
+
+# または直接
+docker-compose up --build
+```
+
+サービスが起動後：
+
+- フロントエンド: http://localhost:3000
+- バックエンド API: http://localhost:8000
+- API 仕様: http://localhost:8000/docs
+
+### 開発用コマンド
+
+```bash
+# サービス起動
+make up
+
+# ログ確認
+make logs          # バックエンドログ
+make logs-web      # フロントエンドログ
+
+# ヘルスチェック
+make health
+
+# テストスクリプト実行
+make test-itunes      # iTunes API基本テスト
+make test-itunes-params # iTunes APIパラメータテスト
+make test-worker      # キューワーカーテスト
+
+# クリーンアップ
+make clean        # キャッシュファイル削除
+make down         # サービス停止
+```
 
 ## CI/CD
 

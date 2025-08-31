@@ -9,11 +9,11 @@ from typing import List
 
 class QueueConfig:
     """キューに関する設定値を管理するクラス"""
-    
+
     @staticmethod
     def get_max_capacity() -> int:
         """キューの最大容量を取得
-        
+
         Returns:
             int: キューの最大容量（デフォルト: 1000）
         """
@@ -22,11 +22,11 @@ class QueueConfig:
             return max(1, int(value))  # 最小値は1
         except ValueError:
             return 1000
-    
+
     @staticmethod
     def get_dequeue_default_n() -> int:
         """dequeueのデフォルト取得件数を取得
-        
+
         Returns:
             int: デフォルト取得件数（デフォルト: 10）
         """
@@ -35,11 +35,11 @@ class QueueConfig:
             return max(1, int(value))  # 最小値は1
         except ValueError:
             return 10
-    
+
     @staticmethod
     def get_low_watermark() -> int:
         """キューの補充トリガ閾値を取得
-        
+
         Returns:
             int: 低水位マーク（デフォルト: 100）
         """
@@ -48,11 +48,11 @@ class QueueConfig:
             return max(0, int(value))  # 最小値は0
         except ValueError:
             return 100
-    
+
     @staticmethod
     def get_all_settings() -> dict:
         """すべての設定値を辞書で取得
-        
+
         Returns:
             dict: 設定値の辞書
         """
@@ -65,34 +65,35 @@ class QueueConfig:
 
 class WorkerConfig:
     """iTunes APIワーカーに関する設定値を管理するクラス"""
-    
+
     @staticmethod
     def get_itunes_terms() -> List[str]:
         """iTunes検索キーワードリストを取得
-        
+
         Returns:
             List[str]: 検索キーワードリスト（デフォルト: 具体的なアーティスト名）
         """
-        value = os.getenv("OTODOKI_ITUNES_TERMS", "さくら,YOASOBI,米津玄師,あいみょん,Official髭男dism")
+        value = os.getenv("OTODOKI_ITUNES_TERMS",
+                          "さくら,YOASOBI,米津玄師,あいみょん,Official髭男dism")
         try:
             terms = [term.strip() for term in value.split(",") if term.strip()]
             return terms if terms else ["さくら", "YOASOBI", "米津玄師", "あいみょん", "Official髭男dism"]
         except Exception:
             return ["さくら", "YOASOBI", "米津玄師", "あいみょん", "Official髭男dism"]
-    
+
     @staticmethod
     def get_country() -> str:
         """iTunes検索の対象国を取得
-        
+
         Returns:
             str: 国コード（デフォルト: "JP"）
         """
         return os.getenv("OTODOKI_COUNTRY", "JP")
-    
+
     @staticmethod
     def get_min_threshold() -> int:
         """キューの最小閾値を取得
-        
+
         Returns:
             int: 最小閾値（デフォルト: 30）
         """
@@ -101,11 +102,11 @@ class WorkerConfig:
             return max(1, int(value))
         except ValueError:
             return 30
-    
+
     @staticmethod
     def get_batch_size() -> int:
         """1回の補充単位を取得
-        
+
         Returns:
             int: バッチサイズ（デフォルト: 30）
         """
@@ -114,11 +115,11 @@ class WorkerConfig:
             return max(1, int(value))
         except ValueError:
             return 30
-    
+
     @staticmethod
     def get_max_cap() -> int:
         """キューの最大容量上限を取得
-        
+
         Returns:
             int: 最大容量上限（デフォルト: 300）
         """
@@ -127,11 +128,11 @@ class WorkerConfig:
             return max(1, int(value))
         except ValueError:
             return 300
-    
+
     @staticmethod
     def get_poll_interval_ms() -> int:
         """ポーリング間隔（ミリ秒）を取得
-        
+
         Returns:
             int: ポーリング間隔（デフォルト: 1500ms）
         """
@@ -140,11 +141,11 @@ class WorkerConfig:
             return max(100, int(value))  # 最小100ms
         except ValueError:
             return 1500
-    
+
     @staticmethod
     def get_http_timeout_s() -> float:
         """HTTPタイムアウト（秒）を取得
-        
+
         Returns:
             float: タイムアウト秒数（デフォルト: 5.0）
         """
@@ -153,11 +154,11 @@ class WorkerConfig:
             return max(1.0, float(value))
         except ValueError:
             return 5.0
-    
+
     @staticmethod
     def get_retry_max() -> int:
         """最大リトライ回数を取得
-        
+
         Returns:
             int: 最大リトライ回数（デフォルト: 3）
         """
@@ -166,11 +167,11 @@ class WorkerConfig:
             return max(0, int(value))
         except ValueError:
             return 3
-    
+
     @staticmethod
     def get_all_settings() -> dict:
         """すべての設定値を辞書で取得
-        
+
         Returns:
             dict: 設定値の辞書
         """
@@ -183,4 +184,60 @@ class WorkerConfig:
             "poll_interval_ms": WorkerConfig.get_poll_interval_ms(),
             "http_timeout_s": WorkerConfig.get_http_timeout_s(),
             "retry_max": WorkerConfig.get_retry_max(),
+        }
+
+
+class SuggestionsConfig:
+    """楽曲提供API設定値を管理するクラス"""
+
+    @staticmethod
+    def get_default_limit() -> int:
+        """デフォルトのlimit値を取得
+
+        Returns:
+            int: デフォルトlimit（デフォルト: 10）
+        """
+        value = os.getenv("OTODOKI_SUGGESTIONS_DEFAULT_LIMIT", "10")
+        try:
+            return max(1, int(value))
+        except ValueError:
+            return 10
+
+    @staticmethod
+    def get_max_limit() -> int:
+        """最大のlimit値を取得
+
+        Returns:
+            int: 最大limit（デフォルト: 50）
+        """
+        value = os.getenv("OTODOKI_SUGGESTIONS_MAX_LIMIT", "50")
+        try:
+            return max(1, int(value))
+        except ValueError:
+            return 50
+
+    @staticmethod
+    def get_rate_limit_per_sec() -> int:
+        """1秒あたりのレート制限を取得
+
+        Returns:
+            int: 1秒あたりの最大リクエスト数（デフォルト: 20）
+        """
+        value = os.getenv("OTODOKI_RATE_LIMIT_PER_SEC", "20")
+        try:
+            return max(1, int(value))
+        except ValueError:
+            return 20
+
+    @staticmethod
+    def get_all_settings() -> dict:
+        """すべての設定値を辞書で取得
+
+        Returns:
+            dict: 設定値の辞書
+        """
+        return {
+            "default_limit": SuggestionsConfig.get_default_limit(),
+            "max_limit": SuggestionsConfig.get_max_limit(),
+            "rate_limit_per_sec": SuggestionsConfig.get_rate_limit_per_sec(),
         }
