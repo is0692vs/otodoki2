@@ -113,7 +113,7 @@ export function SwipeStack({
 
     // Add swiped track to history
     setSwipedTracks((prev) => [...prev, track]);
-    
+
     // Update current index with a slight delay to ensure smooth animation
     setTimeout(() => {
       setCurrentIndex((prev) => {
@@ -125,7 +125,7 @@ export function SwipeStack({
         return next;
       });
     }, 100); // Small delay for smooth transition
-    
+
     onSwipe?.(direction, track);
   };
 

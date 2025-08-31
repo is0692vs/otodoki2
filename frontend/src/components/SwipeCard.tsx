@@ -39,10 +39,10 @@ export function SwipeCard({
 
     if (Math.abs(info.offset.x) > swipeThreshold) {
       const direction = info.offset.x > 0 ? "right" : "left";
-      
+
       // Set swipe info immediately for consistent exit animation
       setSwipeInfo({ direction, offsetX: info.offset.x });
-      
+
       // Call onSwipe callback
       onSwipe?.(direction, track);
     }
@@ -66,7 +66,13 @@ export function SwipeCard({
       initial={{ scale: isTop ? 1 : 0.95, y: isTop ? 0 : 10 }}
       animate={{ scale: isTop ? 1 : 0.95, y: isTop ? 0 : 10 }}
       exit={{
-        x: swipeInfo?.offsetX ? (swipeInfo.offsetX > 0 ? 1000 : -1000) : x.get() > 0 ? 1000 : -1000,
+        x: swipeInfo?.offsetX
+          ? swipeInfo.offsetX > 0
+            ? 1000
+            : -1000
+          : x.get() > 0
+          ? 1000
+          : -1000,
         opacity: 0,
         transition: { duration: 0.3, ease: "easeOut" },
       }}
