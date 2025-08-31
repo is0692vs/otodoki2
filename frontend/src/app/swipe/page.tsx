@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { api, type Track } from "@/services";
+import { getDislikedTrackIds } from "@/lib/storage";
 
 // Fallback demo tracks for when API is unavailable
 const fallbackTracks: Track[] = [
@@ -74,20 +75,42 @@ export default function SwipePage() {
     const fetchTracks = async () => {
       try {
         setLoading(true);
+
+        // Get disliked track IDs to filter out
+        const dislikedIds = new Set(getDislikedTrackIds());
+        console.log(`🚫 Filtering out ${dislikedIds.size} disliked tracks`);
+
         const response = await api.tracks.suggestions({ limit: 20 });
         if (response.error) {
           setError(`Failed to load tracks: ${response.error.error}`);
-          // Use fallback data when API fails
-          setTracks(fallbackTracks);
+          // Use fallback data when API fails, but still filter dislikes
+          const filteredFallback = fallbackTracks.filter(
+            (track) => !dislikedIds.has(Number(track.id))
+          );
+          setTracks(filteredFallback);
         } else {
           const apiTracks = response.data?.data || [];
           // Mix API tracks with fallback tracks for better demo
-          setTracks([...apiTracks, ...fallbackTracks].slice(0, 20));
+          const allTracks = [...apiTracks, ...fallbackTracks];
+          // Filter out disliked tracks
+          const filteredTracks = allTracks.filter(
+            (track) => !dislikedIds.has(Number(track.id))
+          );
+          console.log(
+            `📱 Loaded ${filteredTracks.length} tracks (${
+              allTracks.length - filteredTracks.length
+            } filtered out)`
+          );
+          setTracks(filteredTracks.slice(0, 20));
         }
       } catch (err) {
         setError(`Error loading tracks: ${err}`);
-        // Use fallback data when API fails
-        setTracks(fallbackTracks);
+        // Use fallback data when API fails, but still filter dislikes
+        const dislikedIds = new Set(getDislikedTrackIds());
+        const filteredFallback = fallbackTracks.filter(
+          (track) => !dislikedIds.has(Number(track.id))
+        );
+        setTracks(filteredFallback);
       } finally {
         setLoading(false);
       }

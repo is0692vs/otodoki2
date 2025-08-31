@@ -17,6 +17,7 @@ import { type Track } from "@/services";
 import { useAudioPlayer } from "@/hooks/useAudioPlayer";
 import { useVisibility, usePageVisibility } from "@/hooks/useVisibility";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { saveLikedTrack, saveDislikedTrackId } from "@/lib/storage";
 
 export interface SwipeStackProps {
   tracks: Track[];
@@ -110,6 +111,21 @@ export function SwipeStack({
   const handleSwipe = (direction: "left" | "right", track: Track) => {
     // Stop current playback before moving to next
     audioPlayer.stop();
+
+    // Save swipe preference to localStorage
+    if (direction === "right") {
+      // User liked the track
+      const saved = saveLikedTrack(track);
+      if (saved) {
+        console.log(`💖 Saved liked track: ${track.title} by ${track.artist}`);
+      }
+    } else {
+      // User disliked the track
+      const saved = saveDislikedTrackId(track.id);
+      if (saved) {
+        console.log(`👎 Saved disliked track ID: ${track.id}`);
+      }
+    }
 
     // Add swiped track to history
     setSwipedTracks((prev) => [...prev, track]);
