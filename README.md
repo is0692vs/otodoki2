@@ -1,110 +1,89 @@
 # otodoki2web
 
-FastAPI を Docker 化した API サーバーです。
+This is a web application with a frontend and a backend, containerized with Docker.
 
-## セットアップ
+## Architecture
 
-### 起動
+- **Frontend:** Next.js application running on port 3000.
+- **Backend:** FastAPI application running on port 8000.
+- **Containerization:** Docker and Docker Compose are used to build and run the services.
 
-```bash
-docker-compose up --build -d
-```
+## Setup and Startup
 
-または、Makefile を使用：
+1.  **Prerequisites:**
+    *   Docker
+    *   Docker Compose
 
-```bash
-make up
-```
+2.  **Build and start the services:**
 
-### 停止
+    ```bash
+    docker-compose up --build -d
+    ```
 
-```bash
-docker-compose down
-```
+    Or, using the Makefile:
 
-または：
+    ```bash
+    make up
+    ```
 
-```bash
-make down
-```
+3.  **Stop the services:**
 
-## 動作確認
+    ```bash
+    docker-compose down
+    ```
 
-### ヘルスチェック
+    Or:
 
-```bash
-curl http://localhost:8000/health
-```
+    ```bash
+    make down
+    ```
 
-レスポンス例：
+## How to Verify
 
-```json
-{ "status": "ok" }
-```
+1.  **Check the frontend:**
+    Open your browser and navigate to [http://localhost:3000](http://localhost:3000). You should see the Next.js starter page.
 
-### API ドキュメント
+2.  **Check the backend health:**
+    Run the following command in your terminal:
 
-ブラウザで以下にアクセスして OpenAPI UI を確認：
+    ```bash
+    curl http://localhost:8000/health
+    ```
 
-- http://localhost:8000/docs (Swagger UI)
-- http://localhost:8000/redoc (ReDoc)
+    You should see the following response:
 
-### ログ確認
+    ```json
+    {"status":"ok"}
+    ```
 
-```bash
-docker-compose logs -f api
-```
+3.  **Check the API documentation:**
+    - [http://localhost:8000/docs](http://localhost:8000/docs) (Swagger UI)
+    - [http://localhost:8000/redoc](http://localhost:8000/redoc) (ReDoc)
 
-または：
+## Important Notes
 
-```bash
-make logs
-```
+- **CORS:** CORS is not configured in this setup. Direct API calls from the frontend to the backend in the browser will fail. This will be addressed in a future update.
+- **Adding Dependencies:**
+    - **Frontend:** Add dependencies to `frontend/package.json` and then rebuild the `web` service: `docker-compose up --build -d web`.
+    - **Backend:** Add dependencies to `backend/requirements.txt` and then rebuild the `api` service: `docker-compose up --build -d api`.
 
-## よくあるエラー
-
-### ポート競合
-
-ポート 8000 が既に使用されている場合：
-
-1. 使用中のプロセスを確認：
-
-   ```bash
-   lsof -i :8000
-   ```
-
-2. プロセスを停止するか、docker-compose.yml のポートを変更：
-   ```yaml
-   ports:
-     - "8001:8000" # ホストポートを8001に変更
-   ```
-
-### curl が無い環境
-
-curl の代わりに wget を使用：
-
-```bash
-wget -qO- http://localhost:8000/health
-```
-
-## ディレクトリ構成
+## Directory Structure
 
 ```
 .
-├── app/
-│   ├── __init__.py
-│   └── main.py          # FastAPI アプリケーション
-├── docker-compose.yml   # Docker Compose 設定
-├── Dockerfile          # Docker イメージビルド設定
-├── Makefile           # よく使うコマンドのショートカット
-├── requirements.txt    # Python依存関係
-├── .dockerignore      # Docker ビルド時の除外ファイル
-└── README.md          # このファイル
+├── backend/
+│   ├── app/
+│   │   ├── __init__.py
+│   │   └── main.py
+│   ├── Dockerfile
+│   ├── requirements.txt
+│   └── .dockerignore
+├── frontend/
+│   ├── src/
+│   ├── Dockerfile
+│   ├── package.json
+│   └── ... (Next.js files)
+├── docker-compose.yml
+├── Makefile
+└── README.md
 ```
-
-## API エンドポイント
-
-- `GET /` - 簡易メッセージを返す
-- `GET /health` - ヘルスチェック (`{"status":"ok"}` を返す)
-- `GET /docs` - Swagger UI (API ドキュメント)
-- `GET /redoc` - ReDoc (API ドキュメント)
