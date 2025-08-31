@@ -1,5 +1,23 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Otodoki2Web Frontend
+
+楽曲推薦システムのフロントエンド部分。スワイプ式の楽曲評価機能を提供します。
+
+## 主要機能
+
+- **スワイプ式楽曲推薦** (`/swipe`) - Tinder 風のインターフェースで楽曲を評価
+- **楽曲ライブラリ** (`/library`) - 楽曲一覧の表示
+- **API デモ** (`/api-demo`) - バックエンド API の動作確認
+
+## 技術スタック
+
+- **Next.js 14** with App Router
+- **TypeScript** for type safety
+- **Tailwind CSS** for styling
+- **Framer Motion** for animations (swipe functionality)
+- **Shadcn/ui** for UI components
+
 ## Getting Started
 
 First, run the development server:
