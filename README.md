@@ -20,7 +20,7 @@ The CI pipeline (`ci.yml`) performs the following checks:
 
 2. **Docker Compose Integration**: Services are built and started using docker-compose to test the integration.
 
-3. **Health Checks**: 
+3. **Health Checks**:
    - Backend health endpoint: `http://localhost:8000/health`
    - Backend root endpoint: `http://localhost:8000/`
    - Frontend accessibility: `http://localhost:3000`
@@ -28,12 +28,14 @@ The CI pipeline (`ci.yml`) performs the following checks:
    - Frontend library page: `http://localhost:3000/library`
 
 ### Triggered On
+
 - Push to `main` or `develop` branches
 - Pull requests to `main` branch
 
 ### Health Endpoints
 
 - **Backend Health**: `GET /health`
+
   ```json
   {
     "status": "ok",
@@ -56,8 +58,9 @@ The CI pipeline (`ci.yml`) performs the following checks:
 ## Setup and Startup
 
 1.  **Prerequisites:**
-    *   Docker
-    *   Docker Compose
+
+    - Docker
+    - Docker Compose
 
 2.  **Build and start the services:**
 
@@ -98,7 +101,7 @@ The CI pipeline (`ci.yml`) performs the following checks:
     You should see the following response:
 
     ```json
-    {"status":"ok"}
+    { "status": "ok" }
     ```
 
 3.  **Check the API documentation:**
@@ -109,8 +112,8 @@ The CI pipeline (`ci.yml`) performs the following checks:
 
 - **CORS:** CORS is not configured in this setup. Direct API calls from the frontend to the backend in the browser will fail. This will be addressed in a future update.
 - **Adding Dependencies:**
-    - **Frontend:** Add dependencies to `frontend/package.json` and then rebuild the `web` service: `docker-compose up --build -d web`.
-    - **Backend:** Add dependencies to `backend/requirements.txt` and then rebuild the `api` service: `docker-compose up --build -d api`.
+  - **Frontend:** Add dependencies to `frontend/package.json` and then rebuild the `web` service: `docker-compose up --build -d web`.
+  - **Backend:** Add dependencies to `backend/requirements.txt` and then rebuild the `api` service: `docker-compose up --build -d api`.
 
 ## Directory Structure
 
