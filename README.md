@@ -105,12 +105,39 @@ The CI pipeline (`ci.yml`) performs the following checks:
     ```
 
 3.  **Check the API documentation:**
+
     - [http://localhost:8000/docs](http://localhost:8000/docs) (Swagger UI)
     - [http://localhost:8000/redoc](http://localhost:8000/redoc) (ReDoc)
 
+4.  **Test CORS functionality:**
+    - Open the browser developer tools (F12)
+    - Navigate to [http://localhost:3000](http://localhost:3000)
+    - In the console, run:
+      ```javascript
+      fetch("http://localhost:8000/health")
+        .then((response) => response.json())
+        .then((data) => console.log("API Response:", data))
+        .catch((error) => console.error("CORS Error:", error));
+      ```
+    - You should see the health response without CORS errors
+    - Check the Network tab for the preflight `OPTIONS` request (for complex requests)
+
 ## Important Notes
 
-- **CORS:** CORS is not configured in this setup. Direct API calls from the frontend to the backend in the browser will fail. This will be addressed in a future update.
+- **CORS Configuration:** CORS is configured for development use with `http://localhost:3000` as an allowed origin. This enables the frontend to make API calls to the backend without CORS errors.
+
+  - **Current Settings:**
+    - Allowed origins: `http://localhost:3000` (configurable via `ORIGINS` environment variable)
+    - Allowed methods: `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `OPTIONS`
+    - Allowed headers: `Authorization`, `Content-Type`, and all headers (`*`)
+    - Credentials: Disabled (no cookies)
+  - **Adding Origins:** To add more origins, update the `ORIGINS` environment variable in `docker-compose.yml` (comma-separated list)
+  - **Production Considerations:**
+    - Limit origins to only necessary domains
+    - Minimize allowed headers and methods
+    - Consider enabling credentials only if needed
+    - Regularly review and update CORS policies
+
 - **Adding Dependencies:**
   - **Frontend:** Add dependencies to `frontend/package.json` and then rebuild the `web` service: `docker-compose up --build -d web`.
   - **Backend:** Add dependencies to `backend/requirements.txt` and then rebuild the `api` service: `docker-compose up --build -d api`.
