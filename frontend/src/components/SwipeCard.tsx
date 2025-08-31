@@ -6,12 +6,14 @@ import { motion, PanInfo, useMotionValue, useTransform } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { type Track } from "@/services";
+import { Play, Pause } from "lucide-react";
 
 export interface SwipeCardProps {
   track: Track;
   onSwipe?: (direction: "left" | "right", track: Track) => void;
   className?: string;
   isTop?: boolean;
+  isPlaying?: boolean;
 }
 
 export function SwipeCard({
@@ -19,6 +21,7 @@ export function SwipeCard({
   onSwipe,
   className,
   isTop = false,
+  isPlaying = false,
 }: SwipeCardProps) {
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-200, 200], [-30, 30]);
@@ -36,16 +39,11 @@ export function SwipeCard({
 
     if (Math.abs(info.offset.x) > swipeThreshold) {
       const direction = info.offset.x > 0 ? "right" : "left";
-      console.log(
-        "Swiped:",
-        direction,
-        "offset.x:",
-        info.offset.x,
-        "current x:",
-        x.get()
-      );
-
+      
+      // Set swipe info immediately for consistent exit animation
       setSwipeInfo({ direction, offsetX: info.offset.x });
+      
+      // Call onSwipe callback
       onSwipe?.(direction, track);
     }
   };
@@ -68,9 +66,9 @@ export function SwipeCard({
       initial={{ scale: isTop ? 1 : 0.95, y: isTop ? 0 : 10 }}
       animate={{ scale: isTop ? 1 : 0.95, y: isTop ? 0 : 10 }}
       exit={{
-        x: swipeInfo?.offsetX && swipeInfo.offsetX > 0 ? 1000 : -1000,
+        x: swipeInfo?.offsetX ? (swipeInfo.offsetX > 0 ? 1000 : -1000) : x.get() > 0 ? 1000 : -1000,
         opacity: 0,
-        transition: { duration: 0.5 },
+        transition: { duration: 0.3, ease: "easeOut" },
       }}
     >
       <Card className="w-full h-full overflow-hidden shadow-xl border-2">
@@ -82,6 +80,8 @@ export function SwipeCard({
                 src={track.artwork_url}
                 alt={`${track.title} by ${track.artist}`}
                 fill
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                priority={isTop}
                 className="object-cover"
                 draggable={false}
               />
@@ -109,6 +109,20 @@ export function SwipeCard({
             >
               LIKE
             </motion.div>
+
+            {/* Playing indicator */}
+            {isPlaying && (
+              <div className="absolute bottom-4 right-4 bg-black/70 text-white p-2 rounded-full animate-pulse">
+                <Pause className="h-4 w-4" />
+              </div>
+            )}
+
+            {/* Preview available indicator */}
+            {!isPlaying && track.preview_url && (
+              <div className="absolute bottom-4 right-4 bg-black/70 text-white p-2 rounded-full">
+                <Play className="h-4 w-4" />
+              </div>
+            )}
           </div>
 
           {/* Track Info */}
