@@ -6,7 +6,7 @@
 import os
 from unittest.mock import patch
 
-from app.core.config import QueueConfig
+from app.core.config import QueueConfig, WorkerConfig
 
 
 class TestQueueConfig:
@@ -90,3 +90,93 @@ class TestQueueConfig:
             assert QueueConfig.get_max_capacity() == 1500  # 上書き
             assert QueueConfig.get_dequeue_default_n() == 10  # デフォルト
             assert QueueConfig.get_low_watermark() == 150  # 上書き
+
+
+class TestWorkerConfig:
+    """WorkerConfigクラスのテスト"""
+    
+    def test_worker_default_values(self):
+        """デフォルト値のテスト"""
+        with patch.dict(os.environ, {}, clear=True):
+            assert WorkerConfig.get_itunes_terms() == ["rock", "pop", "jazz"]
+            assert WorkerConfig.get_country() == "JP"
+            assert WorkerConfig.get_min_threshold() == 30
+            assert WorkerConfig.get_batch_size() == 30
+            assert WorkerConfig.get_max_cap() == 300
+            assert WorkerConfig.get_poll_interval_ms() == 1500
+            assert WorkerConfig.get_http_timeout_s() == 5.0
+            assert WorkerConfig.get_retry_max() == 3
+    
+    def test_worker_environment_variable_override(self):
+        """環境変数による設定上書きのテスト"""
+        env_vars = {
+            "OTODOKI_ITUNES_TERMS": "blues,jazz,funk",
+            "OTODOKI_COUNTRY": "US",
+            "OTODOKI_MIN_THRESHOLD": "50",
+            "OTODOKI_BATCH_SIZE": "20",
+            "OTODOKI_MAX_CAP": "500",
+            "OTODOKI_POLL_INTERVAL_MS": "2000",
+            "OTODOKI_HTTP_TIMEOUT_S": "10.0",
+            "OTODOKI_RETRY_MAX": "5"
+        }
+        
+        with patch.dict(os.environ, env_vars):
+            assert WorkerConfig.get_itunes_terms() == ["blues", "jazz", "funk"]
+            assert WorkerConfig.get_country() == "US"
+            assert WorkerConfig.get_min_threshold() == 50
+            assert WorkerConfig.get_batch_size() == 20
+            assert WorkerConfig.get_max_cap() == 500
+            assert WorkerConfig.get_poll_interval_ms() == 2000
+            assert WorkerConfig.get_http_timeout_s() == 10.0
+            assert WorkerConfig.get_retry_max() == 5
+    
+    def test_worker_invalid_environment_values(self):
+        """無効な環境変数値の処理テスト"""
+        env_vars = {
+            "OTODOKI_ITUNES_TERMS": "",  # 空文字
+            "OTODOKI_MIN_THRESHOLD": "invalid",
+            "OTODOKI_BATCH_SIZE": "-10",  # 負の値
+            "OTODOKI_MAX_CAP": "not_a_number",
+            "OTODOKI_POLL_INTERVAL_MS": "50",  # 最小値未満
+            "OTODOKI_HTTP_TIMEOUT_S": "0.5",  # 最小値未満
+            "OTODOKI_RETRY_MAX": "-1"  # 負の値
+        }
+        
+        with patch.dict(os.environ, env_vars):
+            assert WorkerConfig.get_itunes_terms() == ["rock", "pop", "jazz"]  # デフォルト
+            assert WorkerConfig.get_min_threshold() == 30  # デフォルト
+            assert WorkerConfig.get_batch_size() == 1  # 最小値
+            assert WorkerConfig.get_max_cap() == 300  # デフォルト
+            assert WorkerConfig.get_poll_interval_ms() == 100  # 最小値
+            assert WorkerConfig.get_http_timeout_s() == 1.0  # 最小値
+            assert WorkerConfig.get_retry_max() == 0  # 最小値
+    
+    def test_worker_terms_parsing(self):
+        """iTunes検索キーワードのパースのテスト"""
+        test_cases = [
+            ("rock,pop,jazz", ["rock", "pop", "jazz"]),
+            ("  rock  ,  pop  ,  jazz  ", ["rock", "pop", "jazz"]),  # 空白あり
+            ("rock", ["rock"]),  # 単一キーワード
+            ("rock,,pop", ["rock", "pop"]),  # 空要素
+            (",,,", ["rock", "pop", "jazz"]),  # 全て空
+        ]
+        
+        for terms_str, expected in test_cases:
+            with patch.dict(os.environ, {"OTODOKI_ITUNES_TERMS": terms_str}):
+                assert WorkerConfig.get_itunes_terms() == expected
+    
+    def test_worker_get_all_settings(self):
+        """全設定値取得のテスト"""
+        with patch.dict(os.environ, {}, clear=True):
+            settings = WorkerConfig.get_all_settings()
+            
+            expected_keys = {
+                "itunes_terms", "country", "min_threshold", "batch_size",
+                "max_cap", "poll_interval_ms", "http_timeout_s", "retry_max"
+            }
+            assert set(settings.keys()) == expected_keys
+            
+            # デフォルト値の確認
+            assert settings["itunes_terms"] == ["rock", "pop", "jazz"]
+            assert settings["country"] == "JP"
+            assert settings["min_threshold"] == 30
