@@ -1,7 +1,3 @@
-'use client';
-
-import React, { useRef } from "react";
-
 "use client";
 
 import React from "react";
@@ -9,35 +5,16 @@ import Image from "next/image";
 import { motion, PanInfo, useMotionValue, useTransform } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { type Track } from '@/services';
-
-export interface SwipeCardProps {
-  track: Track;
-  onSwipe?: (direction: 'left' | 'right', track: Track) => void;
 import { type Track } from "@/services";
 import { Play, Pause } from "lucide-react";
 
 export interface SwipeCardProps {
   track: Track;
   onSwipe?: (direction: "left" | "right", track: Track) => void;
-
   className?: string;
   isTop?: boolean;
   isPlaying?: boolean;
 }
-
-export function SwipeCard({ track, onSwipe, className, isTop = false }: SwipeCardProps) {
-  const x = useMotionValue(0);
-  const rotate = useTransform(x, [-200, 200], [-30, 30]);
-  const opacity = useTransform(x, [-200, -150, 0, 150, 200], [0, 1, 1, 1, 0]);
-  const exitDirection = useRef<'left' | 'right' | null>(null);
-
-  const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
-    const swipeThreshold = 100;
-    
-    if (Math.abs(info.offset.x) > swipeThreshold) {
-      const direction = info.offset.x > 0 ? 'right' : 'left';
-      exitDirection.current = direction;
 
 export function SwipeCard({
   track,
@@ -66,7 +43,6 @@ export function SwipeCard({
       // Set swipe info immediately for consistent exit animation
       setSwipeInfo({ direction, offsetX: info.offset.x });
 
-
       onSwipe?.(direction, track);
     }
   };
@@ -77,9 +53,6 @@ export function SwipeCard({
         "absolute inset-0 cursor-grab active:cursor-grabbing",
         className
       )}
-      style={{ 
-        x, 
-        rotate, 
       style={{
         x,
         rotate,
@@ -93,7 +66,6 @@ export function SwipeCard({
       initial={{ scale: isTop ? 1 : 0.95, y: isTop ? 0 : 10 }}
       animate={{ scale: isTop ? 1 : 0.95, y: isTop ? 0 : 10 }}
       exit={{
-
         x: swipeInfo?.offsetX
           ? swipeInfo.offsetX > 0
             ? 1000
@@ -101,12 +73,6 @@ export function SwipeCard({
           : x.get() > 0
           ? 1000
           : -1000,
-
-        x: exitDirection.current === 'right' ? 1000 : -1000,
-        opacity: 0,
-        transition: { duration: 0.5 }
-        x: swipeInfo?.offsetX && swipeInfo.offsetX > 0 ? 1000 : -1000,
-
         opacity: 0,
         transition: { duration: 0.3, ease: "easeOut" },
       }}
@@ -135,19 +101,11 @@ export function SwipeCard({
             <motion.div
               className="absolute top-8 left-8 bg-red-500 text-white px-4 py-2 rounded-lg font-bold transform -rotate-12"
               style={{
-                opacity: useTransform(x, [-100, 0], [1, 0])
-
                 opacity: useTransform(x, [-100, 0], [1, 0]),
               }}
             >
               NOPE
             </motion.div>
-            
-            <motion.div
-              className="absolute top-8 right-8 bg-green-500 text-white px-4 py-2 rounded-lg font-bold transform rotate-12"
-              style={{
-                opacity: useTransform(x, [0, 100], [0, 1])
-
 
             <motion.div
               className="absolute top-8 right-8 bg-green-500 text-white px-4 py-2 rounded-lg font-bold transform rotate-12"
@@ -178,12 +136,6 @@ export function SwipeCard({
             <h3 className="font-bold text-xl truncate" title={track.title}>
               {track.title}
             </h3>
-            <p className="text-muted-foreground text-lg truncate" title={track.artist}>
-              {track.artist}
-            </p>
-            {track.album && (
-              <p className="text-sm text-muted-foreground truncate" title={track.album}>
-
             <p
               className="text-muted-foreground text-lg truncate"
               title={track.artist}
@@ -195,7 +147,6 @@ export function SwipeCard({
                 className="text-sm text-muted-foreground truncate"
                 title={track.album}
               >
-
                 {track.album}
               </p>
             )}
@@ -209,5 +160,4 @@ export function SwipeCard({
       </Card>
     </motion.div>
   );
-}
 }
