@@ -1,40 +1,40 @@
 # otodoki2web
 
-This is a web application with a frontend and a backend, containerized with Docker.
+このプロジェクトは、フロントエンドとバックエンドで構成される Web アプリケーションで、Docker でコンテナ化されています。
 
-## Architecture
+## アーキテクチャ
 
-- **Frontend:** Next.js application running on port 3000.
-- **Backend:** FastAPI application running on port 8000.
-- **Containerization:** Docker and Docker Compose are used to build and run the services.
+- **フロントエンド:** Next.js アプリケーション (ポート 3000 で動作)
+- **バックエンド:** FastAPI アプリケーション (ポート 8000 で動作)
+- **コンテナ化:** Docker と Docker Compose を使用してサービスを構築・実行
 
 ## CI/CD
 
-This project includes a GitHub Actions workflow for continuous integration:
+このプロジェクトには、継続的インテグレーションのための GitHub Actions ワークフローが含まれています。
 
-### CI Pipeline
+### CI パイプライン
 
-The CI pipeline (`ci.yml`) performs the following checks:
+CI パイプライン (`ci.yml`) は以下のチェックを実行します。
 
-1. **Individual Container Builds**: Each service (frontend and backend) is built separately to ensure they can be built in isolation.
+1.  **個別のコンテナビルド**: 各サービス（フロントエンドとバックエンド）は、個別にビルドされ、単独でビルド可能であることを確認します。
 
-2. **Docker Compose Integration**: Services are built and started using docker-compose to test the integration.
+2.  **Docker Compose 統合**: docker-compose を使用してサービスをビルドし、起動して統合をテストします。
 
-3. **Health Checks**:
-   - Backend health endpoint: `http://localhost:8000/health`
-   - Backend root endpoint: `http://localhost:8000/`
-   - Frontend accessibility: `http://localhost:3000`
-   - Frontend health API: `http://localhost:3000/api/health`
-   - Frontend library page: `http://localhost:3000/library`
+3.  **ヘルスチェック**:
+    - バックエンド ヘルスエンドポイント: `http://localhost:8000/health`
+    - バックエンド ルートエンドポイント: `http://localhost:8000/`
+    - フロントエンド アクセシビリティ: `http://localhost:3000`
+    - フロントエンド ヘルス API: `http://localhost:3000/api/health`
+    - フロントエンド ライブラリページ: `http://localhost:3000/library`
 
-### Triggered On
+### トリガー
 
-- Push to `main` or `develop` branches
-- Pull requests to `main` branch
+- `main` または `develop` ブランチへのプッシュ
+- `main` ブランチへのプルリクエスト
 
-### Health Endpoints
+### ヘルスエンドポイント
 
-- **Backend Health**: `GET /health`
+- **バックエンド ヘルス**: `GET /health`
 
   ```json
   {
@@ -45,7 +45,7 @@ The CI pipeline (`ci.yml`) performs the following checks:
   }
   ```
 
-- **Frontend Health**: `GET /api/health`
+- **フロントエンド ヘルス**: `GET /api/health`
   ```json
   {
     "status": "ok",
@@ -55,94 +55,93 @@ The CI pipeline (`ci.yml`) performs the following checks:
   }
   ```
 
-## Setup and Startup
+## セットアップと起動
 
-1.  **Prerequisites:**
+1.  **前提条件:**
 
     - Docker
     - Docker Compose
 
-2.  **Build and start the services:**
+2.  **サービスのビルドと起動:**
 
     ```bash
     docker-compose up --build -d
     ```
 
-    Or, using the Makefile:
+    または、Makefile を使用:
 
     ```bash
     make up
     ```
 
-3.  **Stop the services:**
+3.  **サービスの停止:**
 
     ```bash
     docker-compose down
     ```
 
-    Or:
+    または:
 
     ```bash
     make down
     ```
 
-## How to Verify
+## 検証方法
 
-1.  **Check the frontend:**
-    Open your browser and navigate to [http://localhost:3000](http://localhost:3000). You should see the Next.js starter page.
+1.  **フロントエンドの確認:**
+    ブラウザで [http://localhost:3000](http://localhost:3000) にアクセスしてください。Next.js のスタートページが表示されるはずです。
 
-2.  **Check the backend health:**
-    Run the following command in your terminal:
+2.  **バックエンドのヘルスの確認:**
+    ターミナルで以下のコマンドを実行してください:
 
     ```bash
     curl http://localhost:8000/health
     ```
 
-    You should see the following response:
+    以下のレスポンスが表示されるはずです:
 
     ```json
     { "status": "ok" }
     ```
 
-3.  **Check the API documentation:**
+3.  **API ドキュメントの確認:**
 
     - [http://localhost:8000/docs](http://localhost:8000/docs) (Swagger UI)
     - [http://localhost:8000/redoc](http://localhost:8000/redoc) (ReDoc)
 
-4.  **Test CORS functionality:**
-    - Open the browser developer tools (F12)
-    - Navigate to [http://localhost:3000](http://localhost:3000)
-      fetch("http://localhost:8000/health")
+4.  **CORS 機能のテスト:**
+    - ブラウザの開発者ツール (F12) を開きます。
+    - [http://localhost:3000](http://localhost:3000) にアクセスします。
       ```javascript
       fetch("http://localhost:8000/health")
         .then((response) => response.json())
         .then((data) => console.log("API Response:", data))
         .catch((error) => console.error("CORS Error:", error));
       ```
-    - You should see the health response without CORS errors
-    - Check the Network tab for the preflight `OPTIONS` request (for complex requests)
+    - CORS エラーなしにヘルスレスポンスが表示されるはずです。
+    - ネットワークタブでプリフライト `OPTIONS` リクエスト（複雑なリクエストの場合）を確認します。
 
-## Important Notes
+## 重要な注意事項
 
-- **CORS Configuration:** CORS is configured for development use with `http://localhost:3000` as an allowed origin. This enables the frontend to make API calls to the backend without CORS errors.
+- **CORS 設定:** CORS は開発用途に `http://localhost:3000` を許可オリジンとして設定されています。これにより、フロントエンドは CORS エラーなしにバックエンドへ API コールを行うことができます。
 
-  - **Current Settings:**
-    - Allowed origins: `http://localhost:3000` (configurable via `ORIGINS` environment variable)
-    - Allowed methods: `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `OPTIONS`
-    - Allowed headers: `Authorization`, `Content-Type`, and all headers (`*`)
-    - Credentials: Disabled (no cookies)
-  - **Adding Origins:** To add more origins, update the `ORIGINS` environment variable in `docker-compose.yml` (comma-separated list)
-  - **Production Considerations:**
-    - Limit origins to only necessary domains
-    - Minimize allowed headers and methods
-    - Consider enabling credentials only if needed
-    - Regularly review and update CORS policies
+  - **現在の設定:**
+    - 許可オリジン: `http://localhost:3000` (`ORIGINS` 環境変数で設定可能)
+    - 許可メソッド: `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `OPTIONS`
+    - 許可ヘッダー: `Authorization`, `Content-Type`, およびすべてのヘッダー (`*`)
+    - 認証情報: 無効 (クッキーなし)
+  - **オリジンの追加:** オリジンを追加するには、`docker-compose.yml` の `ORIGINS` 環境変数を更新します（カンマ区切りリスト）。
+  - **本番環境での考慮事項:**
+    - 必要なドメインのみにオリジンを制限する
+    - 許可されるヘッダーとメソッドを最小限にする
+    - 必要な場合のみ認証情報を有効にすることを検討する
+    - CORS ポリシーを定期的に見直し、更新する
 
-- **Adding Dependencies:**
-  - **Frontend:** Add dependencies to `frontend/package.json` and then rebuild the `web` service: `docker-compose up --build -d web`.
-  - **Backend:** Add dependencies to `backend/requirements.txt` and then rebuild the `api` service: `docker-compose up --build -d api`.
+- **依存関係の追加:**
+  - **フロントエンド:** `frontend/package.json` に依存関係を追加し、`web` サービスを再ビルドします: `docker-compose up --build -d web`。
+  - **バックエンド:** `backend/requirements.txt` に依存関係を追加し、`api` サービスを再ビルドします: `docker-compose up --build -d api`。
 
-## Directory Structure
+## ディレクトリ構造
 
 ```
 .
