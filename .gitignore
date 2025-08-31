@@ -1,10 +1,15 @@
 .gemini/
 gha-creds-*.json
 .github/copilot-instructions.md
-
+.vscode/
 venv/
-backend/app/__pycache__
-backend/.pytest_cache/
+
+*/__pycache__
+*/*/__pycache__/
+*/*/*/__pycache__/
+*/*/*/__pycache__/
+*/*/*/*/__pycache__/
+*/*/*/*/__pycache__/
 backend/*.pyc
 
 frontend/node_modules/

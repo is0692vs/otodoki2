@@ -8,10 +8,14 @@ from contextlib import asynccontextmanager
 
 from .dependencies import (
     get_queue_manager,
+    get_worker,
     initialize_dependencies,
-    cleanup_dependencies
+    cleanup_dependencies,
+    start_background_tasks,
+    stop_background_tasks
 )
 from .core.queue import QueueManager
+from .services.worker import QueueReplenishmentWorker
 
 # ログ設定
 logging.basicConfig(
@@ -27,9 +31,11 @@ async def lifespan(app: FastAPI):
     # 起動時
     logger.info("Starting otodoki2 API application")
     initialize_dependencies()
+    await start_background_tasks()
     yield
     # 終了時
     logger.info("Shutting down otodoki2 API application")
+    await stop_background_tasks()
     cleanup_dependencies()
 
 
@@ -87,4 +93,27 @@ def get_queue_health(queue_manager: QueueManager = Depends(get_queue_manager)):
         "capacity": stats["max_capacity"],
         "utilization_percent": stats["utilization"],
         "is_low_watermark": stats["is_low"]
+    }
+
+
+@app.get("/worker/stats")
+def get_worker_stats():
+    """ワーカーの統計情報を取得"""
+    worker = get_worker()
+    if worker is None:
+        return {"error": "Worker not initialized"}
+    return worker.stats
+
+
+@app.post("/worker/trigger-refill")
+async def trigger_refill():
+    """ワンショットでキューの補充を実行"""
+    worker = get_worker()
+    if worker is None:
+        return {"error": "Worker not initialized", "success": False}
+    
+    success = await worker.trigger_refill()
+    return {
+        "success": success,
+        "message": "Refill completed" if success else "Refill failed or already in progress"
     }
