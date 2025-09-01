@@ -40,7 +40,35 @@ export function SwipeCard({
 
     if (power > swipeThreshold) {
       const direction = info.offset.x > 0 ? "right" : "left";
+const swipePower = (offset: number, velocity: number) => {
+  return Math.abs(offset) + velocity * 5;
+};
+
+export function SwipeCard({
+  track,
+  onSwipe,
+  isTop,
+  isInstructionCard = false,
+}: SwipeCardProps) {
+  const x = useMotionValue(0);
+  const rotate = useTransform(x, [-200, 200], [-30, 30]);
+  const opacity = useTransform(x, [-200, -150, 0, 150, 200], [0, 1, 1, 1, 0]);
+  const [exitX, setExitX] = React.useState(0);
+
+  const handleDragEnd = (
+    event: MouseEvent | TouchEvent | PointerEvent,
+    info: PanInfo
+  ) => {
+    const swipeThreshold = 100;
+    const power = swipePower(info.offset.x, info.velocity.x);
+
+    if (power > swipeThreshold) {
+      const direction = info.offset.x > 0 ? "right" : "left";
       const exitX = (info.offset.x > 0 ? 1 : -1) * 500;
+      setExitX(exitX);
+      onSwipe?.(direction, track);
+    }
+  };
       setExitX(exitX);
       onSwipe?.(direction, track);
     }
