@@ -7,7 +7,39 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { api, type Track } from "@/services";
-import { getDislikedTrackIds } from "@/lib/storage";
+import { getDislikedTrackIds, saveDislikedTrackId, saveLikedTrack } from "@/lib/storage";
+
+// Helper function to normalize track ID consistently with storage
+function normalizeTrackId(id: string | number): number {
+  if (typeof id === "number") {
+    if (isNaN(id) || id <= 0) {
+      throw new Error(`Invalid track ID: ${id}`);
+    }
+    return id;
+  }
+  
+  // For string IDs, try to parse as number first
+  const numId = parseInt(id, 10);
+  if (!isNaN(numId) && numId > 0) {
+    return numId;
+  }
+  
+  // For non-numeric string IDs (like "swipe-1"), create a hash-based ID
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) {
+    const char = id.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32-bit integer
+  }
+  
+  // Ensure positive number
+  const positiveHash = Math.abs(hash);
+  if (positiveHash === 0) {
+    return 1; // Fallback for edge case
+  }
+  
+  return positiveHash;
+}
 
 // Fallback demo tracks for when API is unavailable
 const fallbackTracks: Track[] = [
@@ -85,7 +117,7 @@ export default function SwipePage() {
           setError(`Failed to load tracks: ${response.error.error}`);
           // Use fallback data when API fails, but still filter dislikes
           const filteredFallback = fallbackTracks.filter(
-            (track) => !dislikedIds.has(Number(track.id))
+            (track) => !dislikedIds.has(normalizeTrackId(track.id))
           );
           setTracks(filteredFallback);
         } else {
@@ -94,7 +126,7 @@ export default function SwipePage() {
           const allTracks = [...apiTracks, ...fallbackTracks];
           // Filter out disliked tracks
           const filteredTracks = allTracks.filter(
-            (track) => !dislikedIds.has(Number(track.id))
+            (track) => !dislikedIds.has(normalizeTrackId(track.id))
           );
           console.log(
             `📱 Loaded ${filteredTracks.length} tracks (${
@@ -108,7 +140,7 @@ export default function SwipePage() {
         // Use fallback data when API fails, but still filter dislikes
         const dislikedIds = new Set(getDislikedTrackIds());
         const filteredFallback = fallbackTracks.filter(
-          (track) => !dislikedIds.has(Number(track.id))
+          (track) => !dislikedIds.has(normalizeTrackId(track.id))
         );
         setTracks(filteredFallback);
       } finally {
@@ -121,11 +153,23 @@ export default function SwipePage() {
 
   const handleSwipe = (direction: "left" | "right", track: Track) => {
     console.log(`Swiped ${direction} on track:`, track.title);
-    // Here you could implement logic to save likes/dislikes
+    
     if (direction === "right") {
-      // Track liked
+      // Track liked - save to localStorage
+      const success = saveLikedTrack(track);
+      if (success) {
+        console.log(`💚 Liked track saved: ${track.title} by ${track.artist}`);
+      } else {
+        console.warn(`Failed to save liked track: ${track.title}`);
+      }
     } else {
-      // Track disliked
+      // Track disliked - save track ID to localStorage
+      const success = saveDislikedTrackId(track.id);
+      if (success) {
+        console.log(`🚫 Disliked track saved: ${track.title} by ${track.artist}`);
+      } else {
+        console.warn(`Failed to save disliked track: ${track.title}`);
+      }
     }
   };
 

@@ -120,11 +120,34 @@ const storage = {
  * Normalize track ID to number
  */
 function normalizeTrackId(id: string | number): number {
-  const numId = typeof id === "string" ? parseInt(id, 10) : id;
-  if (isNaN(numId) || numId <= 0) {
-    throw new Error(`Invalid track ID: ${id}`);
+  if (typeof id === "number") {
+    if (isNaN(id) || id <= 0) {
+      throw new Error(`Invalid track ID: ${id}`);
+    }
+    return id;
   }
-  return numId;
+  
+  // For string IDs, try to parse as number first
+  const numId = parseInt(id, 10);
+  if (!isNaN(numId) && numId > 0) {
+    return numId;
+  }
+  
+  // For non-numeric string IDs (like "swipe-1"), create a hash-based ID
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) {
+    const char = id.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32-bit integer
+  }
+  
+  // Ensure positive number
+  const positiveHash = Math.abs(hash);
+  if (positiveHash === 0) {
+    return 1; // Fallback for edge case
+  }
+  
+  return positiveHash;
 }
 
 /**
