@@ -94,6 +94,11 @@ export default function SwipePage() {
     fetchTracks();
   }, []);
 
+  // 現在のtracksをコンソールに出力
+  useEffect(() => {
+    console.log("Current tracks in queue:", tracks.map(t => t.title));
+  }, [tracks]);
+
   const handleSwipe = (direction: "left" | "right", track: Track) => {
     if (track.id === "instruction-card") {
       console.log("Instruction card swiped.");

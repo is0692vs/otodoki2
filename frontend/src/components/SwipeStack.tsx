@@ -46,7 +46,7 @@ export function SwipeStack({
     onTrackEnd: useCallback(() => {
       if (currentTrack && currentTrack.preview_url && !isInstructionCard) {
         // The hook itself will not be in scope here, so we need to get creative.
-        // For now, we will just log. The parent component will handle re-playing.
+        // For now, we will just log. The parent component will handle what to do next.
         console.log("Track ended, parent should handle what to do next.");
       }
     }, [currentTrack, isInstructionCard]),
@@ -79,6 +79,7 @@ export function SwipeStack({
   useEffect(() => {
     if (currentTrack && !isInstructionCard && isStackVisible && isPageVisible) {
       audioPlayer.playTrack(currentTrack);
+
       const nextTrack = tracks[currentIndex + 1];
       if (nextTrack) {
         audioPlayer.preloadTrack(nextTrack);
@@ -100,7 +101,10 @@ export function SwipeStack({
     }
     onSwipe?.(direction, track);
     setSwipedTracks((prev) => [...prev, track]);
-    setCurrentIndex((prev) => prev + 1);
+    // instructionCard の場合は currentIndex を進めない
+    if (track.id !== "instruction-card") {
+      setCurrentIndex((prev) => prev + 1);
+    }
   };
 
   const handleButtonSwipe = (direction: "left" | "right") => {
@@ -168,15 +172,19 @@ export function SwipeStack({
 
       <div ref={stackRef} className="relative h-[500px] w-full max-w-sm mx-auto">
         <AnimatePresence onExitComplete={onExitComplete}>
-          {tracks.slice(currentIndex).map((track, index) => (
-            <SwipeCard
-              key={track.id}
-              track={track}
-              isTop={index === 0}
-              onSwipe={handleSwipe}
-              isPlaying={audioPlayer.isPlaying && audioPlayer.nowPlayingTrackId === track.id.toString()}
-            />
-          )).reverse()
+          {tracks.slice(currentIndex).map((track, index) => {
+            const isTop = index === 0;
+            const playAudio = isTop && !isInstructionCard; // 最上位かつ説明カードではない場合のみ音声を再生
+            return (
+              <SwipeCard
+                key={track.id}
+                track={track}
+                isTop={isTop}
+                onSwipe={handleSwipe}
+                isPlaying={audioPlayer.isPlaying && audioPlayer.nowPlayingTrackId === track.id.toString() && playAudio}
+              />
+            );
+          }).reverse()
         }
         </AnimatePresence>
       </div>
