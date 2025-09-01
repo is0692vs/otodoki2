@@ -33,7 +33,6 @@ export function SwipeStack({
 }: SwipeStackProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [swipedTracks, setSwipedTracks] = useState<Track[]>([]);
-  const [swipeInProgress, setSwipeInProgress] = useState(false);
 
   const currentTrack = tracks[currentIndex];
   const nextTracks = tracks.slice(currentIndex + 1, currentIndex + 3);
@@ -96,33 +95,23 @@ export function SwipeStack({
   }, [isPageVisible]);
 
   const handleSwipe = (direction: "left" | "right", track: Track) => {
-    if (swipeInProgress) return;
-    setSwipeInProgress(true);
-
     if (!isInstructionCard) {
       audioPlayer.stop();
     }
-
     onSwipe?.(direction, track);
-
     setSwipedTracks((prev) => [...prev, track]);
-
-    setTimeout(() => {
-      setCurrentIndex((prev) => {
-        const next = prev + 1;
-        if (next >= tracks.length) {
-          onStackEmpty?.();
-          return 0;
-        }
-        return next;
-      });
-      setSwipeInProgress(false);
-    }, 100);
+    setCurrentIndex((prev) => prev + 1);
   };
 
   const handleButtonSwipe = (direction: "left" | "right") => {
-    if (currentTrack && !swipeInProgress) {
+    if (currentTrack) {
       handleSwipe(direction, currentTrack);
+    }
+  };
+
+  const onExitComplete = () => {
+    if (currentIndex >= tracks.length && tracks.length > 0) {
+      onStackEmpty?.();
     }
   };
 
@@ -178,7 +167,7 @@ export function SwipeStack({
       )}
 
       <div ref={stackRef} className="relative h-[500px] w-full max-w-sm mx-auto">
-        <AnimatePresence>
+        <AnimatePresence onExitComplete={onExitComplete}>
           {tracks.slice(currentIndex).map((track, index) => (
             <SwipeCard
               key={track.id}

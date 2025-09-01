@@ -26,22 +26,22 @@ export function SwipeCard({
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-200, 200], [-30, 30]);
   const opacity = useTransform(x, [-200, -150, 0, 150, 200], [0, 1, 1, 1, 0]);
-  const [swipeInfo, setSwipeInfo] = React.useState<{
-    direction: "left" | "right";
-    offsetX: number;
-  } | null>(null);
+  const [exitX, setExitX] = React.useState(0);
 
   const handleDragEnd = (
     event: MouseEvent | TouchEvent | PointerEvent,
     info: PanInfo
   ) => {
     const swipeThreshold = 100;
+    const swipePower = (offset: number, velocity: number) => {
+      return Math.abs(offset) + velocity * 5;
+    };
+    const power = swipePower(info.offset.x, info.velocity.x);
 
-    if (Math.abs(info.offset.x) > swipeThreshold) {
+    if (power > swipeThreshold) {
       const direction = info.offset.x > 0 ? "right" : "left";
-
-      setSwipeInfo({ direction, offsetX: info.offset.x });
-
+      const exitX = (info.offset.x > 0 ? 1 : -1) * 500;
+      setExitX(exitX);
       onSwipe?.(direction, track);
     }
   };
@@ -61,11 +61,14 @@ export function SwipeCard({
         initial={{ scale: isTop ? 1 : 0.95, y: isTop ? 0 : 10 }}
         animate={{ scale: isTop ? 1 : 0.95, y: isTop ? 0 : 10 }}
         exit={{
-          x: swipeInfo?.offsetX
-            ? swipeInfo.offsetX > 0 ? 1000 : -1000
-            : x.get() > 0 ? 1000 : -1000,
+          x: exitX,
           opacity: 0,
-          transition: { duration: 0.3, ease: "easeOut" },
+          transition: {
+            type: "spring",
+            stiffness: 300,
+            damping: 30,
+            duration: 0.5,
+          },
         }}
       >
         <Card className="w-full h-full overflow-hidden shadow-xl border-2 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900">
@@ -106,15 +109,14 @@ export function SwipeCard({
       initial={{ scale: isTop ? 1 : 0.95, y: isTop ? 0 : 10 }}
       animate={{ scale: isTop ? 1 : 0.95, y: isTop ? 0 : 10 }}
       exit={{
-        x: swipeInfo?.offsetX
-          ? swipeInfo.offsetX > 0
-            ? 1000
-            : -1000
-          : x.get() > 0
-          ? 1000
-          : -1000,
+        x: exitX,
         opacity: 0,
-        transition: { duration: 0.3, ease: "easeOut" },
+        transition: {
+          type: "spring",
+          stiffness: 300,
+          damping: 30,
+          duration: 0.5,
+        },
       }}
     >
       <Card className="w-full h-full overflow-hidden shadow-xl border-2">
