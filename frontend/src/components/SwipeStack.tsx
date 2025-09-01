@@ -161,8 +161,6 @@ export function SwipeStack({
             </Button>
           </div>
           <div className="text-center mb-4">
-            <h2 className="font-semibold text-lg truncate">{currentTrack.title}</h2>
-            <p className="text-muted-foreground truncate">{currentTrack.artist}</p>
             {audioPlayer.isLoading && <p>Loading...</p>}
             {audioPlayer.error && <p className="text-red-500">{audioPlayer.error}</p>}
             {!currentTrack.preview_url && <p>Preview not available</p>}
