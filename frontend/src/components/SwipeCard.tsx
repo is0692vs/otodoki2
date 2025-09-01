@@ -27,6 +27,8 @@ export function SwipeCard({
   const rotate = useTransform(x, [-200, 200], [-30, 30]);
   const opacity = useTransform(x, [-200, -150, 0, 150, 200], [0, 1, 1, 1, 0]);
   const [exitX, setExitX] = React.useState(0);
+  const nopeOpacity = useTransform(x, [-100, 0], [1, 0]);
+  const likeOpacity = useTransform(x, [0, 100], [0, 1]);
 
   const handleDragEnd = (
     event: MouseEvent | TouchEvent | PointerEvent,
@@ -40,35 +42,6 @@ export function SwipeCard({
 
     if (power > swipeThreshold) {
       const direction = info.offset.x > 0 ? "right" : "left";
-const swipePower = (offset: number, velocity: number) => {
-  return Math.abs(offset) + velocity * 5;
-};
-
-export function SwipeCard({
-  track,
-  onSwipe,
-  isTop,
-  isInstructionCard = false,
-}: SwipeCardProps) {
-  const x = useMotionValue(0);
-  const rotate = useTransform(x, [-200, 200], [-30, 30]);
-  const opacity = useTransform(x, [-200, -150, 0, 150, 200], [0, 1, 1, 1, 0]);
-  const [exitX, setExitX] = React.useState(0);
-
-  const handleDragEnd = (
-    event: MouseEvent | TouchEvent | PointerEvent,
-    info: PanInfo
-  ) => {
-    const swipeThreshold = 100;
-    const power = swipePower(info.offset.x, info.velocity.x);
-
-    if (power > swipeThreshold) {
-      const direction = info.offset.x > 0 ? "right" : "left";
-      const exitX = (info.offset.x > 0 ? 1 : -1) * 500;
-      setExitX(exitX);
-      onSwipe?.(direction, track);
-    }
-  };
       setExitX(exitX);
       onSwipe?.(direction, track);
     }
@@ -131,7 +104,6 @@ export function SwipeCard({
         zIndex: isTop ? 10 : 1,
       }}
       drag={isTop ? "x" : false}
-      dragConstraints={{ left: 0, right: 0 }}
       onDragEnd={handleDragEnd}
       whileDrag={{ scale: 1.05 }}
       initial={{ scale: isTop ? 1 : 0.95, y: isTop ? 0 : 10 }}
@@ -178,7 +150,7 @@ export function SwipeCard({
             <motion.div
               className="absolute top-8 left-8 bg-red-500 text-white px-4 py-2 rounded-lg font-bold transform -rotate-12"
               style={{
-                opacity: useTransform(x, [-100, 0], [1, 0]),
+                opacity: nopeOpacity,
               }}
             >
               NOPE
@@ -187,7 +159,7 @@ export function SwipeCard({
             <motion.div
               className="absolute top-8 right-8 bg-green-500 text-white px-4 py-2 rounded-lg font-bold transform rotate-12"
               style={{
-                opacity: useTransform(x, [0, 100], [0, 1]),
+                opacity: likeOpacity,
               }}
             >
               LIKE
@@ -206,19 +178,19 @@ export function SwipeCard({
             )}
           </div>
 
-          <div className="p-6 bg-white dark:bg-card space-y-2">
+          <div className="p-6 bg-gray-800 dark:bg-gray-900 text-white space-y-2">
             <h3 className="font-bold text-xl truncate" title={track.title}>
               {track.title}
             </h3>
             <p
-              className="text-muted-foreground text-lg truncate"
+              className="text-gray-300 text-lg truncate"
               title={track.artist}
             >
               {track.artist}
             </p>
             {track.album && (
               <p
-                className="text-sm text-muted-foreground truncate"
+                className="text-gray-400 text-sm truncate"
                 title={track.album}
               >
                 {track.album}

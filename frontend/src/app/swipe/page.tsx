@@ -82,8 +82,8 @@ export default function SwipePage() {
         ...fallbackTracks,
       ];
       setTracks(finalTracks.slice(0, 21)); // 20 songs + instruction card
-    } catch (err: any) {
-      setError(`Error loading tracks: ${err.message}`);
+    } catch (err: unknown) {
+      setError(`Error loading tracks: ${err instanceof Error ? err.message : String(err)}`);
       setTracks([instructionCard, ...fallbackTracks]);
     } finally {
       setLoading(false);
@@ -103,7 +103,7 @@ export default function SwipePage() {
     }
 
     // Skip saving for fallback tracks
-    if (track.id.startsWith("swipe-")) {
+    if (typeof track.id === 'string' && track.id.startsWith("swipe-")) {
       console.log(`[STORAGE] Skipping save for fallback track: ${track.title}`);
       return;
     }
