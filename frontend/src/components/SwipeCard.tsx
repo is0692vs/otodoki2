@@ -6,7 +6,7 @@ import { motion, PanInfo, useMotionValue, useTransform } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { type Track } from "@/services";
-import { Play, Pause } from "lucide-react";
+import { Play, Pause, Music, Info } from "lucide-react";
 
 export interface SwipeCardProps {
   track: Track;
@@ -40,12 +40,52 @@ export function SwipeCard({
     if (Math.abs(info.offset.x) > swipeThreshold) {
       const direction = info.offset.x > 0 ? "right" : "left";
 
-      // Set swipe info immediately for consistent exit animation
       setSwipeInfo({ direction, offsetX: info.offset.x });
 
       onSwipe?.(direction, track);
     }
   };
+
+  if (track.id === "instruction-card") {
+    return (
+      <motion.div
+        className={cn(
+          "absolute inset-0 cursor-grab active:cursor-grabbing",
+          className
+        )}
+        style={{ x, rotate, opacity, zIndex: isTop ? 10 : 1 }}
+        drag={isTop ? "x" : false}
+        dragConstraints={{ left: 0, right: 0 }}
+        onDragEnd={handleDragEnd}
+        whileDrag={{ scale: 1.05 }}
+        initial={{ scale: isTop ? 1 : 0.95, y: isTop ? 0 : 10 }}
+        animate={{ scale: isTop ? 1 : 0.95, y: isTop ? 0 : 10 }}
+        exit={{
+          x: swipeInfo?.offsetX
+            ? swipeInfo.offsetX > 0 ? 1000 : -1000
+            : x.get() > 0 ? 1000 : -1000,
+          opacity: 0,
+          transition: { duration: 0.3, ease: "easeOut" },
+        }}
+      >
+        <Card className="w-full h-full overflow-hidden shadow-xl border-2 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900">
+          <CardContent className="p-6 h-full flex flex-col items-center justify-center text-center space-y-4">
+            <Info className="w-12 h-12 text-primary" />
+            <h2 className="text-2xl font-bold">{track.title}</h2>
+            <p className="text-lg text-muted-foreground">{track.artist}</p>
+            <div className="space-y-2 pt-4">
+              <p>▶️ 音楽が自動で再生されます</p>
+              <p>💔 左にスワイプ: 次の曲へ</p>
+              <p>💚 右にスワイプ: ライブラリに保存</p>
+            </div>
+            <p className="pt-6 text-sm text-muted-foreground">このカードをスワイプして開始</p>
+          </CardContent>
+        </Card>
+      </motion.div>
+    );
+  }
+
+  const isPlaceholder = track.artwork_url?.includes("via.placeholder.com");
 
   return (
     <motion.div
@@ -79,25 +119,32 @@ export function SwipeCard({
     >
       <Card className="w-full h-full overflow-hidden shadow-xl border-2">
         <CardContent className="p-0 h-full flex flex-col">
-          {/* Album Artwork */}
           <div className="flex-1 relative">
             {track.artwork_url ? (
-              <Image
-                src={track.artwork_url}
-                alt={`${track.title} by ${track.artist}`}
-                fill
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                priority={isTop}
-                className="object-cover"
-                draggable={false}
-              />
+              isPlaceholder ? (
+                <img
+                  src={track.artwork_url}
+                  alt={`${track.title} by ${track.artist}`}
+                  className="w-full h-full object-cover"
+                  draggable={false}
+                />
+              ) : (
+                <Image
+                  src={track.artwork_url}
+                  alt={`${track.title} by ${track.artist}`}
+                  fill
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  priority={isTop}
+                  className="object-cover"
+                  draggable={false}
+                />
+              )
             ) : (
               <div className="w-full h-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center">
-                <div className="text-white text-2xl font-bold">♪</div>
+                <Music className="w-12 h-12 text-white" />
               </div>
             )}
 
-            {/* Swipe indicators */}
             <motion.div
               className="absolute top-8 left-8 bg-red-500 text-white px-4 py-2 rounded-lg font-bold transform -rotate-12"
               style={{
@@ -116,14 +163,12 @@ export function SwipeCard({
               LIKE
             </motion.div>
 
-            {/* Playing indicator */}
             {isPlaying && (
               <div className="absolute bottom-4 right-4 bg-black/70 text-white p-2 rounded-full animate-pulse">
                 <Pause className="h-4 w-4" />
               </div>
             )}
 
-            {/* Preview available indicator */}
             {!isPlaying && track.preview_url && (
               <div className="absolute bottom-4 right-4 bg-black/70 text-white p-2 rounded-full">
                 <Play className="h-4 w-4" />
@@ -131,7 +176,6 @@ export function SwipeCard({
             )}
           </div>
 
-          {/* Track Info */}
           <div className="p-6 bg-white dark:bg-card space-y-2">
             <h3 className="font-bold text-xl truncate" title={track.title}>
               {track.title}

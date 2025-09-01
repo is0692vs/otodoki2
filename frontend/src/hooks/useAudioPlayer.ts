@@ -31,12 +31,22 @@ interface UseAudioPlayerOptions {
 export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
   const {
     autoPlay = true,
-    defaultMuted = true,
+    defaultMuted = false,
     volume = 0.7,
     preloadNextCount = 1,
     onTrackEnd,
     onPlaybackError,
   } = options;
+
+  const onTrackEndRef = useRef(onTrackEnd);
+  useEffect(() => {
+    onTrackEndRef.current = onTrackEnd;
+  }, [onTrackEnd]);
+
+  const onPlaybackErrorRef = useRef(onPlaybackError);
+  useEffect(() => {
+    onPlaybackErrorRef.current = onPlaybackError;
+  }, [onPlaybackError]);
 
   const opts = useMemo(
     () => ({
@@ -44,16 +54,12 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
       defaultMuted,
       volume,
       preloadNextCount,
-      onTrackEnd,
-      onPlaybackError,
     }),
     [
       autoPlay,
       defaultMuted,
       volume,
       preloadNextCount,
-      onTrackEnd,
-      onPlaybackError,
     ]
   );
 
@@ -99,7 +105,7 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
 
     const handleEnded = () => {
       setState((prev) => ({ ...prev, isPlaying: false }));
-      opts.onTrackEnd?.();
+      onTrackEndRef.current?.();
     };
 
     const handleError = () => {
@@ -111,7 +117,7 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
         error,
         canPlay: false,
       }));
-      opts.onPlaybackError?.(error);
+      onPlaybackErrorRef.current?.(error);
     };
 
     const handleLoadedMetadata = () => {
@@ -184,34 +190,15 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
           try {
             await audio.play();
           } catch {
-            // If autoplay fails, try with muted audio
-            if (!state.isMuted) {
-              setState((prev) => ({ ...prev, isMuted: true }));
-              audio.muted = true;
-              try {
-                await audio.play();
-              } catch {
-                const error =
-                  "自動再生に失敗しました。再生ボタンをクリックしてください。";
-                setState((prev) => ({
-                  ...prev,
-                  error,
-                  isPlaying: false,
-                  isLoading: false,
-                }));
-                opts.onPlaybackError?.(error);
-              }
-            } else {
-              const error =
-                "自動再生に失敗しました。再生ボタンをクリックしてください。";
-              setState((prev) => ({
-                ...prev,
-                error,
-                isPlaying: false,
-                isLoading: false,
-              }));
-              opts.onPlaybackError?.(error);
-            }
+            const error =
+              "自動再生に失敗しました。再生ボタンをクリックしてください。";
+            setState((prev) => ({
+              ...prev,
+              error,
+              isPlaying: false,
+              isLoading: false,
+            }));
+            onPlaybackErrorRef.current?.(error);
           }
         }
       } catch {
@@ -224,7 +211,7 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
           nowPlayingTrackId: null,
           canPlay: false,
         }));
-        opts.onPlaybackError?.(errorMessage);
+        onPlaybackErrorRef.current?.(errorMessage);
       }
     },
     [opts, state.isMuted]
@@ -268,9 +255,9 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
     } catch {
       const errorMessage = "再生制御に失敗しました";
       setState((prev) => ({ ...prev, error: errorMessage }));
-      opts.onPlaybackError?.(errorMessage);
+      onPlaybackErrorRef.current?.(errorMessage);
     }
-  }, [state.nowPlayingTrackId, opts]);
+  }, [state.nowPlayingTrackId]);
 
   const setVolume = useCallback(
     (volume: number) => {
