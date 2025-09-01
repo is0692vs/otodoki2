@@ -42,7 +42,7 @@ export function SwipeCard({
 
     if (power > swipeThreshold) {
       const direction = info.offset.x > 0 ? "right" : "left";
-      setExitX(exitX);
+      setExitX(x.get() + (direction === "right" ? 500 : -500));
       onSwipe?.(direction, track);
     }
   };
