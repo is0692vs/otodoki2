@@ -155,15 +155,17 @@ function normalizeTrack(track: Track): StoredTrack {
   }
 
   // Validate URLs if provided
-  const artworkUrl = track.artwork_url || "";
-  const previewUrl = track.preview_url || "";
+  let artworkUrl = track.artwork_url || "";
+  let previewUrl = track.preview_url || "";
 
   if (artworkUrl && !isValidUrl(artworkUrl)) {
-    throw new Error("Invalid artwork URL");
+    log.warn(`Invalid artwork URL for track ${track.id}: ${artworkUrl}`);
+    artworkUrl = "";
   }
 
   if (previewUrl && !isValidUrl(previewUrl)) {
-    throw new Error("Invalid preview URL");
+    log.warn(`Invalid preview URL for track ${track.id}: ${previewUrl}`);
+    previewUrl = "";
   }
 
   return {
@@ -175,15 +177,14 @@ function normalizeTrack(track: Track): StoredTrack {
     collectionName: track.album,
     primaryGenreName: track.genre,
     savedAt: new Date().toISOString(),
-  if (artworkUrl && !isValidUrl(artworkUrl)) {
-    log.warn(`Invalid artwork URL for track ${track.id}: ${artworkUrl}`);
-    artworkUrl = "";
-  }
+  };
+}
 
-  if (previewUrl && !isValidUrl(previewUrl)) {
-    log.warn(`Invalid preview URL for track ${track.id}: ${previewUrl}`);
-    previewUrl = "";
-  }
+/**
+ * Load likes from storage with error recovery
+ */
+function loadLikes(): LikesStorage {
+  const raw = storage.get(LIKES_KEY);
   if (!raw) {
     return { version: 1, items: [] };
   }

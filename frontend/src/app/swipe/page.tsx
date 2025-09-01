@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { api, type Track } from "@/services";
-import { getDislikedTrackIds } from "@/lib/storage";
+import { getDislikedTrackIds, saveDislikedTrackId } from "@/lib/storage";
 
 // Fallback demo tracks for when API is unavailable
 const fallbackTracks: Track[] = [
@@ -73,44 +73,35 @@ export default function SwipePage() {
   // Fetch tracks for swiping
   useEffect(() => {
     const fetchTracks = async () => {
+      setLoading(true);
+      setError(null);
       try {
-        setLoading(true);
-
-        // Get disliked track IDs to filter out
         const dislikedIds = new Set(getDislikedTrackIds());
         console.log(`🚫 Filtering out ${dislikedIds.size} disliked tracks`);
 
         const response = await api.tracks.suggestions({ limit: 20 });
         if (response.error) {
-          setError(`Failed to load tracks: ${response.error.error}`);
-          // Use fallback data when API fails, but still filter dislikes
-          const filteredFallback = fallbackTracks.filter(
-            (track) => !dislikedIds.has(Number(track.id))
-          );
-          setTracks(filteredFallback);
-        } else {
-          const apiTracks = response.data?.data || [];
-          // Mix API tracks with fallback tracks for better demo
-          const allTracks = [...apiTracks, ...fallbackTracks];
-          // Filter out disliked tracks
-          const filteredTracks = allTracks.filter(
-            (track) => !dislikedIds.has(Number(track.id))
-          );
-          console.log(
-            `📱 Loaded ${filteredTracks.length} tracks (${
-              allTracks.length - filteredTracks.length
-            } filtered out)`
-          );
-          setTracks(filteredTracks.slice(0, 20));
+          throw new Error(response.error.error);
         }
-      } catch (err) {
-        setError(`Error loading tracks: ${err}`);
-        // Use fallback data when API fails, but still filter dislikes
-        const dislikedIds = new Set(getDislikedTrackIds());
-        const filteredFallback = fallbackTracks.filter(
+
+        const apiTracks = response.data?.data || [];
+        const filteredApiTracks = apiTracks.filter(
           (track) => !dislikedIds.has(Number(track.id))
         );
-        setTracks(filteredFallback);
+
+        console.log(
+          `📱 Loaded ${filteredApiTracks.length} tracks from API (${
+            apiTracks.length - filteredApiTracks.length
+          } filtered out)`
+        );
+
+        // Mix filtered API tracks with fallback tracks for a better demo experience
+        const finalTracks = [...filteredApiTracks, ...fallbackTracks];
+        setTracks(finalTracks.slice(0, 20));
+      } catch (err: any) {
+        setError(`Error loading tracks: ${err.message}`);
+        // Use fallback data when API fails
+        setTracks(fallbackTracks);
       } finally {
         setLoading(false);
       }
@@ -121,17 +112,18 @@ export default function SwipePage() {
 
   const handleSwipe = (direction: "left" | "right", track: Track) => {
     console.log(`Swiped ${direction} on track:`, track.title);
-    // Here you could implement logic to save likes/dislikes
-    if (direction === "right") {
-      // Track liked
+    if (direction === "left") {
+      // Dislike
+      saveDislikedTrackId(track.id);
     } else {
-      // Track disliked
+      // Like
+      // saveLikedTrack(track);
     }
   };
 
   const handleStackEmpty = () => {
     console.log("All tracks swiped! Loading more...");
-    // Reload tracks or fetch more
+    // For now, just show fallback tracks again
     setTracks([...fallbackTracks]);
   };
 
