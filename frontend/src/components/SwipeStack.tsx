@@ -45,9 +45,8 @@ export function SwipeStack({
     volume: 0.7,
     onTrackEnd: useCallback(() => {
       if (currentTrack && currentTrack.preview_url && !isInstructionCard) {
-        // The hook itself will not be in scope here, so we need to get creative.
-        // For now, we will just log. The parent component will handle what to do next.
-        console.log("Track ended, parent should handle what to do next.");
+        // トラックの終了時に再度再生を開始
+        audioPlayer.playTrack(currentTrack);
       }
     }, [currentTrack, isInstructionCard]),
     onPlaybackError: useCallback((error: string) => {

@@ -184,6 +184,7 @@ export default function SwipePage() {
             tracks={tracks}
             onSwipe={handleSwipe}
             onStackEmpty={handleStackEmpty}
+            // onTrackEnded は削除
           />
         )}
       </div>
