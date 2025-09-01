@@ -8,9 +8,9 @@ import {
   getLikedTracks,
   removeLikedTrack,
   clearLikedTracks,
-  saveDislikedTrackId,
-  getDislikedTrackIds,
-  clearDislikedTrackIds,
+  saveDislikedTrack,
+  getDislikedTracks,
+  clearDislikedTracks,
   purgeExpiredDislikes,
   migrateStorageIfNeeded,
   isBrowser,
@@ -53,7 +53,7 @@ export function testStorageBasics() {
 
   // Clear existing data
   clearLikedTracks();
-  clearDislikedTrackIds();
+  clearDislikedTracks();
 
   console.log("✅ Cleared existing data");
 
@@ -73,11 +73,14 @@ export function testStorageBasics() {
 
   // Test disliked IDs
   console.log("\n👎 Testing disliked track IDs...");
-  saveDislikedTrackId(99999);
-  saveDislikedTrackId("88888");
+  saveDislikedTrack(sampleTrack);
+  saveDislikedTrack(sampleTrack2);
 
-  const dislikedIds = getDislikedTrackIds();
-  console.log("Disliked track IDs:", dislikedIds);
+  const dislikedTracks = getDislikedTracks();
+  console.log("Disliked tracks:", dislikedTracks.length);
+  dislikedTracks.forEach((track, index) => {
+    console.log(`  ${index + 1}. ${track.trackName} by ${track.artistName}`);
+  });
 
   // Test removal
   console.log("\n🗑️ Testing removal...");
@@ -117,7 +120,7 @@ export function testErrorHandling() {
   console.log("Save invalid track result:", result);
 
   // Test invalid track ID
-  const result2 = saveDislikedTrackId("invalid");
+  const result2 = saveDislikedTrack({ id: "invalid", title: "", artist: "" });
   console.log("Save invalid dislike ID result:", result2);
 
   console.log("✅ Error handling tests completed!");
@@ -138,7 +141,7 @@ export function demoSwipeUsage() {
       console.log("Saved to likes:", saved);
     } else {
       // User disliked the track
-      const saved = saveDislikedTrackId(track.id);
+      const saved = saveDislikedTrack(track);
       console.log("Saved to dislikes:", saved);
     }
   };
@@ -148,10 +151,10 @@ export function demoSwipeUsage() {
   handleSwipe("left", sampleTrack2);
 
   // Show filtering example
-  const dislikedIds = new Set(getDislikedTrackIds());
+  const dislikedTracksFiltered = new Set(getDislikedTracks().map(t => t.trackId));
   const candidateTracks = [sampleTrack, sampleTrack2];
   const filteredTracks = candidateTracks.filter(
-    (track) => !dislikedIds.has(Number(track.id))
+    (track) => !dislikedTracksFiltered.has(Number(track.id))
   );
 
   console.log("Original tracks:", candidateTracks.length);

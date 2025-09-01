@@ -40,7 +40,7 @@ class iTunesApiClient:
         
         # 重複排除用のIDセット（最近取得したトラックID）
         self._recent_track_ids: Set[str] = set()
-        self._track_id_cleanup_interval = timedelta(hours=1)
+        self._track_id_cleanup_interval = timedelta(minutes=1) # 1分間に変更
         self._last_cleanup = datetime.now()
         
         logger.info("iTunes API client initialized")

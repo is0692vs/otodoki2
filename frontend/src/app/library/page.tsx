@@ -10,10 +10,14 @@ import {
   getLikedTracks,
   removeLikedTrack,
   clearLikedTracks,
+  getDislikedTracks,
+  removeDislikedTrack,
+  clearDislikedTracks,
 } from "@/lib/storage";
 import { Track } from "@/services/types";
+import { ThumbsDown } from "lucide-react";
 
-// StoredTrack type definition
+// StoredTrack type definition (for liked tracks)
 interface StoredTrack {
   trackId: number;
   trackName: string;
@@ -25,7 +29,20 @@ interface StoredTrack {
   savedAt: string;
 }
 
-// StoredTrack to Track converter
+// StoredDislikedTrack type definition (for disliked tracks)
+interface StoredDislikedTrack {
+  trackId: number;
+  trackName: string;
+  artistName: string;
+  artworkUrl: string;
+  previewUrl: string;
+  collectionName?: string;
+  primaryGenreName?: string;
+  dislikedAt: string;
+  ttlSec?: number;
+}
+
+// Converters
 function storedTrackToTrack(storedTrack: StoredTrack): Track {
   return {
     id: storedTrack.trackId,
@@ -38,20 +55,42 @@ function storedTrackToTrack(storedTrack: StoredTrack): Track {
   };
 }
 
+function storedDislikedTrackToTrack(storedDislikedTrack: StoredDislikedTrack): Track {
+  return {
+    id: storedDislikedTrack.trackId,
+    title: storedDislikedTrack.trackName,
+    artist: storedDislikedTrack.artistName,
+    artwork_url: storedDislikedTrack.artworkUrl,
+    preview_url: storedDislikedTrack.previewUrl,
+    album: storedDislikedTrack.collectionName,
+    genre: storedDislikedTrack.primaryGenreName,
+  };
+}
+
 export default function Library() {
   const [likedTracks, setLikedTracks] = useState<Track[]>([]);
+  const [dislikedTracks, setDislikedTracks] = useState<Track[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadLikedTracks = () => {
-    setLoading(true);
+    setLoading(true); // Assuming loading state is shared for both lists
     const stored = getLikedTracks();
     const tracks = stored.map(storedTrackToTrack);
     setLikedTracks(tracks);
     setLoading(false);
   };
 
+  const loadDislikedTracks = () => {
+    setLoading(true); // Assuming loading state is shared for both lists
+    const stored = getDislikedTracks();
+    const tracks = stored.map(storedDislikedTrackToTrack);
+    setDislikedTracks(tracks);
+    setLoading(false);
+  };
+
   useEffect(() => {
     loadLikedTracks();
+    loadDislikedTracks();
   }, []);
 
   const handleRemoveTrack = (trackId: string | number) => {
@@ -72,6 +111,28 @@ export default function Library() {
       if (success) {
         setLikedTracks([]);
         console.log("🗑️ Cleared all liked tracks");
+      }
+    }
+  };
+
+  const handleRemoveDislikedTrack = (trackId: string | number) => {
+    const success = removeDislikedTrack(trackId);
+    if (success) {
+      loadDislikedTracks(); // Reload the list
+      console.log(`🗑️ Removed disliked track from library: ${trackId}`);
+    }
+  };
+
+  const handleClearDislikedTracks = () => {
+    if (
+      confirm(
+        "すべてのスキップ楽曲を削除しますか？この操作は元に戻せません。"
+      )
+    ) {
+      const success = clearDislikedTracks();
+      if (success) {
+        setDislikedTracks([]);
+        console.log("🗑️ Cleared all disliked tracks");
       }
     }
   };
@@ -143,8 +204,8 @@ export default function Library() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {likedTracks.map((track) => (
-              <div key={track.id} className="relative group">
+            {likedTracks.map((track, index) => (
+              <div key={`${track.id}-${index}`} className="relative group">
                 <TrackCard track={track} className="h-full" />
 
                 {/* Remove button overlay */}
@@ -161,6 +222,72 @@ export default function Library() {
             ))}
           </div>
         )}
+
+        {/* Disliked Tracks Section */}
+        <div className="space-y-6 pt-12">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <ThumbsDown className="h-8 w-8 text-gray-500" />
+              <div>
+                <h1 className="text-3xl font-bold">スキップした楽曲</h1>
+                <p className="text-muted-foreground">
+                  {dislikedTracks.length > 0
+                    ? `${dislikedTracks.length} 曲のスキップ楽曲`
+                    : "スキップした楽曲はまだありません"}
+                </p>
+              </div>
+            </div>
+
+            {dislikedTracks.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleClearDislikedTracks}
+                className="gap-2 text-destructive hover:bg-destructive/10"
+              >
+                <Trash2 className="h-4 w-4" />
+                すべて削除
+              </Button>
+            )}
+          </div>
+
+          {dislikedTracks.length === 0 ? (
+            <div className="text-center py-16 space-y-4">
+              <ThumbsDown className="h-16 w-16 text-muted-foreground mx-auto" />
+              <div>
+                <h3 className="text-xl font-semibold mb-2">
+                  スキップした楽曲はありません
+                </h3>
+                <p className="text-muted-foreground mb-4">
+                  スワイプページで楽曲を左にスワイプしてスキップしましょう
+                </p>
+                <Link href="/swipe">
+                  <Button className="gap-2">
+                    <ThumbsDown className="h-4 w-4" />
+                    楽曲を探す
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {dislikedTracks.map((track, index) => (
+                <div key={`${track.id}-${index}`} className="relative group">
+                  <TrackCard track={track} className="h-full" />
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => handleRemoveDislikedTrack(track.id)}
+                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity gap-1"
+                  >
+                    <RotateCcw className="h-3 w-3" />
+                    解除
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
         {/* Navigation back */}
         <div className="text-center pt-8">
