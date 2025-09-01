@@ -38,15 +38,21 @@ interface LikesStorage {
   items: StoredTrack[];
 }
 
-interface DislikedItem {
-  id: number;
+interface StoredDislikedTrack {
+  trackId: number;
+  trackName: string;
+  artistName: string;
+  artworkUrl: string;
+  previewUrl: string;
+  collectionName?: string;
+  primaryGenreName?: string;
   dislikedAt: string; // ISO8601
   ttlSec?: number;
 }
 
 interface DislikesStorage {
   version: 1;
-  items: DislikedItem[];
+  items: StoredDislikedTrack[];
 }
 
 interface SaveDislikedOptions {
@@ -267,7 +273,7 @@ function saveDislikes(data: DislikesStorage): boolean {
 /**
  * Remove expired dislikes from array
  */
-function removeExpiredDislikes(items: DislikedItem[]): DislikedItem[] {
+function removeExpiredDislikes(items: StoredDislikedTrack[]): StoredDislikedTrack[] {
   const now = new Date();
   return items.filter((item) => {
     const dislikedAt = new Date(item.dislikedAt);
@@ -427,39 +433,49 @@ export function clearLikedTracks(): boolean {
  * @param opts Options including TTL
  * @returns true if saved successfully
  */
-export function saveDislikedTrackId(
-  trackId: string | number,
+export function saveDislikedTrack(
+  track: Track,
   opts?: SaveDislikedOptions
 ): boolean {
   if (!isBrowser()) {
+    log.info("saveDislikedTrack: SSR environment, skipping");
     return false;
   }
 
   try {
-    const normalizedId = normalizeTrackId(trackId);
+    const storedTrack = normalizeTrack(track);
     const dislikes = loadDislikes();
 
-    // Check for existing dislike
+    // Check for existing track
     const existingIndex = dislikes.items.findIndex(
-      (item) => item.id === normalizedId
+      (item) => item.trackId === storedTrack.trackId
     );
     const now = new Date().toISOString();
 
+    const newDislikedItem: StoredDislikedTrack = {
+      trackId: storedTrack.trackId,
+      trackName: storedTrack.trackName,
+      artistName: storedTrack.artistName,
+      artworkUrl: storedTrack.artworkUrl,
+      previewUrl: storedTrack.previewUrl,
+      collectionName: storedTrack.collectionName,
+      primaryGenreName: storedTrack.primaryGenreName,
+      dislikedAt: now,
+      ttlSec: opts?.ttlSec || DISLIKE_TTL_SEC,
+    };
+
     if (existingIndex >= 0) {
-      // Update existing dislike
-      dislikes.items[existingIndex].dislikedAt = now;
-      if (opts?.ttlSec !== undefined) {
-        dislikes.items[existingIndex].ttlSec = opts.ttlSec;
-      }
-      log.info(`Updated existing disliked track ID: ${normalizedId}`);
+      // Update savedAt of existing track
+      dislikes.items[existingIndex] = newDislikedItem;
+      log.info(
+        `Updated existing disliked track: ${storedTrack.trackName} by ${storedTrack.artistName}`
+      );
     } else {
-      // Add new dislike
-      dislikes.items.push({
-        id: normalizedId,
-        dislikedAt: now,
-        ttlSec: opts?.ttlSec || DISLIKE_TTL_SEC,
-      });
-      log.info(`Saved new disliked track ID: ${normalizedId}`);
+      // Add new track
+      dislikes.items.push(newDislikedItem);
+      log.info(
+        `Saved new disliked track: ${storedTrack.trackName} by ${storedTrack.artistName}`
+      );
     }
 
     // Trim to max size if needed
@@ -467,13 +483,11 @@ export function saveDislikedTrackId(
 
     const success = saveDislikes(dislikes);
     if (success) {
-      log.info(
-        `Dislikes storage updated, total count: ${dislikes.items.length}`
-      );
+      log.info(`Dislikes storage updated, total count: ${dislikes.items.length}`);
     }
     return success;
   } catch (error) {
-    log.error("Failed to save disliked track ID", error);
+    log.error("Failed to save disliked track", error);
     return false;
   }
 }
@@ -482,7 +496,7 @@ export function saveDislikedTrackId(
  * Get all disliked track IDs (excluding expired ones)
  * @returns Array of disliked track IDs
  */
-export function getDislikedTrackIds(): number[] {
+export function getDislikedTracks(): StoredDislikedTrack[] {
   if (!isBrowser()) {
     return [];
   }
@@ -500,9 +514,10 @@ export function getDislikedTrackIds(): number[] {
       );
     }
 
-    return validItems.map((item) => item.id);
+    // Return newest first
+    return [...validItems].sort((a, b) => b.dislikedAt.localeCompare(a.dislikedAt));
   } catch (error) {
-    log.error("Failed to get disliked track IDs", error);
+    log.error("Failed to get disliked tracks", error);
     return [];
   }
 }
@@ -511,7 +526,36 @@ export function getDislikedTrackIds(): number[] {
  * Clear all disliked track IDs
  * @returns true if cleared successfully
  */
-export function clearDislikedTrackIds(): boolean {
+export function removeDislikedTrack(trackId: string | number): boolean {
+  if (!isBrowser()) {
+    return false;
+  }
+
+  try {
+    const normalizedId = normalizeTrackId(trackId);
+    const dislikes = loadDislikes();
+    const initialCount = dislikes.items.length;
+
+    dislikes.items = dislikes.items.filter((item) => item.trackId !== normalizedId);
+
+    if (dislikes.items.length < initialCount) {
+      const success = saveDislikes(dislikes);
+      if (success) {
+        log.info(
+          `Removed disliked track ID: ${normalizedId}, new count: ${dislikes.items.length}`
+        );
+      }
+      return success;
+    }
+
+    return true; // Track didn't exist, consider it successful
+  } catch (error) {
+    log.error("Failed to remove disliked track", error);
+    return false;
+  }
+}
+
+export function clearDislikedTracks(): boolean {
   if (!isBrowser()) {
     return false;
   }

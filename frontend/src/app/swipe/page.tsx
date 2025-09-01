@@ -8,8 +8,8 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { api, type Track } from "@/services";
 import {
-  getDislikedTrackIds,
-  saveDislikedTrackId,
+  getDislikedTracks,
+  saveDislikedTrack,
   saveLikedTrack,
 } from "@/lib/storage";
 
@@ -57,7 +57,7 @@ export default function SwipePage() {
     setLoading(true);
     setError(null);
     try {
-      const dislikedIds = new Set(getDislikedTrackIds());
+      const dislikedIds = new Set(getDislikedTracks().map(t => t.trackId));
       console.log(`🚫 Filtering out ${dislikedIds.size} disliked tracks`);
 
       const response = await api.tracks.suggestions({ limit: 20 });
@@ -114,7 +114,7 @@ export default function SwipePage() {
         saveLikedTrack(track);
         console.log(`[STORAGE] Saved liked track: ${track.title}`);
       } else {
-        saveDislikedTrackId(track.id);
+        saveDislikedTrack(track);
         console.log(`[STORAGE] Saved disliked track ID: ${track.id}`);
       }
     } catch (error) {

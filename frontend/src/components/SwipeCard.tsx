@@ -44,6 +44,9 @@ export function SwipeCard({
       const direction = info.offset.x > 0 ? "right" : "left";
       setExitX(x.get() + (direction === "right" ? 500 : -500));
       onSwipe?.(direction, track);
+    } else {
+      // 閾値を超えなかった場合は中央に戻す
+      x.set(0);
     }
   };
 
