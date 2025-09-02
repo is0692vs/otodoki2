@@ -147,7 +147,7 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
       audio.src = "";
       audio.load();
     };
-  }, [opts, state.isMuted]);
+  }, [opts]);
 
   // Update volume and mute state
   useEffect(() => {
