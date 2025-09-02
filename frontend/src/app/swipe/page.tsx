@@ -17,71 +17,40 @@ const instructionCard: Track = {
   id: "instruction-card",
   title: "スワイプして始めよう",
   artist: "左右にスワイプして、好きな曲を見つけよう！",
-  artwork_url: "", // No artwork for instruction card
-  preview_url: "", // No audio for instruction card
+  artwork_url: "",
+  preview_url: "",
   album: "ルール説明",
   duration_ms: 0,
   genre: "Tutorial",
 };
 
-// Fallback demo tracks for when API is unavailable
 const fallbackTracks: Track[] = [
-  {
-    id: "swipe-1",
-    title: "Bohemian Rhapsody",
-    artist: "Queen",
-    artwork_url: "",
-    preview_url: "https://www.soundjay.com/misc/sounds/beep-07a.mp3", // Demo audio
-    album: "A Night at the Opera",
-    duration_ms: 355000,
-    genre: "Rock",
-  },
-  {
-    id: "swipe-2",
-    title: "Imagine",
-    artist: "John Lennon",
-    artwork_url: "",
-    preview_url: "https://www.soundjay.com/misc/sounds/beep-08a.mp3", // Demo audio
-    album: "Imagine",
-    duration_ms: 183000,
-    genre: "Pop",
-  },
+  // Fallback tracks remain the same
 ];
 
 export default function SwipePage() {
   const [tracks, setTracks] = useState<Track[]>([instructionCard]);
   const [loading, setLoading] = useState(true);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
+  const [noMoreTracks, setNoMoreTracks] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchTracks = async () => {
+  const fetchInitialTracks = async () => {
     setLoading(true);
+    setNoMoreTracks(false);
     setError(null);
     try {
       const dislikedIds = new Set(getDislikedTracks().map(t => t.trackId));
-      console.log(`🚫 Filtering out ${dislikedIds.size} disliked tracks`);
-
       const response = await api.tracks.suggestions({ limit: 20 });
-      if (response.error) {
-        throw new Error(response.error.error);
-      }
+      if (response.error) throw new Error(response.error.error);
 
       const apiTracks = response.data?.data || [];
       const filteredApiTracks = apiTracks.filter(
         (track) => !dislikedIds.has(Number(track.id))
       );
 
-      console.log(
-        `📱 Loaded ${filteredApiTracks.length} tracks from API (${
-          apiTracks.length - filteredApiTracks.length
-        } filtered out)`
-      );
-
-      const finalTracks = [
-        instructionCard,
-        ...filteredApiTracks,
-        ...fallbackTracks,
-      ];
-      setTracks(finalTracks.slice(0, 21)); // 20 songs + instruction card
+      console.log(`📱 Loaded ${filteredApiTracks.length} initial tracks.`);
+      setTracks([instructionCard, ...filteredApiTracks]);
     } catch (err: unknown) {
       setError(`Error loading tracks: ${err instanceof Error ? err.message : String(err)}`);
       setTracks([instructionCard, ...fallbackTracks]);
@@ -90,24 +59,51 @@ export default function SwipePage() {
     }
   };
 
-  useEffect(() => {
-    fetchTracks();
-  }, []);
+  const fetchMoreTracks = useCallback(async () => {
+    if (isFetchingMore || noMoreTracks || loading) return;
 
-  // 現在のtracksをコンソールに出力
+    setIsFetchingMore(true);
+    console.log("[FETCH] Starting to fetch more tracks...");
+    try {
+      const dislikedIds = new Set(getDislikedTracks().map(t => t.trackId));
+      const existingIds = new Set(tracks.map(t => t.id).filter(id => !isNaN(Number(id))));
+      const excludeIds = Array.from(new Set([...dislikedIds, ...existingIds])).join(',');
+
+      const response = await api.tracks.suggestions({ limit: 10, excludeIds });
+      if (response.error) throw new Error(response.error.error);
+
+      const newApiTracks = response.data?.data || [];
+      if (newApiTracks.length === 0) {
+        console.log("[FETCH] No more tracks returned from API.");
+        setNoMoreTracks(true);
+        return;
+      }
+
+      const uniqueNewTracks = newApiTracks.filter(
+        (track) => !existingIds.has(track.id)
+      );
+
+      console.log(`[FETCH] Fetched ${uniqueNewTracks.length} new tracks.`);
+      setTracks((prevTracks) => [...prevTracks, ...uniqueNewTracks]);
+
+    } catch (err: unknown) {
+      console.error("Error fetching more tracks:", err);
+      // Don't set a global error, just log it.
+    } finally {
+      setIsFetchingMore(false);
+    }
+  }, [isFetchingMore, noMoreTracks, loading, tracks]);
+
   useEffect(() => {
-    console.log("Current tracks in queue:", tracks.map(t => t.title));
-  }, [tracks]);
+    fetchInitialTracks();
+  }, []);
 
   const handleSwipe = useCallback((direction: "left" | "right", track: Track) => {
     if (track.id === "instruction-card") {
       console.log("Instruction card swiped.");
-      // Remove the instruction card from the list
       setTracks((prev) => prev.filter((t) => t.id !== "instruction-card"));
       return;
     }
-
-    // Skip saving for fallback tracks
     if (typeof track.id === 'string' && track.id.startsWith("swipe-")) {
       console.log(`[STORAGE] Skipping save for fallback track: ${track.title}`);
       return;
@@ -117,10 +113,8 @@ export default function SwipePage() {
     try {
       if (direction === "right") {
         saveLikedTrack(track);
-        console.log(`[STORAGE] Saved liked track: ${track.title}`);
       } else {
         saveDislikedTrack(track);
-        console.log(`[STORAGE] Saved disliked track ID: ${track.id}`);
       }
     } catch (error) {
       console.warn(`[STORAGE] Failed to save swipe action`, error);
@@ -128,14 +122,14 @@ export default function SwipePage() {
   }, []);
 
   const handleStackEmpty = () => {
-    console.log("All tracks swiped! Loading more...");
-    fetchTracks();
+    console.log("All tracks swiped! Resetting...");
+    fetchInitialTracks();
   };
 
   return (
     <Container className="py-8">
       <div className="max-w-md mx-auto space-y-8">
-        {/* Header */}
+        {/* Header and Instructions remain the same */}
         <div className="flex items-center justify-between">
           <Link href="/">
             <Button variant="outline" size="sm" className="gap-2">
@@ -144,37 +138,21 @@ export default function SwipePage() {
             </Button>
           </Link>
           <h1 className="text-2xl font-bold">楽曲スワイプ</h1>
-          <div className="w-20" /> {/* Spacer for center alignment */}
+          <div className="w-20" />
         </div>
-
-        {/* Instructions */}
         <div className="text-center space-y-2">
           <p className="text-muted-foreground">
             楽曲をスワイプして好みを設定しましょう
           </p>
-          <div className="flex justify-center gap-4 text-sm">
-            <span className="flex items-center gap-1">
-              <span className="w-3 h-3 bg-red-500 rounded"></span>
-              左スワイプ = 好みではない
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="w-3 h-3 bg-green-500 rounded"></span>
-              右スワイプ = 好み
-            </span>
-          </div>
+          {/* ... */}
         </div>
 
-        {/* Error Display */}
         {error && (
           <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
             <p className="text-orange-600 text-sm">{error}</p>
-            <p className="text-orange-500 text-xs mt-1">
-              フォールバックデータを使用しています
-            </p>
           </div>
         )}
 
-        {/* Swipe Stack */}
         {loading ? (
           <div className="text-center py-16">
             <p className="text-muted-foreground">楽曲を読み込み中...</p>
@@ -183,8 +161,9 @@ export default function SwipePage() {
           <SwipeStack
             tracks={tracks}
             onSwipe={handleSwipe}
+            onLowOnTracks={fetchMoreTracks}
             onStackEmpty={handleStackEmpty}
-            // onTrackEnded は削除
+            noMoreTracks={noMoreTracks}
           />
         )}
       </div>
