@@ -51,7 +51,7 @@ export function SwipeStack({
       if (currentTrack && currentTrack.preview_url && !isInstructionCard) {
         audioPlayer.playTrack(currentTrack);
       }
-    }, [currentTrack, isInstructionCard, audioPlayer]),
+    }, [currentTrack, isInstructionCard]),
     onPlaybackError: useCallback((error: string) => {
       console.warn("Audio error:", error);
     }, []),
