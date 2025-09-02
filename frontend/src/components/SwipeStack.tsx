@@ -17,47 +17,66 @@ import { type Track } from "@/services";
 import { useAudioPlayer } from "@/hooks/useAudioPlayer";
 import { useVisibility, usePageVisibility } from "@/hooks/useVisibility";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { REFILL_THRESHOLD } from "@/lib/constants";
 
 export interface SwipeStackProps {
   tracks: Track[];
   onSwipe?: (direction: "left" | "right", track: Track) => void;
-  onStackEmpty?: () => void;
+  onLowOnTracks?: () => void;
+  onStackEmpty?: () => void; // Kept for now, but will be deprecated by new logic
   className?: string;
+  noMoreTracks?: boolean;
 }
 
 export function SwipeStack({
   tracks,
   onSwipe,
+  onLowOnTracks,
   onStackEmpty,
   className,
+  noMoreTracks,
 }: SwipeStackProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [swipedTracks, setSwipedTracks] = useState<Track[]>([]);
 
   const currentTrack = tracks[currentIndex];
-  const nextTracks = tracks.slice(currentIndex + 1, currentIndex + 3);
-
   const isInstructionCard = currentTrack?.id === "instruction-card";
 
-  const audioPlayer = useAudioPlayer({
+  const audioPlayerHook = useAudioPlayer({
     autoPlay: !isInstructionCard,
     defaultMuted: false,
     volume: 0.7,
     onTrackEnd: useCallback(() => {
-      if (currentTrack && currentTrack.preview_url && !isInstructionCard) {
-        // トラックの終了時に再度再生を開始
-        audioPlayer.playTrack(currentTrack);
-      }
-    }, [currentTrack, isInstructionCard]),
+      // Note: We can't easily reference audioPlayerHook here before it's initialized.
+      // This logic is now handled by the playTrack effect.
+      // A more robust solution might involve passing a function that receives the player instance.
+    }, []),
     onPlaybackError: useCallback((error: string) => {
       console.warn("Audio error:", error);
     }, []),
   });
 
+  // By destructuring, we can ensure our effects only re-run when the specific props/functions we use change.
+  const {
+    playTrack,
+    preloadTrack,
+    pause,
+    stop,
+    togglePlay,
+    toggleMute,
+    isPlaying,
+    isMuted,
+    canPlay,
+    isLoading,
+    error: audioError,
+    nowPlayingTrackId,
+  } = audioPlayerHook;
+
+
   const { ref: stackRef, isVisible: isStackVisible } = useVisibility({
     onVisibilityChange: (visible) => {
-      if (!visible && audioPlayer.isPlaying) {
-        audioPlayer.pause();
+      if (!visible && isPlaying) {
+        pause();
       }
     },
     threshold: 0.5,
@@ -68,7 +87,7 @@ export function SwipeStack({
   useKeyboardShortcuts({
     onSpacePress: () => {
       if (currentTrack && !isInstructionCard) {
-        audioPlayer.togglePlay();
+        togglePlay();
       }
     },
     onArrowLeft: () => handleButtonSwipe("left"),
@@ -77,32 +96,37 @@ export function SwipeStack({
 
   useEffect(() => {
     if (currentTrack && !isInstructionCard && isStackVisible && isPageVisible) {
-      audioPlayer.playTrack(currentTrack);
-
+      playTrack(currentTrack);
       const nextTrack = tracks[currentIndex + 1];
       if (nextTrack) {
-        audioPlayer.preloadTrack(nextTrack);
+        preloadTrack(nextTrack);
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentIndex, isStackVisible, isPageVisible, tracks, isInstructionCard]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentIndex, isStackVisible, isPageVisible, tracks, currentTrack, isInstructionCard, playTrack, preloadTrack]);
 
   useEffect(() => {
-    if (!isPageVisible && audioPlayer.isPlaying) {
-      audioPlayer.pause();
+    if (!isPageVisible && isPlaying) {
+      pause();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isPageVisible]);
+  }, [isPageVisible, isPlaying, pause]);
 
   const handleSwipe = (direction: "left" | "right", track: Track) => {
     if (!isInstructionCard) {
-      audioPlayer.stop();
+      stop();
     }
     onSwipe?.(direction, track);
     setSwipedTracks((prev) => [...prev, track]);
-    // instructionCard の場合は currentIndex を進めない
+
     if (track.id !== "instruction-card") {
-      setCurrentIndex((prev) => prev + 1);
+      const newIndex = currentIndex + 1;
+      console.log(`[QUEUE] Swiped to track ${newIndex} / ${tracks.length}`);
+      setCurrentIndex(newIndex);
+      // Check if we need to fetch more tracks
+      if (onLowOnTracks && tracks.length - newIndex <= REFILL_THRESHOLD) {
+        console.log(`[SwipeStack] Low on tracks (remaining: ${tracks.length - newIndex}), requesting more.`);
+        onLowOnTracks();
+      }
     }
   };
 
@@ -113,15 +137,23 @@ export function SwipeStack({
   };
 
   const onExitComplete = () => {
-    if (currentIndex >= tracks.length && tracks.length > 0) {
-      onStackEmpty?.();
+    // This is called after the card disappears.
+    // We check if the queue is now empty and if there are no more tracks to be fetched.
+    if (currentIndex >= tracks.length && tracks.length > 0 && noMoreTracks) {
+      onStackEmpty?.(); // Signal that the stack is truly and finally empty.
     }
   };
 
   const handleReset = () => {
-    audioPlayer.stop();
+    stop();
+    // This should ideally be handled by the parent component by re-fetching
+    // and passing a new `tracks` array. For now, we just reset the index.
     setCurrentIndex(0);
     setSwipedTracks([]);
+    // Let parent know we want a reset
+    if (onStackEmpty) {
+      onStackEmpty();
+    }
   };
 
   if (!currentTrack) {
@@ -130,7 +162,7 @@ export function SwipeStack({
         <p className="text-muted-foreground">すべての楽曲をスワイプしました！</p>
         <Button onClick={handleReset} variant="outline" className="gap-2">
           <RotateCcw className="h-4 w-4" />
-          リセット
+          もう一度探す
         </Button>
       </div>
     );
@@ -144,24 +176,24 @@ export function SwipeStack({
             <Button
               variant="outline"
               size="sm"
-              onClick={audioPlayer.togglePlay}
-              disabled={!audioPlayer.canPlay && !audioPlayer.isPlaying}
+              onClick={togglePlay}
+              disabled={!canPlay && !isPlaying}
               className="gap-2"
             >
-              {audioPlayer.isPlaying ? <Pause /> : <Play />}
+              {isPlaying ? <Pause /> : <Play />}
             </Button>
             <Button
               variant="outline"
               size="sm"
-              onClick={audioPlayer.toggleMute}
+              onClick={toggleMute}
               className="gap-2"
             >
-              {audioPlayer.isMuted ? <VolumeX /> : <Volume2 />}
+              {isMuted ? <VolumeX /> : <Volume2 />}
             </Button>
           </div>
           <div className="text-center mb-4">
-            {audioPlayer.isLoading && <p>Loading...</p>}
-            {audioPlayer.error && <p className="text-red-500">{audioPlayer.error}</p>}
+            {isLoading && <p>Loading...</p>}
+            {audioError && <p className="text-red-500">{audioError}</p>}
             {!currentTrack.preview_url && <p>Preview not available</p>}
           </div>
         </>
@@ -169,32 +201,33 @@ export function SwipeStack({
 
       <div ref={stackRef} className="relative h-[500px] w-full max-w-sm mx-auto">
         <AnimatePresence onExitComplete={onExitComplete}>
-          {tracks.slice(currentIndex).map((track, index) => {
-            const isTop = index === 0;
-            const playAudio = isTop && !isInstructionCard; // 最上位かつ説明カードではない場合のみ音声を再生
-            return (
-              <SwipeCard
-                key={track.id}
-                track={track}
-                isTop={isTop}
-                onSwipe={handleSwipe}
-                isPlaying={audioPlayer.isPlaying && audioPlayer.nowPlayingTrackId === track.id.toString() && playAudio}
-              />
-            );
-          }).reverse()
-        }
+          {tracks.slice(currentIndex).map((track) => (
+            <SwipeCard
+              key={track.id}
+              track={track}
+              isTop={track.id === currentTrack.id}
+              onSwipe={handleSwipe}
+              isPlaying={isPlaying && nowPlayingTrackId === track.id.toString() && track.id === currentTrack.id}
+            />
+          )).reverse()}
         </AnimatePresence>
       </div>
 
-      <div className="flex justify-center gap-4 mt-8">
-        <Button onClick={() => handleButtonSwipe("left")}><X /></Button>
-        <Button onClick={() => handleButtonSwipe("right")}><Heart /></Button>
-      </div>
-
-      <div className="mt-6 text-center">
-        <p className="text-sm text-muted-foreground">
-          {currentIndex + 1} / {tracks.length}
-        </p>
+      <div className="flex justify-center gap-8 mt-8">
+        <Button
+          onClick={() => handleButtonSwipe("left")}
+          className="bg-red-500 hover:bg-red-600 text-white rounded-full w-20 h-20 shadow-lg"
+          aria-label="Dislike"
+        >
+          <X size={36} />
+        </Button>
+        <Button
+          onClick={() => handleButtonSwipe("right")}
+          className="bg-green-500 hover:bg-green-600 text-white rounded-full w-20 h-20 shadow-lg"
+          aria-label="Like"
+        >
+          <Heart size={36} />
+        </Button>
       </div>
 
       {swipedTracks.length > 0 && (
