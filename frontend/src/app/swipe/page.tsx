@@ -101,6 +101,7 @@ export default function SwipePage() {
   const handleSwipe = (direction: "left" | "right", track: Track) => {
     if (track.id === "instruction-card") {
       console.log("Instruction card swiped.");
+      setTracks((prev) => prev.filter((t) => t.id !== "instruction-card"));
       return;
     }
     if (typeof track.id === 'string' && track.id.startsWith("swipe-")) {
