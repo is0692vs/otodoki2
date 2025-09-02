@@ -94,17 +94,20 @@ export function SwipeStack({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isPageVisible]);
 
-  const handleSwipe = (direction: "left" | "right", track: Track) => {
-    if (!isInstructionCard) {
-      audioPlayer.stop();
-    }
-    onSwipe?.(direction, track);
-    setSwipedTracks((prev) => [...prev, track]);
-    // instructionCard の場合は currentIndex を進めない
-    if (track.id !== "instruction-card") {
-      setCurrentIndex((prev) => prev + 1);
-    }
-  };
+  const handleSwipe = useCallback(
+    (direction: "left" | "right", track: Track) => {
+      if (!isInstructionCard) {
+        audioPlayer.stop();
+      }
+      onSwipe?.(direction, track);
+      setSwipedTracks((prev) => [...prev, track]);
+      // instructionCard の場合は currentIndex を進めない
+      if (track.id !== "instruction-card") {
+        setCurrentIndex((prev) => prev + 1);
+      }
+    },
+    [isInstructionCard, audioPlayer, onSwipe]
+  );
 
   const handleButtonSwipe = (direction: "left" | "right") => {
     if (currentTrack) {
@@ -178,17 +181,24 @@ export function SwipeStack({
                 track={track}
                 isTop={isTop}
                 onSwipe={handleSwipe}
-                isPlaying={audioPlayer.isPlaying && audioPlayer.nowPlayingTrackId === track.id.toString() && playAudio}
+                isPlaying={
+                  audioPlayer.isPlaying &&
+                  audioPlayer.nowPlayingTrackId === track.id.toString() &&
+                  playAudio
+                }
               />
             );
-          }).reverse()
-        }
+          }).reverse()}
         </AnimatePresence>
       </div>
 
       <div className="flex justify-center gap-4 mt-8">
-        <Button onClick={() => handleButtonSwipe("left")}><X /></Button>
-        <Button onClick={() => handleButtonSwipe("right")}><Heart /></Button>
+        <Button onClick={() => handleButtonSwipe("left")}>
+          <X />
+        </Button>
+        <Button onClick={() => handleButtonSwipe("right")}>
+          <Heart />
+        </Button>
       </div>
 
       <div className="mt-6 text-center">
@@ -199,7 +209,12 @@ export function SwipeStack({
 
       {swipedTracks.length > 0 && (
         <div className="mt-4 text-center">
-          <Button onClick={handleReset} variant="ghost" size="sm" className="gap-2">
+          <Button
+            onClick={handleReset}
+            variant="ghost"
+            size="sm"
+            className="gap-2"
+          >
             <RotateCcw className="h-4 w-4" />
             リセット
           </Button>
