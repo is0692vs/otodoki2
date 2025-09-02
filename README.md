@@ -1,3 +1,4 @@
+![GitHub last commit](https://img.shields.io/github/last-commit/is0692vs/otodoki2web) ![GitHub issues](https://img.shields.io/github/issues/is0692vs/otodoki2web) ![GitHub pull requests](https://img.shields.io/github/issues-pr/is0692vs/otodoki2web)
 # 未完成
 
 # otodoki2web
