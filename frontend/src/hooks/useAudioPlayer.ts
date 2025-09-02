@@ -104,8 +104,13 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
     };
 
     const handleEnded = () => {
-      setState((prev) => ({ ...prev, isPlaying: false }));
-      onTrackEndRef.current?.();
+      if (audioRef.current) {
+        audioRef.current.currentTime = 0;
+        audioRef.current.play();
+      } else {
+        setState((prev) => ({ ...prev, isPlaying: false }));
+        onTrackEndRef.current?.();
+      }
     };
 
     const handleError = () => {
@@ -214,7 +219,7 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
         onPlaybackErrorRef.current?.(errorMessage);
       }
     },
-    [opts, state.isMuted]
+    [opts]
   );
 
   const pause = useCallback(() => {
