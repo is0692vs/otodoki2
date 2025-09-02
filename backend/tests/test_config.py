@@ -120,7 +120,7 @@ class TestWorkerConfig:
             "OTODOKI_RETRY_MAX": "5"
         }
         
-        with patch.dict(os.environ, env_vars):
+        with patch.dict(os.environ, env_vars, clear=True):
             assert WorkerConfig.get_itunes_terms() == ["blues", "jazz", "funk"]
             assert WorkerConfig.get_country() == "US"
             assert WorkerConfig.get_min_threshold() == 50
@@ -142,7 +142,7 @@ class TestWorkerConfig:
             "OTODOKI_RETRY_MAX": "-1"  # 負の値
         }
         
-        with patch.dict(os.environ, env_vars):
+        with patch.dict(os.environ, env_vars, clear=True):
             assert WorkerConfig.get_itunes_terms() == ["さくら", "YOASOBI", "米津玄師", "あいみょん", "Official髭男dism"]  # デフォルト
             assert WorkerConfig.get_min_threshold() == 30  # デフォルト
             assert WorkerConfig.get_batch_size() == 1  # 最小値
@@ -162,7 +162,7 @@ class TestWorkerConfig:
         ]
         
         for terms_str, expected in test_cases:
-            with patch.dict(os.environ, {"OTODOKI_ITUNES_TERMS": terms_str}):
+            with patch.dict(os.environ, {"OTODOKI_ITUNES_TERMS": terms_str}, clear=True):
                 assert WorkerConfig.get_itunes_terms() == expected
     
     def test_worker_get_all_settings(self):
