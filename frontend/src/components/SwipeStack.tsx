@@ -17,6 +17,7 @@ import { type Track } from "@/services";
 import { useAudioPlayer } from "@/hooks/useAudioPlayer";
 import { useVisibility, usePageVisibility } from "@/hooks/useVisibility";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { REFILL_THRESHOLD } from "@/lib/constants";
 
 export interface SwipeStackProps {
   tracks: Track[];
@@ -26,8 +27,6 @@ export interface SwipeStackProps {
   className?: string;
   noMoreTracks?: boolean;
 }
-
-const REFILL_THRESHOLD = 5;
 
 export function SwipeStack({
   tracks,
@@ -121,6 +120,7 @@ export function SwipeStack({
 
     if (track.id !== "instruction-card") {
       const newIndex = currentIndex + 1;
+      console.log(`[QUEUE] Swiped to track ${newIndex} / ${tracks.length}`);
       setCurrentIndex(newIndex);
       // Check if we need to fetch more tracks
       if (onLowOnTracks && tracks.length - newIndex <= REFILL_THRESHOLD) {
@@ -216,12 +216,6 @@ export function SwipeStack({
       <div className="flex justify-center gap-4 mt-8">
         <Button onClick={() => handleButtonSwipe("left")}><X /></Button>
         <Button onClick={() => handleButtonSwipe("right")}><Heart /></Button>
-      </div>
-
-      <div className="mt-6 text-center">
-        <p className="text-sm text-muted-foreground">
-          {swipedTracks.length + 1} / {tracks.length}{noMoreTracks ? " (end)" : ""}
-        </p>
       </div>
 
       {swipedTracks.length > 0 && (
