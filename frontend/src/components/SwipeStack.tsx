@@ -103,7 +103,6 @@ export function SwipeStack({
         preloadTrack(nextTrack);
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentIndex, isStackVisible, isPageVisible, tracks, currentTrack, isInstructionCard, playTrack, preloadTrack]);
 
   useEffect(() => {
