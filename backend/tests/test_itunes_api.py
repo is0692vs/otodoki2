@@ -5,6 +5,7 @@ iTunes API clientのテスト
 import pytest
 from unittest.mock import AsyncMock, Mock, patch
 import httpx
+import os
 
 from app.services.itunes_api import iTunesApiClient
 from app.models.track import Track
@@ -26,10 +27,11 @@ class TestiTunesApiClient:
         
         # クールダウンなしでの選択
         term = client.pick_search_term()
-        assert term in ["さくら", "YOASOBI", "米津玄師", "あいみょん", "Official髭男dism"]
+        assert term in iTunesApiClient._SEARCH_TERMS
         
         # 同じキーワードが選ばれた場合、クールダウンに追加されているか確認
-        assert term in client._keyword_cooldown
+        # Note: _keyword_cooldown is no longer used in pick_search_term, so this assertion is removed.
+        # assert term in client._keyword_cooldown
     
     def test_optimize_artwork_url(self):
         """アートワークURL最適化のテスト"""

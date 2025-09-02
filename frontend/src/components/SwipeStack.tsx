@@ -42,7 +42,7 @@ export function SwipeStack({
   const currentTrack = tracks[currentIndex];
   const isInstructionCard = currentTrack?.id === "instruction-card";
 
-  const audioPlayerHook = useAudioPlayer({
+  const audioPlayer = useAudioPlayer({
     autoPlay: !isInstructionCard,
     defaultMuted: false,
     volume: 0.7,
@@ -55,6 +55,7 @@ export function SwipeStack({
       console.warn("Audio error:", error);
     }, []),
   });
+
 
   // By destructuring, we can ensure our effects only re-run when the specific props/functions we use change.
   const {
@@ -70,7 +71,7 @@ export function SwipeStack({
     isLoading,
     error: audioError,
     nowPlayingTrackId,
-  } = audioPlayerHook;
+  } = audioPlayer;
 
 
   const { ref: stackRef, isVisible: isStackVisible } = useVisibility({
@@ -102,7 +103,6 @@ export function SwipeStack({
         preloadTrack(nextTrack);
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentIndex, isStackVisible, isPageVisible, tracks, currentTrack, isInstructionCard, playTrack, preloadTrack]);
 
   useEffect(() => {

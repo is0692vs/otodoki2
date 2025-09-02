@@ -35,17 +35,21 @@ export function SwipeCard({
     info: PanInfo
   ) => {
     const swipeThreshold = 100;
-    const swipePower = (offset: number, velocity: number) => {
-      return Math.abs(offset) + velocity * 5;
-    };
-    const power = swipePower(info.offset.x, info.velocity.x);
+    const velocityThreshold = 200; // pixels per second
 
-    if (power > swipeThreshold) {
-      const direction = info.offset.x > 0 ? "right" : "left";
-      setExitX(x.get() + (direction === "right" ? 500 : -500));
-      onSwipe?.(direction, track);
+    const offset = info.offset.x;
+    const velocity = info.velocity.x;
+
+    if (offset > swipeThreshold || velocity > velocityThreshold) {
+      // Swiped Right
+      setExitX(500);
+      onSwipe?.("right", track);
+    } else if (offset < -swipeThreshold || velocity < -velocityThreshold) {
+      // Swiped Left
+      setExitX(-500);
+      onSwipe?.("left", track);
     } else {
-      // 閾値を超えなかった場合は中央に戻す
+      // Not a swipe, animate back to center
       x.set(0);
     }
   };

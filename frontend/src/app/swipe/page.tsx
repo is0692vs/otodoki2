@@ -98,7 +98,7 @@ export default function SwipePage() {
     fetchInitialTracks();
   }, []);
 
-  const handleSwipe = (direction: "left" | "right", track: Track) => {
+  const handleSwipe = useCallback((direction: "left" | "right", track: Track) => {
     if (track.id === "instruction-card") {
       console.log("Instruction card swiped.");
       setTracks((prev) => prev.filter((t) => t.id !== "instruction-card"));
@@ -119,7 +119,7 @@ export default function SwipePage() {
     } catch (error) {
       console.warn(`[STORAGE] Failed to save swipe action`, error);
     }
-  };
+  }, []);
 
   const handleStackEmpty = () => {
     console.log("All tracks swiped! Resetting...");
