@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Container } from "@/components/Container";
 import { SwipeStack } from "@/components/SwipeStack";
 import { Button } from "@/components/ui/button";
@@ -99,7 +99,7 @@ export default function SwipePage() {
     console.log("Current tracks in queue:", tracks.map(t => t.title));
   }, [tracks]);
 
-  const handleSwipe = (direction: "left" | "right", track: Track) => {
+  const handleSwipe = useCallback((direction: "left" | "right", track: Track) => {
     if (track.id === "instruction-card") {
       console.log("Instruction card swiped.");
       // Remove the instruction card from the list
@@ -125,7 +125,7 @@ export default function SwipePage() {
     } catch (error) {
       console.warn(`[STORAGE] Failed to save swipe action`, error);
     }
-  };
+  }, []);
 
   const handleStackEmpty = () => {
     console.log("All tracks swiped! Loading more...");
