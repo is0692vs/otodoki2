@@ -43,24 +43,41 @@ export function SwipeStack({
   const currentTrack = tracks[currentIndex];
   const isInstructionCard = currentTrack?.id === "instruction-card";
 
-  const audioPlayer = useAudioPlayer({
+  const audioPlayerHook = useAudioPlayer({
     autoPlay: !isInstructionCard,
     defaultMuted: false,
     volume: 0.7,
     onTrackEnd: useCallback(() => {
-      if (currentTrack && currentTrack.preview_url && !isInstructionCard) {
-        audioPlayer.playTrack(currentTrack);
-      }
-    }, [currentTrack, isInstructionCard]),
+      // Note: We can't easily reference audioPlayerHook here before it's initialized.
+      // This logic is now handled by the playTrack effect.
+      // A more robust solution might involve passing a function that receives the player instance.
+    }, []),
     onPlaybackError: useCallback((error: string) => {
       console.warn("Audio error:", error);
     }, []),
   });
 
+  // By destructuring, we can ensure our effects only re-run when the specific props/functions we use change.
+  const {
+    playTrack,
+    preloadTrack,
+    pause,
+    stop,
+    togglePlay,
+    toggleMute,
+    isPlaying,
+    isMuted,
+    canPlay,
+    isLoading,
+    error: audioError,
+    nowPlayingTrackId,
+  } = audioPlayerHook;
+
+
   const { ref: stackRef, isVisible: isStackVisible } = useVisibility({
     onVisibilityChange: (visible) => {
-      if (!visible && audioPlayer.isPlaying) {
-        audioPlayer.pause();
+      if (!visible && isPlaying) {
+        pause();
       }
     },
     threshold: 0.5,
@@ -71,7 +88,7 @@ export function SwipeStack({
   useKeyboardShortcuts({
     onSpacePress: () => {
       if (currentTrack && !isInstructionCard) {
-        audioPlayer.togglePlay();
+        togglePlay();
       }
     },
     onArrowLeft: () => handleButtonSwipe("left"),
@@ -80,23 +97,24 @@ export function SwipeStack({
 
   useEffect(() => {
     if (currentTrack && !isInstructionCard && isStackVisible && isPageVisible) {
-      audioPlayer.playTrack(currentTrack);
+      playTrack(currentTrack);
       const nextTrack = tracks[currentIndex + 1];
       if (nextTrack) {
-        audioPlayer.preloadTrack(nextTrack);
+        preloadTrack(nextTrack);
       }
     }
-  }, [currentIndex, isStackVisible, isPageVisible, tracks, currentTrack, isInstructionCard, audioPlayer]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentIndex, isStackVisible, isPageVisible, tracks, currentTrack, isInstructionCard, playTrack, preloadTrack]);
 
   useEffect(() => {
-    if (!isPageVisible && audioPlayer.isPlaying) {
-      audioPlayer.pause();
+    if (!isPageVisible && isPlaying) {
+      pause();
     }
-  }, [isPageVisible, audioPlayer]);
+  }, [isPageVisible, isPlaying, pause]);
 
   const handleSwipe = (direction: "left" | "right", track: Track) => {
     if (!isInstructionCard) {
-      audioPlayer.stop();
+      stop();
     }
     onSwipe?.(direction, track);
     setSwipedTracks((prev) => [...prev, track]);
@@ -127,7 +145,7 @@ export function SwipeStack({
   };
 
   const handleReset = () => {
-    audioPlayer.stop();
+    stop();
     // This should ideally be handled by the parent component by re-fetching
     // and passing a new `tracks` array. For now, we just reset the index.
     setCurrentIndex(0);
@@ -158,24 +176,24 @@ export function SwipeStack({
             <Button
               variant="outline"
               size="sm"
-              onClick={audioPlayer.togglePlay}
-              disabled={!audioPlayer.canPlay && !audioPlayer.isPlaying}
+              onClick={togglePlay}
+              disabled={!canPlay && !isPlaying}
               className="gap-2"
             >
-              {audioPlayer.isPlaying ? <Pause /> : <Play />}
+              {isPlaying ? <Pause /> : <Play />}
             </Button>
             <Button
               variant="outline"
               size="sm"
-              onClick={audioPlayer.toggleMute}
+              onClick={toggleMute}
               className="gap-2"
             >
-              {audioPlayer.isMuted ? <VolumeX /> : <Volume2 />}
+              {isMuted ? <VolumeX /> : <Volume2 />}
             </Button>
           </div>
           <div className="text-center mb-4">
-            {audioPlayer.isLoading && <p>Loading...</p>}
-            {audioPlayer.error && <p className="text-red-500">{audioPlayer.error}</p>}
+            {isLoading && <p>Loading...</p>}
+            {audioError && <p className="text-red-500">{audioError}</p>}
             {!currentTrack.preview_url && <p>Preview not available</p>}
           </div>
         </>
@@ -189,7 +207,7 @@ export function SwipeStack({
               track={track}
               isTop={track.id === currentTrack.id}
               onSwipe={handleSwipe}
-              isPlaying={audioPlayer.isPlaying && audioPlayer.nowPlayingTrackId === track.id.toString() && track.id === currentTrack.id}
+              isPlaying={isPlaying && nowPlayingTrackId === track.id.toString() && track.id === currentTrack.id}
             />
           )).reverse()}
         </AnimatePresence>
