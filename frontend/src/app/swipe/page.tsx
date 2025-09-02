@@ -166,12 +166,6 @@ export default function SwipePage() {
             noMoreTracks={noMoreTracks}
           />
         )}
-
-        {isFetchingMore && (
-            <div className="text-center py-4">
-                <p className="text-muted-foreground">次の楽曲を読み込み中...</p>
-            </div>
-        )}
       </div>
     </Container>
   );

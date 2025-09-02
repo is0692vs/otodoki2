@@ -213,9 +213,21 @@ export function SwipeStack({
         </AnimatePresence>
       </div>
 
-      <div className="flex justify-center gap-4 mt-8">
-        <Button onClick={() => handleButtonSwipe("left")}><X /></Button>
-        <Button onClick={() => handleButtonSwipe("right")}><Heart /></Button>
+      <div className="flex justify-center gap-8 mt-8">
+        <Button
+          onClick={() => handleButtonSwipe("left")}
+          className="bg-red-500 hover:bg-red-600 text-white rounded-full w-20 h-20 shadow-lg"
+          aria-label="Dislike"
+        >
+          <X size={36} />
+        </Button>
+        <Button
+          onClick={() => handleButtonSwipe("right")}
+          className="bg-green-500 hover:bg-green-600 text-white rounded-full w-20 h-20 shadow-lg"
+          aria-label="Like"
+        >
+          <Heart size={36} />
+        </Button>
       </div>
 
       {swipedTracks.length > 0 && (
