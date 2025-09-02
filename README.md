@@ -1,7 +1,3 @@
-# otodoki2web# otodoki2web# otodoki2web
-
-楽曲推薦・配信システム。フロントエンドとバックエンドで構成される Web アプリケーションで、Docker でコンテナ化されています。
-
 # otodoki2web
 
 楽曲推薦・配信システム。フロントエンドとバックエンドで構成される Web アプリケーションで、Docker でコンテナ化されています。
@@ -30,7 +26,7 @@
 
 ## プロジェクト構造
 
-````text
+```
 otodoki2web/
 ├── backend/           # バックエンドAPI (FastAPI + Python)
 │   ├── app/          # アプリケーションコード
@@ -51,11 +47,7 @@ otodoki2web/
 ├── .github/           # GitHub Actions設定
 ├── docker-compose.yml # Docker Compose設定
 └── Makefile          # 開発用コマンド
-- **フロントエンド:** Next.js アプリケーション (ポート 3000 で動作)
-  - スワイプ式楽曲推薦機能搭載
-  - Framer Motion によるスムーズなアニメーション
-- **バックエンド:** FastAPI アプリケーション (ポート 8000 で動作)
-- **コンテナ化:** Docker と Docker Compose を使用してサービスを構築・実行
+```
 
 ## 開発環境セットアップ
 
@@ -66,29 +58,32 @@ otodoki2web/
 
 ### クイックスタート
 
-```bash
-# プロジェクトをクローン
-git clone <repository-url>
-cd otodoki2web
+1.  **プロジェクトをクローン:**
+    ```bash
+    git clone <repository-url>
+    cd otodoki2web
+    ```
 
-# Docker Composeでサービスを起動
-make up
-
-# または直接
-docker-compose up --build
-````
+2.  **Docker Compose でサービスを起動:**
+    ```bash
+    make up
+    # または直接: docker-compose up --build -d
+    ```
 
 サービスが起動後：
 
-- フロントエンド: http://localhost:3000
-- バックエンド API: http://localhost:8000
-- API 仕様: http://localhost:8000/docs
+- フロントエンド: [http://localhost:3000](http://localhost:3000)
+- バックエンド API: [http://localhost:8000](http://localhost:8000)
+- API 仕様: [http://localhost:8000/docs](http://localhost:8000/docs)
 
-### 開発用コマンド
+### 開発用コマンド (Makefile)
 
 ```bash
 # サービス起動
 make up
+
+# サービス停止
+make down
 
 # ログ確認
 make logs          # バックエンドログ
@@ -104,8 +99,62 @@ make test-worker      # キューワーカーテスト
 
 # クリーンアップ
 make clean        # キャッシュファイル削除
-make down         # サービス停止
 ```
+
+## 検証方法
+
+1.  **フロントエンドの確認:**
+    ブラウザで [http://localhost:3000](http://localhost:3000) にアクセスしてください。Next.js のスタートページが表示されるはずです。
+
+2.  **バックエンドのヘルスの確認:**
+    ターミナルで以下のコマンドを実行してください:
+    ```bash
+    curl http://localhost:8000/health
+    ```
+    以下のレスポンスが表示されるはずです:
+    ```json
+    { "status": "ok" }
+    ```
+
+3.  **API ドキュメントの確認:**
+    - [http://localhost:8000/docs](http://localhost:8000/docs) (Swagger UI)
+    - [http://localhost:8000/redoc](http://localhost:8000/redoc) (ReDoc)
+
+4.  **CORS 機能のテスト:**
+    - ブラウザの開発者ツール (F12) を開きます。
+    - [http://localhost:3000](http://localhost:3000) にアクセスします。
+    - コンソールで以下の JavaScript コードを実行します。
+      ```javascript
+      fetch("http://localhost:8000/health")
+        .then((response) => response.json())
+        .then((data) => console.log("API Response:", data))
+        .catch((error) => console.error("CORS Error:", error));
+      ```
+    - CORS エラーなしにヘルスレスポンスが表示されるはずです。
+    - ネットワークタブでプリフライト `OPTIONS` リクエスト（複雑なリクエストの場合）を確認します。
+
+## 依存関係と技術スタック
+
+### フロントエンド
+
+- **Next.js 14** - React フレームワーク
+- **TypeScript** - 型安全な JavaScript
+- **Tailwind CSS** - ユーティリティファーストの CSS フレームワーク
+- **Framer Motion** - アニメーションライブラリ（スワイプ機能）
+- **Shadcn/ui** - カスタマイズ可能な UI コンポーネント
+
+### バックエンド
+
+- **FastAPI** - 高性能な Python Web フレームワーク
+- **Pydantic** - データバリデーション
+- **Uvicorn** - ASGI サーバー
+- **Redis** - キューシステム（予定）
+
+### 開発・運用
+
+- **Docker & Docker Compose** - コンテナ化
+- **GitHub Actions** - CI/CD パイプライン
+- **VS Code Dev Container** - 統一された開発環境
 
 ## CI/CD
 
@@ -154,95 +203,6 @@ CI パイプライン (`ci.yml`) は以下のチェックを実行します。
   }
   ```
 
-## セットアップと起動
-
-1.  **前提条件:**
-
-    - Docker
-    - Docker Compose
-
-2.  **サービスのビルドと起動:**
-
-    ```bash
-    docker-compose up --build -d
-    ```
-
-    または、Makefile を使用:
-
-    ```bash
-    make up
-    ```
-
-3.  **サービスの停止:**
-
-    ```bash
-    docker-compose down
-    ```
-
-    または:
-
-    ```bash
-    make down
-    ```
-
-## 検証方法
-
-1.  **フロントエンドの確認:**
-    ブラウザで [http://localhost:3000](http://localhost:3000) にアクセスしてください。Next.js のスタートページが表示されるはずです。
-
-2.  **バックエンドのヘルスの確認:**
-    ターミナルで以下のコマンドを実行してください:
-
-    ```bash
-    curl http://localhost:8000/health
-    ```
-
-    以下のレスポンスが表示されるはずです:
-
-    ```json
-    { "status": "ok" }
-    ```
-
-3.  **API ドキュメントの確認:**
-
-    - [http://localhost:8000/docs](http://localhost:8000/docs) (Swagger UI)
-    - [http://localhost:8000/redoc](http://localhost:8000/redoc) (ReDoc)
-
-4.  **CORS 機能のテスト:**
-    - ブラウザの開発者ツール (F12) を開きます。
-    - [http://localhost:3000](http://localhost:3000) にアクセスします。
-      ```javascript
-      fetch("http://localhost:8000/health")
-        .then((response) => response.json())
-        .then((data) => console.log("API Response:", data))
-        .catch((error) => console.error("CORS Error:", error));
-      ```
-    - CORS エラーなしにヘルスレスポンスが表示されるはずです。
-    - ネットワークタブでプリフライト `OPTIONS` リクエスト（複雑なリクエストの場合）を確認します。
-
-## 依存関係と技術スタック
-
-### フロントエンド
-
-- **Next.js 14** - React フレームワーク
-- **TypeScript** - 型安全な JavaScript
-- **Tailwind CSS** - ユーティリティファーストの CSS フレームワーク
-- **Framer Motion** - アニメーションライブラリ（スワイプ機能）
-- **Shadcn/ui** - カスタマイズ可能な UI コンポーネント
-
-### バックエンド
-
-- **FastAPI** - 高性能な Python Web フレームワーク
-- **Pydantic** - データバリデーション
-- **Uvicorn** - ASGI サーバー
-- **Redis** - キューシステム（予定）
-
-### 開発・運用
-
-- **Docker & Docker Compose** - コンテナ化
-- **GitHub Actions** - CI/CD パイプライン
-- **VS Code Dev Container** - 統一された開発環境
-
 ## 重要な注意事項
 
 - **CORS 設定:** CORS は開発用途に `http://localhost:3000` を許可オリジンとして設定されています。これにより、フロントエンドは CORS エラーなしにバックエンドへ API コールを行うことができます。
@@ -262,24 +222,3 @@ CI パイプライン (`ci.yml`) は以下のチェックを実行します。
 - **依存関係の追加:**
   - **フロントエンド:** `frontend/package.json` に依存関係を追加し、`web` サービスを再ビルドします: `docker-compose up --build -d web`。
   - **バックエンド:** `backend/requirements.txt` に依存関係を追加し、`api` サービスを再ビルドします: `docker-compose up --build -d api`。
-
-## ディレクトリ構造
-
-```
-.
-├── backend/
-│   ├── app/
-│   │   ├── __init__.py
-│   │   └── main.py
-│   ├── Dockerfile
-│   ├── requirements.txt
-│   └── .dockerignore
-├── frontend/
-│   ├── src/
-│   ├── Dockerfile
-│   ├── package.json
-│   └── ... (Next.js files)
-├── docker-compose.yml
-├── Makefile
-└── README.md
-```
