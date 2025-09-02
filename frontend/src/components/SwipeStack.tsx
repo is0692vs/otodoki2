@@ -1,210 +1,98 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React from "react";
 import { AnimatePresence } from "framer-motion";
 import { SwipeCard } from "./SwipeCard";
 import { Button } from "@/components/ui/button";
-import {
-  Heart,
-  X,
-  RotateCcw,
-  Play,
-  Pause,
-  VolumeX,
-  Volume2,
-} from "lucide-react";
+import { Heart, X } from "lucide-react";
 import { type Track } from "@/services";
-import { useAudioPlayer } from "@/hooks/useAudioPlayer";
-import { useVisibility, usePageVisibility } from "@/hooks/useVisibility";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 
 export interface SwipeStackProps {
   tracks: Track[];
-  onSwipe?: (direction: "left" | "right", track: Track) => void;
-  onStackEmpty?: () => void;
+  onSwipe: (direction: "left" | "right", track: Track) => void;
   className?: string;
 }
 
+/**
+ * A stateless component that displays a stack of swipeable cards.
+ * It does not manage its own state and relies on props for data and event handling.
+ */
 export function SwipeStack({
   tracks,
   onSwipe,
-  onStackEmpty,
   className,
 }: SwipeStackProps) {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [swipedTracks, setSwipedTracks] = useState<Track[]>([]);
+  // The track on top of the stack is the first one in the array.
+  const currentTrack = tracks[0];
 
-  const currentTrack = tracks[currentIndex];
-  const nextTracks = tracks.slice(currentIndex + 1, currentIndex + 3);
+  // Handler for swipe buttons (Like/Dislike)
+  const handleButtonSwipe = (direction: "left" | "right") => {
+    if (currentTrack) {
+      onSwipe(direction, currentTrack);
+    }
+  };
 
-  const isInstructionCard = currentTrack?.id === "instruction-card";
-
-  const audioPlayer = useAudioPlayer({
-    autoPlay: !isInstructionCard,
-    defaultMuted: false,
-    volume: 0.7,
-    onTrackEnd: useCallback(() => {
-      if (currentTrack && currentTrack.preview_url && !isInstructionCard) {
-        // トラックの終了時に再度再生を開始
-        audioPlayer.playTrack(currentTrack);
-      }
-    }, [currentTrack, isInstructionCard]),
-    onPlaybackError: useCallback((error: string) => {
-      console.warn("Audio error:", error);
-    }, []),
-  });
-
-  const { ref: stackRef, isVisible: isStackVisible } = useVisibility({
-    onVisibilityChange: (visible) => {
-      if (!visible && audioPlayer.isPlaying) {
-        audioPlayer.pause();
-      }
-    },
-    threshold: 0.5,
-  });
-
-  const isPageVisible = usePageVisibility();
-
+  // Enable keyboard shortcuts for swiping the top card.
   useKeyboardShortcuts({
-    onSpacePress: () => {
-      if (currentTrack && !isInstructionCard) {
-        audioPlayer.togglePlay();
-      }
-    },
     onArrowLeft: () => handleButtonSwipe("left"),
     onArrowRight: () => handleButtonSwipe("right"),
   });
 
-  useEffect(() => {
-    if (currentTrack && !isInstructionCard && isStackVisible && isPageVisible) {
-      audioPlayer.playTrack(currentTrack);
-
-      const nextTrack = tracks[currentIndex + 1];
-      if (nextTrack) {
-        audioPlayer.preloadTrack(nextTrack);
-      }
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentIndex, isStackVisible, isPageVisible, tracks, isInstructionCard]);
-
-  useEffect(() => {
-    if (!isPageVisible && audioPlayer.isPlaying) {
-      audioPlayer.pause();
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isPageVisible]);
-
-  const handleSwipe = (direction: "left" | "right", track: Track) => {
-    if (!isInstructionCard) {
-      audioPlayer.stop();
-    }
-    onSwipe?.(direction, track);
-    setSwipedTracks((prev) => [...prev, track]);
-    // instructionCard の場合は currentIndex を進めない
-    if (track.id !== "instruction-card") {
-      setCurrentIndex((prev) => prev + 1);
-    }
-  };
-
-  const handleButtonSwipe = (direction: "left" | "right") => {
-    if (currentTrack) {
-      handleSwipe(direction, currentTrack);
-    }
-  };
-
-  const onExitComplete = () => {
-    if (currentIndex >= tracks.length && tracks.length > 0) {
-      onStackEmpty?.();
-    }
-  };
-
-  const handleReset = () => {
-    audioPlayer.stop();
-    setCurrentIndex(0);
-    setSwipedTracks([]);
-  };
-
+  // Display a message if there are no tracks to show.
   if (!currentTrack) {
     return (
-      <div className="text-center py-16 space-y-4">
-        <p className="text-muted-foreground">すべての楽曲をスワイプしました！</p>
-        <Button onClick={handleReset} variant="outline" className="gap-2">
-          <RotateCcw className="h-4 w-4" />
-          リセット
-        </Button>
+      <div className="text-center py-16 flex items-center justify-center h-full">
+        <p className="text-muted-foreground">表示できる楽曲がありません。</p>
       </div>
     );
   }
 
   return (
     <div className={className}>
-      {!isInstructionCard && (
-        <>
-          <div className="flex justify-center gap-2 mb-4">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={audioPlayer.togglePlay}
-              disabled={!audioPlayer.canPlay && !audioPlayer.isPlaying}
-              className="gap-2"
-            >
-              {audioPlayer.isPlaying ? <Pause /> : <Play />}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={audioPlayer.toggleMute}
-              className="gap-2"
-            >
-              {audioPlayer.isMuted ? <VolumeX /> : <Volume2 />}
-            </Button>
-          </div>
-          <div className="text-center mb-4">
-            {audioPlayer.isLoading && <p>Loading...</p>}
-            {audioPlayer.error && <p className="text-red-500">{audioPlayer.error}</p>}
-            {!currentTrack.preview_url && <p>Preview not available</p>}
-          </div>
-        </>
-      )}
-
-      <div ref={stackRef} className="relative h-[500px] w-full max-w-sm mx-auto">
-        <AnimatePresence onExitComplete={onExitComplete}>
-          {tracks.slice(currentIndex).map((track, index) => {
-            const isTop = index === 0;
-            const playAudio = isTop && !isInstructionCard; // 最上位かつ説明カードではない場合のみ音声を再生
-            return (
-              <SwipeCard
-                key={track.id}
-                track={track}
-                isTop={isTop}
-                onSwipe={handleSwipe}
-                isPlaying={audioPlayer.isPlaying && audioPlayer.nowPlayingTrackId === track.id.toString() && playAudio}
-              />
-            );
-          }).reverse()
-        }
+      {/* The stack of cards */}
+      <div className="relative h-[500px] w-full max-w-sm mx-auto">
+        <AnimatePresence>
+          {tracks
+            .map((track, index) => {
+              const isTop = index === 0;
+              return (
+                <SwipeCard
+                  key={track.id}
+                  track={track}
+                  isTop={isTop}
+                  // When a card is swiped via gesture, call the onSwipe prop
+                  // with the direction and the specific track that was swiped.
+                  onSwipe={(direction) => onSwipe(direction, track)}
+                />
+              );
+            })
+            .reverse() // Reverse so the last card in the array is at the bottom.
+          }
         </AnimatePresence>
       </div>
 
+      {/* Swipe control buttons */}
       <div className="flex justify-center gap-4 mt-8">
-        <Button onClick={() => handleButtonSwipe("left")}><X /></Button>
-        <Button onClick={() => handleButtonSwipe("right")}><Heart /></Button>
+        <Button
+          onClick={() => handleButtonSwipe("left")}
+          variant="outline"
+          size="lg"
+          className="rounded-full w-20 h-20"
+          aria-label="Dislike"
+        >
+          <X className="h-8 w-8 text-red-500" />
+        </Button>
+        <Button
+          onClick={() => handleButtonSwipe("right")}
+          variant="outline"
+          size="lg"
+          className="rounded-full w-20 h-20"
+          aria-label="Like"
+        >
+          <Heart className="h-8 w-8 text-green-500" />
+        </Button>
       </div>
-
-      <div className="mt-6 text-center">
-        <p className="text-sm text-muted-foreground">
-          {currentIndex + 1} / {tracks.length}
-        </p>
-      </div>
-
-      {swipedTracks.length > 0 && (
-        <div className="mt-4 text-center">
-          <Button onClick={handleReset} variant="ghost" size="sm" className="gap-2">
-            <RotateCcw className="h-4 w-4" />
-            リセット
-          </Button>
-        </div>
-      )}
     </div>
   );
 }
