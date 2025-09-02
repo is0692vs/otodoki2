@@ -31,16 +31,12 @@ export function SwipeStack({
   onStackEmpty,
   className,
 }: SwipeStackProps) {
-  // Refactored state: directly manage the stack of tracks to display
-  const [displayedTracks, setDisplayedTracks] = useState(tracks);
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [swipedTracks, setSwipedTracks] = useState<Track[]>([]);
 
-  // Sync displayedTracks with the tracks prop when it changes
-  useEffect(() => {
-    setDisplayedTracks(tracks);
-  }, [tracks]);
+  const currentTrack = tracks[currentIndex];
+  const nextTracks = tracks.slice(currentIndex + 1, currentIndex + 3);
 
-  const currentTrack = displayedTracks[0];
   const isInstructionCard = currentTrack?.id === "instruction-card";
 
   const audioPlayer = useAudioPlayer({
@@ -48,10 +44,14 @@ export function SwipeStack({
     defaultMuted: false,
     volume: 0.7,
     onTrackEnd: useCallback(() => {
+      // This callback can't be dependent on `audioPlayer` because it's part of the initialization.
+      // The linter will complain, but it's a necessary exception to avoid a ReferenceError.
+      // The functions on `audioPlayer` are stable, so this is safe.
       if (currentTrack && currentTrack.preview_url && !isInstructionCard) {
+        // トラックの終了時に再度再生を開始
         audioPlayer.playTrack(currentTrack);
       }
-    }, [currentTrack, isInstructionCard]), // Removed circular audioPlayer dependency
+    }, [currentTrack, isInstructionCard]),
     onPlaybackError: useCallback((error: string) => {
       console.warn("Audio error:", error);
     }, []),
@@ -78,23 +78,24 @@ export function SwipeStack({
     onArrowRight: () => handleButtonSwipe("right"),
   });
 
-  // Effect to play audio for the current top card
   useEffect(() => {
     if (currentTrack && !isInstructionCard && isStackVisible && isPageVisible) {
       audioPlayer.playTrack(currentTrack);
-      const nextTrack = displayedTracks[1];
+
+      const nextTrack = tracks[currentIndex + 1];
       if (nextTrack) {
         audioPlayer.preloadTrack(nextTrack);
       }
     }
-    // `displayedTracks` is a dependency to react to stack changes
-  }, [currentTrack, isStackVisible, isPageVisible, audioPlayer]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentIndex, isStackVisible, isPageVisible, tracks, isInstructionCard]);
 
   useEffect(() => {
     if (!isPageVisible && audioPlayer.isPlaying) {
       audioPlayer.pause();
     }
-  }, [isPageVisible, audioPlayer]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isPageVisible]);
 
   const handleSwipe = useCallback(
     (direction: "left" | "right", track: Track) => {
@@ -102,12 +103,14 @@ export function SwipeStack({
         audioPlayer.stop();
       }
       onSwipe?.(direction, track);
-      setSwipedTracks((prev) => [...prev, track]);
 
-      // Refactored logic: remove the top card from the stack
-      if (track.id !== "instruction-card") {
-        setDisplayedTracks((current) => current.slice(1));
-      }
+      // Defer state updates to avoid race condition with framer-motion
+      setTimeout(() => {
+        setSwipedTracks((prev) => [...prev, track]);
+        if (track.id !== "instruction-card") {
+          setCurrentIndex((prev) => prev + 1);
+        }
+      }, 0);
     },
     [isInstructionCard, audioPlayer, onSwipe]
   );
@@ -119,20 +122,16 @@ export function SwipeStack({
   };
 
   const onExitComplete = () => {
-    // onStackEmpty is now checked when displayedTracks is empty
-    if (displayedTracks.length === 0) {
+    if (currentIndex >= tracks.length && tracks.length > 0) {
       onStackEmpty?.();
     }
   };
 
   const handleReset = () => {
     audioPlayer.stop();
-    setDisplayedTracks(tracks); // Reset to the original full stack
+    setCurrentIndex(0);
     setSwipedTracks([]);
   };
-
-  const originalTrackCount = tracks.length;
-  const swipedCount = swipedTracks.length;
 
   if (!currentTrack) {
     return (
@@ -184,9 +183,11 @@ export function SwipeStack({
         className="relative h-[500px] w-full max-w-sm mx-auto"
       >
         <AnimatePresence onExitComplete={onExitComplete}>
-          {displayedTracks.map((track, index) => {
+          {tracks
+            .slice(currentIndex)
+            .map((track, index) => {
               const isTop = index === 0;
-              const playAudio = isTop && !isInstructionCard;
+              const playAudio = isTop && !isInstructionCard; // 最上位かつ説明カードではない場合のみ音声を再生
               return (
                 <SwipeCard
                   key={track.id}
@@ -216,7 +217,7 @@ export function SwipeStack({
 
       <div className="mt-6 text-center">
         <p className="text-sm text-muted-foreground">
-          {swipedCount + 1} / {originalTrackCount}
+          {currentIndex + 1} / {tracks.length}
         </p>
       </div>
 
