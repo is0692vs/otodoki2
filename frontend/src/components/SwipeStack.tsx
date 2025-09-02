@@ -1,3 +1,4 @@
+// frontend/src/components/SwipeStack.tsx
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
