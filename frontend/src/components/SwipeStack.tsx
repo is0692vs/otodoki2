@@ -21,22 +21,26 @@ import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 export interface SwipeStackProps {
   tracks: Track[];
   onSwipe?: (direction: "left" | "right", track: Track) => void;
-  onStackEmpty?: () => void;
+  onLowOnTracks?: () => void;
+  onStackEmpty?: () => void; // Kept for now, but will be deprecated by new logic
   className?: string;
+  noMoreTracks?: boolean;
 }
+
+const REFILL_THRESHOLD = 5;
 
 export function SwipeStack({
   tracks,
   onSwipe,
+  onLowOnTracks,
   onStackEmpty,
   className,
+  noMoreTracks,
 }: SwipeStackProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [swipedTracks, setSwipedTracks] = useState<Track[]>([]);
 
   const currentTrack = tracks[currentIndex];
-  const nextTracks = tracks.slice(currentIndex + 1, currentIndex + 3);
-
   const isInstructionCard = currentTrack?.id === "instruction-card";
 
   const audioPlayer = useAudioPlayer({
@@ -45,10 +49,9 @@ export function SwipeStack({
     volume: 0.7,
     onTrackEnd: useCallback(() => {
       if (currentTrack && currentTrack.preview_url && !isInstructionCard) {
-        // トラックの終了時に再度再生を開始
         audioPlayer.playTrack(currentTrack);
       }
-    }, [currentTrack, isInstructionCard]),
+    }, [currentTrack, isInstructionCard, audioPlayer]),
     onPlaybackError: useCallback((error: string) => {
       console.warn("Audio error:", error);
     }, []),
@@ -78,21 +81,18 @@ export function SwipeStack({
   useEffect(() => {
     if (currentTrack && !isInstructionCard && isStackVisible && isPageVisible) {
       audioPlayer.playTrack(currentTrack);
-
       const nextTrack = tracks[currentIndex + 1];
       if (nextTrack) {
         audioPlayer.preloadTrack(nextTrack);
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentIndex, isStackVisible, isPageVisible, tracks, isInstructionCard]);
+  }, [currentIndex, isStackVisible, isPageVisible, tracks, currentTrack, isInstructionCard, audioPlayer]);
 
   useEffect(() => {
     if (!isPageVisible && audioPlayer.isPlaying) {
       audioPlayer.pause();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isPageVisible]);
+  }, [isPageVisible, audioPlayer]);
 
   const handleSwipe = (direction: "left" | "right", track: Track) => {
     if (!isInstructionCard) {
@@ -100,9 +100,15 @@ export function SwipeStack({
     }
     onSwipe?.(direction, track);
     setSwipedTracks((prev) => [...prev, track]);
-    // instructionCard の場合は currentIndex を進めない
+
     if (track.id !== "instruction-card") {
-      setCurrentIndex((prev) => prev + 1);
+      const newIndex = currentIndex + 1;
+      setCurrentIndex(newIndex);
+      // Check if we need to fetch more tracks
+      if (onLowOnTracks && tracks.length - newIndex <= REFILL_THRESHOLD) {
+        console.log(`[SwipeStack] Low on tracks (remaining: ${tracks.length - newIndex}), requesting more.`);
+        onLowOnTracks();
+      }
     }
   };
 
@@ -113,15 +119,23 @@ export function SwipeStack({
   };
 
   const onExitComplete = () => {
-    if (currentIndex >= tracks.length && tracks.length > 0) {
-      onStackEmpty?.();
+    // This is called after the card disappears.
+    // We check if the queue is now empty and if there are no more tracks to be fetched.
+    if (currentIndex >= tracks.length && tracks.length > 0 && noMoreTracks) {
+      onStackEmpty?.(); // Signal that the stack is truly and finally empty.
     }
   };
 
   const handleReset = () => {
     audioPlayer.stop();
+    // This should ideally be handled by the parent component by re-fetching
+    // and passing a new `tracks` array. For now, we just reset the index.
     setCurrentIndex(0);
     setSwipedTracks([]);
+    // Let parent know we want a reset
+    if (onStackEmpty) {
+      onStackEmpty();
+    }
   };
 
   if (!currentTrack) {
@@ -130,7 +144,7 @@ export function SwipeStack({
         <p className="text-muted-foreground">すべての楽曲をスワイプしました！</p>
         <Button onClick={handleReset} variant="outline" className="gap-2">
           <RotateCcw className="h-4 w-4" />
-          リセット
+          もう一度探す
         </Button>
       </div>
     );
@@ -169,20 +183,15 @@ export function SwipeStack({
 
       <div ref={stackRef} className="relative h-[500px] w-full max-w-sm mx-auto">
         <AnimatePresence onExitComplete={onExitComplete}>
-          {tracks.slice(currentIndex).map((track, index) => {
-            const isTop = index === 0;
-            const playAudio = isTop && !isInstructionCard; // 最上位かつ説明カードではない場合のみ音声を再生
-            return (
-              <SwipeCard
-                key={track.id}
-                track={track}
-                isTop={isTop}
-                onSwipe={handleSwipe}
-                isPlaying={audioPlayer.isPlaying && audioPlayer.nowPlayingTrackId === track.id.toString() && playAudio}
-              />
-            );
-          }).reverse()
-        }
+          {tracks.slice(currentIndex).map((track) => (
+            <SwipeCard
+              key={track.id}
+              track={track}
+              isTop={track.id === currentTrack.id}
+              onSwipe={handleSwipe}
+              isPlaying={audioPlayer.isPlaying && audioPlayer.nowPlayingTrackId === track.id.toString() && track.id === currentTrack.id}
+            />
+          )).reverse()}
         </AnimatePresence>
       </div>
 
@@ -193,7 +202,7 @@ export function SwipeStack({
 
       <div className="mt-6 text-center">
         <p className="text-sm text-muted-foreground">
-          {currentIndex + 1} / {tracks.length}
+          {swipedTracks.length + 1} / {tracks.length}{noMoreTracks ? " (end)" : ""}
         </p>
       </div>
 
