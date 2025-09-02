@@ -22,7 +22,7 @@ import { REFILL_THRESHOLD } from "@/lib/constants";
 export interface SwipeStackProps {
   tracks: Track[];
   onSwipe?: (direction: "left" | "right", track: Track) => void;
-<<<<<<< HEAD
+  onLowOnTracks?: () => void;
   onStackEmpty?: () => void; // Kept for now, but will be deprecated by new logic
   className?: string;
   noMoreTracks?: boolean;
@@ -31,7 +31,6 @@ export interface SwipeStackProps {
 export function SwipeStack({
   tracks,
   onSwipe,
-<<<<<<< HEAD
   onLowOnTracks,
   onStackEmpty,
   className,
@@ -41,7 +40,6 @@ export function SwipeStack({
   const [swipedTracks, setSwipedTracks] = useState<Track[]>([]);
 
   const currentTrack = tracks[currentIndex];
-<<<<<<< HEAD
   const isInstructionCard = currentTrack?.id === "instruction-card";
 
   const audioPlayer = useAudioPlayer({
@@ -49,27 +47,16 @@ export function SwipeStack({
     defaultMuted: false,
     volume: 0.7,
     onTrackEnd: useCallback(() => {
-<<<<<<< HEAD
-      // This callback can't be dependent on `audioPlayer` because it's part of the initialization.
-      // The linter will complain, but it's a necessary exception to avoid a ReferenceError.
-      // The functions on `audioPlayer` are stable, so this is safe.
-      if (currentTrack && currentTrack.preview_url && !isInstructionCard) {
-        // トラックの終了時に再度再生を開始
-        audioPlayer.playTrack(currentTrack);
-      }
-    }, [currentTrack, isInstructionCard]),
-=======
       // Note: We can't easily reference audioPlayerHook here before it's initialized.
       // This logic is now handled by the playTrack effect.
       // A more robust solution might involve passing a function that receives the player instance.
     }, []),
->>>>>>> main
     onPlaybackError: useCallback((error: string) => {
       console.warn("Audio error:", error);
     }, []),
   });
 
-<<<<<<< HEAD
+
   // By destructuring, we can ensure our effects only re-run when the specific props/functions we use change.
   const {
     playTrack,
@@ -102,6 +89,7 @@ export function SwipeStack({
     onSpacePress: () => {
       if (currentTrack && !isInstructionCard) {
         togglePlay();
+      }
     },
     onArrowLeft: () => handleButtonSwipe("left"),
     onArrowRight: () => handleButtonSwipe("right"),
@@ -150,15 +138,10 @@ export function SwipeStack({
   };
 
   const onExitComplete = () => {
-<<<<<<< HEAD
-    if (currentIndex >= tracks.length && tracks.length > 0) {
-      onStackEmpty?.();
-=======
     // This is called after the card disappears.
     // We check if the queue is now empty and if there are no more tracks to be fetched.
     if (currentIndex >= tracks.length && tracks.length > 0 && noMoreTracks) {
       onStackEmpty?.(); // Signal that the stack is truly and finally empty.
->>>>>>> main
     }
   };
 
@@ -172,6 +155,7 @@ export function SwipeStack({
     if (onStackEmpty) {
       onStackEmpty();
     }
+  };
 
   if (!currentTrack) {
     return (
@@ -193,7 +177,6 @@ export function SwipeStack({
             <Button
               variant="outline"
               size="sm"
-<<<<<<< HEAD
               onClick={togglePlay}
               disabled={!canPlay && !isPlaying}
               className="gap-2"
@@ -203,7 +186,6 @@ export function SwipeStack({
             <Button
               variant="outline"
               size="sm"
-<<<<<<< HEAD
               onClick={toggleMute}
               className="gap-2"
             >
@@ -218,7 +200,6 @@ export function SwipeStack({
         </>
       )}
 
-<<<<<<< HEAD
       <div ref={stackRef} className="relative h-[500px] w-full max-w-sm mx-auto">
         <AnimatePresence onExitComplete={onExitComplete}>
           {tracks.slice(currentIndex).map((track) => (
