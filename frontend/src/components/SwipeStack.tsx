@@ -1,4 +1,3 @@
-// frontend/src/components/SwipeStack.tsx
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
@@ -45,11 +44,14 @@ export function SwipeStack({
     defaultMuted: false,
     volume: 0.7,
     onTrackEnd: useCallback(() => {
+      // This callback can't be dependent on `audioPlayer` because it's part of the initialization.
+      // The linter will complain, but it's a necessary exception to avoid a ReferenceError.
+      // The functions on `audioPlayer` are stable, so this is safe.
       if (currentTrack && currentTrack.preview_url && !isInstructionCard) {
         // トラックの終了時に再度再生を開始
         audioPlayer.playTrack(currentTrack);
       }
-    }, [currentTrack, isInstructionCard, audioPlayer]),
+    }, [currentTrack, isInstructionCard]),
     onPlaybackError: useCallback((error: string) => {
       console.warn("Audio error:", error);
     }, []),
