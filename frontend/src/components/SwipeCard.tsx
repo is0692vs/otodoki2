@@ -35,14 +35,13 @@ export function SwipeCard({
     info: PanInfo
   ) => {
     const swipeThreshold = 100;
-    const swipePower = (offset: number, velocity: number) => {
-      return Math.abs(offset) + velocity * 5;
-    };
-    const power = swipePower(info.offset.x, info.velocity.x);
-
-    if (power > swipeThreshold) {
-      const direction = info.offset.x > 0 ? "right" : "left";
-      setExitX(x.get() + (direction === "right" ? 500 : -500));
+    if (info.offset.x > swipeThreshold) {
+      const direction = "right";
+      setExitX(x.get() + 500);
+      onSwipe?.(direction, track);
+    } else if (info.offset.x < -swipeThreshold) {
+      const direction = "left";
+      setExitX(x.get() - 500);
       onSwipe?.(direction, track);
     } else {
       // 閾値を超えなかった場合は中央に戻す
