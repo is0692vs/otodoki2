@@ -191,11 +191,7 @@ export function SwipeStack({
               {isMuted ? <VolumeX /> : <Volume2 />}
             </Button>
           </div>
-          <div className="text-center mb-4">
-            {isLoading && <p>Loading...</p>}
-            {audioError && <p className="text-red-500">{audioError}</p>}
-            {!currentTrack.preview_url && <p>Preview not available</p>}
-          </div>
+
         </>
       )}
 
@@ -229,6 +225,12 @@ export function SwipeStack({
           <Heart size={36} />
         </Button>
       </div>
+
+      {audioError && (
+        <div className="mt-4 text-center">
+          <p className="text-red-500">{audioError}</p>
+        </div>
+      )}
 
       {swipedTracks.length > 0 && (
         <div className="mt-4 text-center">
