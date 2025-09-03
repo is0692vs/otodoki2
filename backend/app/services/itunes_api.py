@@ -5,6 +5,7 @@ iTunes Search API統合モジュール
 
 import asyncio
 import logging
+import random
 from typing import List, Dict, Any, Optional, Set
 from datetime import datetime, timedelta
 
@@ -39,6 +40,25 @@ class iTunesApiClient:
         self._last_cleanup = datetime.now()
 
         logger.info("iTunes API client initialized")
+
+    def pick_search_term(self) -> str:
+        """iTunes API検索キーワードをランダムに選択（クールダウン考慮なし）
+        
+        検索戦略によってキーワードが提供されるため、このメソッドはiTunes APIのテスト用途でのみ使用される。
+        
+        Returns:
+            str: 選択された検索キーワード
+        """
+        terms = self.config.get_itunes_terms()
+        # 複数戦略が導入されたため、ここではランダムキーワード戦略のデフォルトキーワードを使用
+        # TODO: 検索戦略に応じたキーワード選択ロジックをここに統合するか、別の場所に移管する
+        # 現状はテスト用途のため、シンプルにデフォルトのキーワードリストから選択
+        default_terms = ["さくら", "YOASOBI", "米津玄師", "あいみょん", "Official髭男dism"]
+        
+        if not terms:
+            terms = default_terms
+            
+        return random.choice(terms)
 
     async def search_tracks(self, custom_params: Dict[str, Any], limit: int = 200) -> List[Dict[str, Any]]:
         """iTunes Search APIで楽曲を検索
@@ -143,11 +163,11 @@ class iTunesApiClient:
         for raw_track in raw_tracks:
             try:
                 # 必須フィールドのチェック
-                track_id = raw_track.get("trackId")
-                track_name = raw_track.get("trackName")
-                artist_name = raw_track.get("artistName")
-                preview_url = raw_track.get("previewUrl")
-                artwork_url = raw_track.get("artworkUrl100")
+                track_id: Optional[Any] = raw_track.get("trackId")
+                track_name: Optional[str] = raw_track.get("trackName")
+                artist_name: Optional[str] = raw_track.get("artistName")
+                preview_url: Optional[str] = raw_track.get("previewUrl")
+                artwork_url: Optional[str] = raw_track.get("artworkUrl100")
 
                 if not all([track_id, track_name, artist_name, preview_url, artwork_url]):
                     skipped_count += 1
@@ -160,13 +180,13 @@ class iTunesApiClient:
                     continue
 
                 # アートワークURLの高解像度化
-                optimized_artwork_url = self._optimize_artwork_url(artwork_url)
+                optimized_artwork_url = self._optimize_artwork_url(artwork_url if artwork_url else "")
 
                 # Trackオブジェクト作成
                 track = Track(
                     id=track_id_str,
-                    title=track_name,
-                    artist=artist_name,
+                    title=track_name if track_name else "",
+                    artist=artist_name if artist_name else "",
                     artwork_url=optimized_artwork_url,
                     preview_url=preview_url,
                     album=raw_track.get("collectionName"),
@@ -195,7 +215,7 @@ class iTunesApiClient:
 
         return cleaned_tracks
 
-    def _optimize_artwork_url(self, artwork_url: str) -> str:
+    def _optimize_artwork_url(self, artwork_url: Optional[str]) -> str:
         """アートワークURLを高解像度に最適化
 
         Args:
@@ -207,7 +227,7 @@ class iTunesApiClient:
         if artwork_url and "100x100" in artwork_url:
             # 100x100を600x600に変更
             return artwork_url.replace("100x100", "600x600")
-        return artwork_url
+        return artwork_url if artwork_url else ""
 
     def _cleanup_track_ids(self) -> None:
         """古いトラックIDをクリーンアップ"""

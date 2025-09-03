@@ -172,7 +172,8 @@ class TestWorkerConfig:
             
             expected_keys = {
                 "itunes_terms", "country", "min_threshold", "batch_size",
-                "max_cap", "poll_interval_ms", "http_timeout_s", "retry_max"
+                "max_cap", "poll_interval_ms", "http_timeout_s", "retry_max",
+                "search_strategy", "search_genres", "search_years"
             }
             assert set(settings.keys()) == expected_keys
             

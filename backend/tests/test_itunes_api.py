@@ -27,7 +27,7 @@ class TestiTunesApiClient:
         
         # クールダウンなしでの選択
         term = client.pick_search_term()
-        assert term in iTunesApiClient._SEARCH_TERMS
+        assert term in client.config.get_itunes_terms()
         
         # 同じキーワードが選ばれた場合、クールダウンに追加されているか確認
         # Note: _keyword_cooldown is no longer used in pick_search_term, so this assertion is removed.
@@ -48,7 +48,7 @@ class TestiTunesApiClient:
         assert client._optimize_artwork_url(url_600) == url_600
         
         # None の場合
-        assert client._optimize_artwork_url(None) is None
+        assert client._optimize_artwork_url(None) == ""
     
     def test_clean_and_filter_tracks(self):
         """トラックデータ整形のテスト"""
@@ -82,6 +82,7 @@ class TestiTunesApiClient:
         assert tracks[0].id == "12345"
         assert tracks[0].title == "Test Song"
         assert tracks[0].artist == "Test Artist"
+        assert tracks[0].artwork_url is not None
         assert "600x600" in tracks[0].artwork_url  # 高解像度化
     
     def test_clean_and_filter_tracks_duplicate_removal(self):
@@ -140,7 +141,7 @@ class TestiTunesApiClient:
             
             mock_client.return_value.__aenter__.return_value.get = AsyncMock(return_value=mock_response)
             
-            results = await client.search_tracks("test", limit=50)
+            results = await client.search_tracks({"term": "test"}, limit=50)
             
             assert len(results) == 1
             assert results[0]["trackId"] == 12345
@@ -156,7 +157,7 @@ class TestiTunesApiClient:
             
             mock_client.return_value.__aenter__.return_value.get = AsyncMock(return_value=mock_response)
             
-            results = await client.search_tracks("test")
+            results = await client.search_tracks({"term": "test"})
             
             # 4xxエラーの場合は空リストを返す
             assert results == []
@@ -181,7 +182,7 @@ class TestiTunesApiClient:
             )
             
             with patch('asyncio.sleep') as mock_sleep:
-                results = await client.search_tracks("test")
+                results = await client.search_tracks({"term": "test"})
                 
                 # リトライが実行され、最終的に成功
                 assert len(results) == 1

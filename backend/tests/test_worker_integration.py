@@ -66,6 +66,7 @@ class TestWorkerIntegration:
             assert tracks[0].id == "1001"
             assert tracks[0].title == "Mock Song 1"
             assert tracks[0].artist == "Mock Artist 1"
+            assert tracks[0].artwork_url is not None
             assert "600x600" in tracks[0].artwork_url  # 高解像度化確認
             
             assert tracks[1].id == "1002"
@@ -136,7 +137,7 @@ class TestWorkerIntegration:
         expected_keys = {
             "running", "consecutive_failures", "max_failures", 
             "refill_in_progress", "poll_interval_ms", "min_threshold",
-            "batch_size", "max_cap"
+            "batch_size", "max_cap", "search_strategy"
         }
         assert set(stats.keys()) == expected_keys
         
