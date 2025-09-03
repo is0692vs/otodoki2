@@ -21,8 +21,8 @@ def get_strategy(strategy_name: str) -> BaseSearchStrategy:
     """
     try:
         # モジュールを動的にインポート
-        # e.g., "random_keyword" -> "backend.app.services.search_strategies.random_keyword"
-        module_path = f"backend.app.services.search_strategies.{strategy_name}"
+        # e.g., "random_keyword" -> "app.services.search_strategies.random_keyword"
+        module_path = f"app.services.search_strategies.{strategy_name}"
         strategy_module = importlib.import_module(module_path)
 
         # モジュール内でBaseSearchStrategyを継承したクラスを探索
@@ -34,7 +34,7 @@ def get_strategy(strategy_name: str) -> BaseSearchStrategy:
         raise ImportError(f"No class inheriting from BaseSearchStrategy found in module: {strategy_name}")
 
     except (ImportError, AttributeError) as e:
-        raise ImportError(f"Could not load search strategy '{strategy_name}'. Ensure the file 'backend/app/services/search_strategies/{strategy_name}.py' exists and contains a valid strategy class. Error: {e}")
+        raise ImportError(f"Could not load search strategy '{strategy_name}'. Ensure the file 'app/services/search_strategies/{strategy_name}.py' exists and contains a valid strategy class. Error: {e}")
 
 def list_strategies() -> list[str]:
     """
@@ -43,7 +43,7 @@ def list_strategies() -> list[str]:
     Returns:
         list[str]: 利用可能な戦略名のリスト
     """
-    package_path = "backend.app.services.search_strategies"
+    package_path = "app.services.search_strategies"
     package = importlib.import_module(package_path)
 
     available_strategies = []
