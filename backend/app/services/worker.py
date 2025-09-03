@@ -1,6 +1,6 @@
 """
 iTunes API補充ワーカーモジュール
-バックグラウンドでキューを監視し、必要に応じてiTunes APIから楽曲データを補充する
+バックグラウンドでキューを監視し、必要に応じてiTunes APIから楽曲データを補充
 """
 
 import asyncio
@@ -14,6 +14,7 @@ from ..services.itunes_api import iTunesApiClient
 from ..services.search_strategies import get_strategy, BaseSearchStrategy
 
 logger = logging.getLogger(__name__)
+# ロガーの設定
 
 
 class QueueReplenishmentWorker:
