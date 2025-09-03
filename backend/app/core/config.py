@@ -169,6 +169,43 @@ class WorkerConfig:
             return 3
 
     @staticmethod
+    def get_search_strategy() -> str:
+        """検索戦略を取得
+        """
+        return "random_keyword"
+
+    @staticmethod
+    def get_search_genres() -> List[str]:
+        """ジャンル検索で利用するジャンルリストを取得
+
+        Returns:
+            List[str]: ジャンル名のリスト
+        """
+        default_genres = "J-POP,Rock,Anime,Jazz,Classic,Pop,Electronic,Hip-Hop"
+        value = os.getenv("OTODOKI_SEARCH_GENRES", default_genres)
+        try:
+            genres = [genre.strip()
+                      for genre in value.split(",") if genre.strip()]
+            return genres if genres else default_genres.split(",")
+        except Exception:
+            return default_genres.split(",")
+
+    @staticmethod
+    def get_search_years() -> List[str]:
+        """年別検索で利用する年のリストを取得
+
+        Returns:
+            List[str]: 年のリスト
+        """
+        default_years = "2020,2021,2022,2023,2024"
+        value = os.getenv("OTODOKI_SEARCH_YEARS", default_years)
+        try:
+            years = [year.strip() for year in value.split(",") if year.strip()]
+            return years if years else default_years.split(",")
+        except Exception:
+            return default_years.split(",")
+
+    @staticmethod
     def get_all_settings() -> dict:
         """すべての設定値を辞書で取得
 
@@ -184,6 +221,9 @@ class WorkerConfig:
             "poll_interval_ms": WorkerConfig.get_poll_interval_ms(),
             "http_timeout_s": WorkerConfig.get_http_timeout_s(),
             "retry_max": WorkerConfig.get_retry_max(),
+            "search_strategy": WorkerConfig.get_search_strategy(),
+            "search_genres": WorkerConfig.get_search_genres(),
+            "search_years": WorkerConfig.get_search_years(),
         }
 
 
