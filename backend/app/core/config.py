@@ -171,11 +171,8 @@ class WorkerConfig:
     @staticmethod
     def get_search_strategy() -> str:
         """検索戦略を取得
-
-        Returns:
-            str: 検索戦略名（デフォルト: "random_keyword"）
         """
-        return os.getenv("OTODOKI_SEARCH_STRATEGY", "random_keyword")
+        return "random_keyword"
 
     @staticmethod
     def get_search_genres() -> List[str]:
@@ -187,7 +184,8 @@ class WorkerConfig:
         default_genres = "J-POP,Rock,Anime,Jazz,Classic,Pop,Electronic,Hip-Hop"
         value = os.getenv("OTODOKI_SEARCH_GENRES", default_genres)
         try:
-            genres = [genre.strip() for genre in value.split(",") if genre.strip()]
+            genres = [genre.strip()
+                      for genre in value.split(",") if genre.strip()]
             return genres if genres else default_genres.split(",")
         except Exception:
             return default_genres.split(",")
