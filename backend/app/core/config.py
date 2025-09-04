@@ -171,8 +171,11 @@ class WorkerConfig:
     @staticmethod
     def get_search_strategy() -> str:
         """検索戦略を取得
+
+        Returns:
+            str: 検索戦略名（デフォルト: "gemini_keyword"）
         """
-        return "random_keyword"
+        return "gemini_keyword"
 
     @staticmethod
     def get_search_genres() -> List[str]:
@@ -225,6 +228,16 @@ class WorkerConfig:
             "search_genres": WorkerConfig.get_search_genres(),
             "search_years": WorkerConfig.get_search_years(),
         }
+
+    @staticmethod
+    def get_available_search_strategies() -> List[str]:
+        """利用可能な検索戦略のリストを取得
+
+        Returns:
+            List[str]: 利用可能な検索戦略名のリスト
+        """
+        # ここに利用可能なすべての戦略名を追加
+        return ["gemini_keyword", "random_keyword", "artist_search", "genre_search", "release_year_search"]
 
 
 class SuggestionsConfig:

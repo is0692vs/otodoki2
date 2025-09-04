@@ -5,6 +5,8 @@ services:
     ports:
       - "8000:8000"
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
       - ORIGINS=http://localhost:3000
     healthcheck:

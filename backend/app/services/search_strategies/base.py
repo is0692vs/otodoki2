@@ -7,7 +7,7 @@ class BaseSearchStrategy(ABC):
     """
 
     @abstractmethod
-    def generate_params(self) -> Dict[str, Any]:
+    async def generate_params(self) -> Dict[str, Any]:
         """
         iTunes APIの検索パラメータを生成する
 
