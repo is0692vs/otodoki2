@@ -36,6 +36,9 @@ jobs:
           cat docker-compose.yml
           echo "-------------------------------------"
 
+      - name: Create dummy .env file
+        run: touch .env
+
       - name: Build and start services with docker compose
         run: |
           docker compose up --build -d
@@ -140,6 +143,9 @@ jobs:
     needs: integration-test # integration-testが完了してから実行
     steps:
       - uses: actions/checkout@v4
+
+      - name: Create dummy .env file
+        run: touch .env
 
       - name: Build and start services with docker compose
         run: |
