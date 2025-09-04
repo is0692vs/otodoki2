@@ -171,8 +171,12 @@ class WorkerConfig:
     @staticmethod
     def get_search_strategy() -> str:
         """検索戦略を取得
+
+        Returns:
+            str: 検索戦略名（デフォルト: "random_keyword"）
         """
-        return "random_keyword"
+        # README.md に記載のデフォルト値 'random_keyword' を使用し、環境変数から読み込むように修正
+        return os.getenv("OTODOKI_SEARCH_STRATEGY", "random_keyword")
 
     @staticmethod
     def get_search_genres() -> List[str]:
@@ -225,6 +229,16 @@ class WorkerConfig:
             "search_genres": WorkerConfig.get_search_genres(),
             "search_years": WorkerConfig.get_search_years(),
         }
+
+    @staticmethod
+    def get_available_search_strategies() -> List[str]:
+        """利用可能な検索戦略のリストを取得
+
+        Returns:
+            List[str]: 利用可能な検索戦略名のリスト
+        """
+        # ここに利用可能なすべての戦略名を追加
+        return ["gemini_keyword", "random_keyword", "artist_search", "genre_search", "release_year_search"]
 
 
 class SuggestionsConfig:

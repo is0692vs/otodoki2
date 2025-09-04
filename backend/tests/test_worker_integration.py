@@ -135,9 +135,10 @@ class TestWorkerIntegration:
         
         # 必要なキーが含まれているかチェック
         expected_keys = {
-            "running", "consecutive_failures", "max_failures", 
+            "running", "consecutive_failures", "max_failures",
             "refill_in_progress", "poll_interval_ms", "min_threshold",
-            "batch_size", "max_cap", "search_strategy"
+            "batch_size", "max_cap", "current_search_strategy",
+            "keyword_queue_size", "keyword_refill_threshold", "strategy_failure_info"
         }
         assert set(stats.keys()) == expected_keys
         

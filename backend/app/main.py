@@ -30,6 +30,23 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+# /healthエンドポイントの正常系アクセスログを無効化するフィルタ
+class HealthCheckFilter(logging.Filter):
+    def filter(self, record: logging.LogRecord) -> bool:
+        # uvicorn.accessのログレコードは、record.argsに(host, request_line, status_code)といった情報を持つ
+        if record.name == "uvicorn.access" and record.args and len(record.args) >= 3:
+            request_line = record.args[1]
+            status_code = record.args[2]
+            # /health へのリクエストで、かつステータスコードが2xx（正常系）の場合のみログを抑制
+            if isinstance(request_line, str) and "/health" in request_line and 200 <= status_code < 300:
+                return False
+        return True
+
+# uvicorn.accessロガーにフィルタを追加
+uvicorn_access_logger = logging.getLogger("uvicorn.access")
+uvicorn_access_logger.addFilter(HealthCheckFilter())
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """アプリケーションのライフサイクル管理"""

@@ -34,7 +34,7 @@ class RandomKeywordSearchStrategy(BaseSearchStrategy):
         "City", "Tokyo", "Osaka"
     ]
 
-    def generate_params(self) -> Dict[str, Any]:
+    async def generate_params(self) -> Dict[str, Any]:
         """
         ランダムな検索キーワードを選択してパラメータ辞書を返す
         """

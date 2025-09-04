@@ -6,7 +6,8 @@ iTunes API補充ワーカーモジュール
 import asyncio
 import logging
 import time
-from typing import Optional
+from collections import deque
+from typing import Optional, Deque, Dict, Any, List, Tuple
 
 from ..core.queue import QueueManager
 from ..core.config import WorkerConfig
@@ -36,15 +37,24 @@ class QueueReplenishmentWorker:
 
         # 検索戦略をロード
         try:
-            strategy_name = self.config.get_search_strategy()
-            self.search_strategy: BaseSearchStrategy = get_strategy(
-                strategy_name)
-            logger.info(f"Search strategy loaded: {strategy_name}")
+            # 初期戦略をロード（configで指定された戦略）
+            initial_strategy_name = self.config.get_search_strategy()
+            self.search_strategy: BaseSearchStrategy = get_strategy(initial_strategy_name)
+            logger.info(f"初期検索戦略がロードされました: {initial_strategy_name}")
         except ImportError as e:
             logger.error(
-                f"Failed to load configured strategy '{self.config.get_search_strategy()}': {e}. Falling back to 'random_keyword'.")
-            self.search_strategy: BaseSearchStrategy = get_strategy(
-                "random_keyword")
+                f"設定された戦略 '{self.config.get_search_strategy()}' のロードに失敗しました: {e}。'random_keyword' にフォールバックします。")
+            self.search_strategy: BaseSearchStrategy = get_strategy("random_keyword")
+
+        # 利用可能なすべての戦略をロードし、現在の戦略のインデックスを保持
+        self._available_strategies: List[BaseSearchStrategy] = []
+        self._strategy_index: int = 0
+        self._load_all_strategies()
+
+        # 検索キーワードを保持するキュー
+        self._keyword_queue: Deque[str] = deque()
+        # キーワード補充の閾値
+        self._keyword_refill_threshold: int = 3 # キーワードが3個以下になったら補充
 
         # ワーカー制御
         self._running = False
@@ -56,6 +66,11 @@ class QueueReplenishmentWorker:
         self._max_failures = 5
         self._failure_backoff_multiplier = 2.0
         self._last_failure_time = 0
+        # 戦略ごとの失敗回数と最終失敗時刻
+        self._strategy_failure_info: Dict[str, Dict[str, Any]] = {
+            s_name: {"failures": 0, "last_failure_time": 0}
+            for s_name in self.config.get_available_search_strategies()
+        }
 
         logger.info("Queue replenishment worker initialized")
 
@@ -167,21 +182,50 @@ class QueueReplenishmentWorker:
             max_attempts = 3
 
             while filled < need and attempts < max_attempts:
-                search_params = {}
+                current_keyword: Optional[str] = None
                 try:
-                    # パラメータ生成
-                    search_params = self.search_strategy.generate_params()
+                    # キーワードキューが空の場合、検索戦略から新しいキーワードセットを補充
+                    if not self._keyword_queue:
+                        logger.info("キーワードキューが空です。検索戦略から新しいキーワードを生成します。")
+                        success, generated_params = await self._generate_keywords_with_fallback()
 
-                    # iTunes API検索
-                    raw_tracks = await self.itunes_client.search_tracks(custom_params=search_params, limit=200)
-                    if not raw_tracks:
+                        if success:
+                            if "terms" in generated_params and isinstance(generated_params["terms"], list):
+                                for term in generated_params["terms"]:
+                                    self._keyword_queue.append(term)
+                                logger.info(f"キーワードキューに{len(generated_params['terms'])}個のキーワードを追加しました。")
+                            elif "term" in generated_params and isinstance(generated_params["term"], str):
+                                self._keyword_queue.append(generated_params["term"])
+                                logger.info("キーワードキューに1個のキーワードを追加しました。")
+                            else:
+                                logger.warning(f"検索戦略からの予期しないフォーマットです: {generated_params}")
+                                attempts += 1
+                                continue
+                        else:
+                            logger.warning("キーワードの生成に失敗しました。")
+                            attempts += 1
+                            continue
+
+                    if not self._keyword_queue:
+                        logger.warning("キーワードキューが空のままです。")
                         attempts += 1
                         continue
 
-                    # データ整形
+                    current_keyword = self._keyword_queue.popleft()
+                    logger.info(f"キューからキーワードを使用します: {current_keyword}")
+
+                    raw_tracks = await self.itunes_client.search_tracks(custom_params={"term": current_keyword}, limit=200)
+                    if not raw_tracks:
+                        logger.info(f"キーワード '{current_keyword}' でトラックが見つかりませんでした。短い遅延を追加します。")
+                        await asyncio.sleep(1)
+                        attempts += 1
+                        continue
+
                     cleaned_tracks = self.itunes_client.clean_and_filter_tracks(
                         raw_tracks)
                     if not cleaned_tracks:
+                        logger.info(f"キーワード '{current_keyword}' で有効なトラックが見つかりませんでした。短い遅延を追加します。")
+                        await asyncio.sleep(1)
                         attempts += 1
                         continue
 
@@ -199,7 +243,7 @@ class QueueReplenishmentWorker:
 
                 except Exception as e:
                     logger.warning(
-                        f"Failed to fetch tracks with params {search_params}: {e}")
+                        f"Failed to fetch tracks with keyword {current_keyword}: {e}")
 
                 attempts += 1
 
@@ -249,6 +293,57 @@ class QueueReplenishmentWorker:
 
         await asyncio.sleep(interval_ms / 1000.0)
 
+    async def _generate_keywords_with_fallback(self) -> Tuple[bool, Dict[str, Any]]:
+        """
+        利用可能な戦略を順番に試行し、キーワードを生成する。
+        失敗した戦略は一時的にスキップし、一定時間後に再試行可能にする。
+        """
+        available_strategy_names = self.config.get_available_search_strategies()
+        
+        for _ in range(len(available_strategy_names)): # 全戦略を最大1周試行
+            current_strategy_name = available_strategy_names[self._strategy_index]
+            current_strategy_info = self._strategy_failure_info[current_strategy_name]
+            
+            # 失敗している戦略の場合、バックオフ時間をチェック
+            if current_strategy_info["failures"] > 0:
+                backoff_time = (self._failure_backoff_multiplier **
+                                min(current_strategy_info["failures"], 5)) * 60 # 失敗回数に応じてバックオフ
+                if (time.time() - current_strategy_info["last_failure_time"]) < backoff_time:
+                    logger.info(f"戦略 '{current_strategy_name}' はクールダウン中です。スキップします。")
+                    self._strategy_index = (self._strategy_index + 1) % len(available_strategy_names)
+                    continue
+
+            try:
+                # 現在の戦略をロード
+                current_strategy: BaseSearchStrategy = get_strategy(current_strategy_name)
+                logger.info(f"キーワード生成に戦略 '{current_strategy_name}' を使用します。")
+                generated_params = await current_strategy.generate_params()
+                
+                # 成功した場合、失敗カウンタをリセット
+                self._strategy_failure_info[current_strategy_name]["failures"] = 0
+                return True, generated_params
+            except Exception as e:
+                logger.warning(f"戦略 '{current_strategy_name}' でキーワード生成に失敗しました: {e}")
+                self._strategy_failure_info[current_strategy_name]["failures"] += 1
+                self._strategy_failure_info[current_strategy_name]["last_failure_time"] = time.time()
+                
+                # 次の戦略へ
+                self._strategy_index = (self._strategy_index + 1) % len(available_strategy_names)
+        
+        logger.error("利用可能なすべての戦略でキーワード生成に失敗しました。")
+        return False, {}
+
+    def _load_all_strategies(self):
+        """利用可能なすべての戦略をロードし、初期化する"""
+        self._available_strategies = []
+        for strategy_name in self.config.get_available_search_strategies():
+            try:
+                strategy_instance = get_strategy(strategy_name)
+                self._available_strategies.append(strategy_instance)
+                logger.info(f"利用可能な戦略 '{strategy_name}' をロードしました。")
+            except ImportError as e:
+                logger.warning(f"戦略 '{strategy_name}' のロードに失敗しました: {e}。スキップします。")
+
     @property
     def is_running(self) -> bool:
         """ワーカーの実行状態を取得"""
@@ -257,7 +352,7 @@ class QueueReplenishmentWorker:
     @property
     def stats(self) -> dict:
         """ワーカーの統計情報を取得"""
-        return {
+        stats_data = {
             "running": self._running,
             "consecutive_failures": self._consecutive_failures,
             "max_failures": self._max_failures,
@@ -266,5 +361,9 @@ class QueueReplenishmentWorker:
             "min_threshold": self.config.get_min_threshold(),
             "batch_size": self.config.get_batch_size(),
             "max_cap": self.config.get_max_cap(),
-            "search_strategy": self.config.get_search_strategy(),
+            "current_search_strategy": self.config.get_search_strategy(), # 現在設定されている戦略名
+            "keyword_queue_size": len(self._keyword_queue),
+            "keyword_refill_threshold": self._keyword_refill_threshold,
+            "strategy_failure_info": {k: v for k, v in self._strategy_failure_info.items()} # 失敗情報も統計に含める
         }
+        return stats_data
