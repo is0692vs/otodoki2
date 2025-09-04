@@ -26,7 +26,8 @@ class GeminiKeywordSearchStrategy(BaseSearchStrategy):
         logger.info(f"Gemini APIへのプロンプト: {prompt}")
         response = await model.generate_content_async(prompt)
         raw_keywords = response.text.strip()
-        keywords = [k.strip() for k in raw_keywords.split(',') if k.strip()]
+        # Handle both English and Japanese commas
+        keywords = [k.strip() for k in raw_keywords.replace('、', ',').split(',') if k.strip()]
 
         logger.info(f"Gemini APIからのレスポンス (生成されたキーワード): {raw_keywords}")
         logger.info(f"パースされたキーワードリスト: {keywords}")

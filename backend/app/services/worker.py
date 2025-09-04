@@ -187,17 +187,22 @@ class QueueReplenishmentWorker:
                     # キーワードキューが空の場合、検索戦略から新しいキーワードセットを補充
                     if not self._keyword_queue:
                         logger.info("キーワードキューが空です。検索戦略から新しいキーワードを生成します。")
-                        generated_params = await self.search_strategy.generate_params()
-                        
-                        if "terms" in generated_params and isinstance(generated_params["terms"], list):
-                            for term in generated_params["terms"]:
-                                self._keyword_queue.append(term)
-                            logger.info(f"キーワードキューに{len(generated_params['terms'])}個のキーワードを追加しました。")
-                        elif "term" in generated_params and isinstance(generated_params["term"], str):
-                            self._keyword_queue.append(generated_params["term"])
-                            logger.info("キーワードキューに1個のキーワードを追加しました。")
+                        success, generated_params = await self._generate_keywords_with_fallback()
+
+                        if success:
+                            if "terms" in generated_params and isinstance(generated_params["terms"], list):
+                                for term in generated_params["terms"]:
+                                    self._keyword_queue.append(term)
+                                logger.info(f"キーワードキューに{len(generated_params['terms'])}個のキーワードを追加しました。")
+                            elif "term" in generated_params and isinstance(generated_params["term"], str):
+                                self._keyword_queue.append(generated_params["term"])
+                                logger.info("キーワードキューに1個のキーワードを追加しました。")
+                            else:
+                                logger.warning(f"検索戦略からの予期しないフォーマットです: {generated_params}")
+                                attempts += 1
+                                continue
                         else:
-                            logger.warning(f"検索戦略からの予期しないフォーマットです: {generated_params}")
+                            logger.warning("キーワードの生成に失敗しました。")
                             attempts += 1
                             continue
 
