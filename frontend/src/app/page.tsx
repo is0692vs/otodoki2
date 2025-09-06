@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 import { Container } from "@/components/Container";
 import { SearchBar } from "@/components/SearchBar";
 import { Section } from "@/components/Section";
-import { TrackCard } from "@/components/TrackCard";
+import { PlayableTrackCard } from "@/components/PlayableTrackCard";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import {
@@ -14,7 +14,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { api, type Track } from '@/services';
+import { api, type Track } from "@/services";
 
 // Fallback demo tracks to show when API is unavailable
 const fallbackTracks: Track[] = [
@@ -25,16 +25,17 @@ const fallbackTracks: Track[] = [
     artwork_url: "https://via.placeholder.com/300x300/1f2937/ffffff?text=Queen",
     album: "A Night at the Opera",
     duration_ms: 355000,
-    genre: "Rock"
+    genre: "Rock",
   },
   {
-    id: "demo-2", 
+    id: "demo-2",
     title: "Imagine",
     artist: "John Lennon",
-    artwork_url: "https://via.placeholder.com/300x300/3b82f6/ffffff?text=Imagine",
+    artwork_url:
+      "https://via.placeholder.com/300x300/3b82f6/ffffff?text=Imagine",
     album: "Imagine",
     duration_ms: 183000,
-    genre: "Pop"
+    genre: "Pop",
   },
   {
     id: "demo-3",
@@ -42,21 +43,29 @@ const fallbackTracks: Track[] = [
     artist: "Michael Jackson",
     album: "Thriller",
     duration_ms: 294000,
-    genre: "Pop"
+    genre: "Pop",
   },
   {
     id: "demo-4",
     title: "Hotel California",
-    artist: "Eagles", 
-    artwork_url: "https://via.placeholder.com/300x300/059669/ffffff?text=Eagles",
+    artist: "Eagles",
+    artwork_url:
+      "https://via.placeholder.com/300x300/059669/ffffff?text=Eagles",
     album: "Hotel California",
     duration_ms: 391000,
-    genre: "Rock"
-  }
+    genre: "Rock",
+  },
 ];
 
 const genres = [
-  "ポップ", "ロック", "ジャズ", "クラシック", "R&B", "ヒップホップ", "エレクトロニック", "カントリー"
+  "ポップ",
+  "ロック",
+  "ジャズ",
+  "クラシック",
+  "R&B",
+  "ヒップホップ",
+  "エレクトロニック",
+  "カントリー",
 ];
 
 export default function Home() {
@@ -149,11 +158,7 @@ export default function Home() {
         <Section title="ジャンル">
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
             {genres.map((genre) => (
-              <Button
-                key={genre}
-                variant="outline"
-                className="h-12 text-sm"
-              >
+              <Button key={genre} variant="outline" className="h-12 text-sm">
                 {genre}
               </Button>
             ))}
@@ -161,7 +166,7 @@ export default function Home() {
         </Section>
 
         {/* Featured Music */}
-        <Section title="おすすめの楽曲" showViewAll>
+        <Section title="おすすめの楽曲" viewAllHref="/collection/featured">
           {loadingFeatured ? (
             <div className="text-center py-8">
               <p className="text-muted-foreground">楽曲を読み込み中...</p>
@@ -169,17 +174,14 @@ export default function Home() {
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {featuredTracks.slice(0, 4).map((track) => (
-                <TrackCard
-                  key={track.id}
-                  track={track}
-                />
+                <PlayableTrackCard key={track.id} track={track} />
               ))}
             </div>
           )}
         </Section>
 
         {/* Recent/Trending */}
-        <Section title="最近人気の楽曲" showViewAll>
+        <Section title="最近人気の楽曲" viewAllHref="/collection/trending">
           {loadingRecent ? (
             <div className="text-center py-8">
               <p className="text-muted-foreground">楽曲を読み込み中...</p>
@@ -187,10 +189,7 @@ export default function Home() {
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {recentTracks.slice(0, 4).map((track) => (
-                <TrackCard
-                  key={track.id}
-                  track={track}
-                />
+                <PlayableTrackCard key={track.id} track={track} />
               ))}
             </div>
           )}
@@ -213,9 +212,7 @@ export default function Home() {
         </Card>
         <div className="flex gap-4">
           <Link href="/swipe">
-            <Button size="lg">
-              楽曲スワイプを始める
-            </Button>
+            <Button size="lg">楽曲スワイプを始める</Button>
           </Link>
           <Button variant="secondary" size="lg">
             詳しく見る
