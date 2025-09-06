@@ -36,8 +36,20 @@ jobs:
           cat docker-compose.yml
           echo "-------------------------------------"
 
-      - name: Create dummy .env file
-        run: touch .env
+      - name: Create .env for docker-compose (use GEMINI_API_KEY if available, else fallback)
+        run: |
+          # Always set a safe default search strategy for CI (useful for forks where secrets are not available)
+          echo "OTODOKI_SEARCH_STRATEGY=random_keyword" > .env
+
+          # If repository secret GEMINI_API_KEY is present, append it (this will be empty for forks)
+          if [ -n "${{ secrets.GEMINI_API_KEY }}" ]; then
+            echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" >> .env
+            # Optionally enable the default strategy if you prefer Gemini in CI
+            echo "OTODOKI_SEARCH_STRATEGY=gemini_keyword" >> .env
+          fi
+
+          # (任意) 他の env を必要ならここに追加
+          echo "OTODOKI_COUNTRY=JP" >> .env
 
       - name: Build and start services with docker compose
         run: |
