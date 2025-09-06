@@ -388,18 +388,17 @@ class QueueReplenishmentWorker:
     def stats(self) -> dict:
         """ワーカーの統計情報を取得"""
         stats_data = {
-            "running": self._running,
-            "consecutive_failures": self._consecutive_failures,
-            "max_failures": self._max_failures,
-            "refill_in_progress": self._refill_lock.locked(),
+            "running": getattr(self, "_running", False),
+            "consecutive_failures": getattr(self, "_consecutive_failures", 0),
+            "max_failures": getattr(self, "_max_failures", 0),
+            "refill_in_progress": getattr(self, "_refill_lock", None) and self._refill_lock.locked(),
             "poll_interval_ms": self.config.get_poll_interval_ms(),
             "min_threshold": self.config.get_min_threshold(),
             "batch_size": self.config.get_batch_size(),
             "max_cap": self.config.get_max_cap(),
-            "keyword_queue_size": len(self._keyword_queue),
-            "keyword_refill_threshold": self._keyword_refill_threshold,
-            "keyword_queue_max_size": self._keyword_queue_max_size,
-            # 失敗情報も統計に含める
-            "strategy_failure_info": {k: v for k, v in self._strategy_failure_info.items()}
+            "current_search_strategy": getattr(self, "search_strategy_name", self.config.get_search_strategy()),
+            "keyword_queue_size": len(getattr(self, "_keyword_queue", [])),
+            "keyword_refill_threshold": getattr(self, "_keyword_refill_threshold", 0),
+            "strategy_failure_info": getattr(self, "_strategy_failure_info", {}),
         }
         return stats_data
