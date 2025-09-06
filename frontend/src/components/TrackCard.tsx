@@ -1,9 +1,9 @@
-import React, { useState } from "react";
+import React from "react";
 import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Play, Pause, Volume2, VolumeX, Music } from "lucide-react";
+import { Play, Pause, Music } from "lucide-react";
 
 // Track interface matching backend model
 export interface Track {
@@ -20,14 +20,12 @@ export interface Track {
 export interface TrackCardProps {
   track: Track;
   className?: string;
-  // Audio control props (optional for backward compatibility)
+  // Audio control props
   isPlaying?: boolean;
-  isMuted?: boolean;
   canPlay?: boolean;
   isLoading?: boolean;
   error?: string | null;
   onPlayToggle?: () => void;
-  onMuteToggle?: () => void;
   showAudioControls?: boolean;
 }
 
@@ -35,30 +33,24 @@ export function TrackCard({
   track,
   className,
   isPlaying = false,
-  isMuted = false,
   canPlay = false,
   isLoading = false,
   error = null,
   onPlayToggle,
-  onMuteToggle,
   showAudioControls = false,
 }: TrackCardProps) {
-  const [isHovered, setIsHovered] = useState(false);
-
   const hasPreview = Boolean(track.preview_url);
 
   return (
     <Card
       className={cn(
-        "w-full max-w-sm overflow-hidden hover:shadow-lg transition-shadow",
+        "w-full max-w-sm overflow-hidden hover:shadow-lg transition-shadow group",
         className
       )}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
     >
       <CardContent className="p-0">
         {/* Album Artwork */}
-        <div className="aspect-square relative group">
+        <div className="aspect-square relative">
           {track.artwork_url ? (
             <Image
               src={track.artwork_url}
@@ -75,12 +67,15 @@ export function TrackCard({
           )}
 
           {/* Audio Controls Overlay */}
-          {showAudioControls && hasPreview && (isHovered || isPlaying) && (
-            <div className="absolute inset-0 bg-black/40 flex items-center justify-center gap-2 transition-opacity">
+          {showAudioControls && hasPreview && (
+            <div className="absolute inset-0 bg-black/40 flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
               <Button
                 variant="secondary"
                 size="sm"
-                onClick={onPlayToggle}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onPlayToggle?.();
+                }}
                 disabled={!canPlay && !isPlaying}
                 className="h-12 w-12 rounded-full"
                 aria-label={isPlaying ? "一時停止" : "再生"}
@@ -91,20 +86,6 @@ export function TrackCard({
                   <Pause className="h-4 w-4" />
                 ) : (
                   <Play className="h-4 w-4" />
-                )}
-              </Button>
-
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={onMuteToggle}
-                className="h-10 w-10 rounded-full"
-                aria-label={isMuted ? "ミュート解除" : "ミュート"}
-              >
-                {isMuted ? (
-                  <VolumeX className="h-4 w-4" />
-                ) : (
-                  <Volume2 className="h-4 w-4" />
                 )}
               </Button>
             </div>

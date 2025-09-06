@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AppHeader } from "@/components/AppHeader";
+import { AudioPlayerProvider } from "@/contexts/AudioPlayerContext";
 import { DevTools } from "@/components/DevTools";
 
 const geistSans = Geist({
@@ -33,7 +34,9 @@ export default function RootLayout({
       <body className="min-h-screen bg-background font-sans antialiased">
         <div className="relative flex min-h-screen flex-col">
           <AppHeader />
-          <main className="flex-1">{children}</main>
+          <AudioPlayerProvider>
+            <main className="flex-1">{children}</main>
+          </AudioPlayerProvider>
         </div>
       </body>
     </html>

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Container } from "@/components/Container";
 import { SearchBar } from "@/components/SearchBar";
 import { Section } from "@/components/Section";
-import { TrackCard } from "@/components/TrackCard";
+import { PlayableTrackCard } from "@/components/PlayableTrackCard";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import {
@@ -28,7 +28,7 @@ const fallbackTracks: Track[] = [
     genre: "Rock"
   },
   {
-    id: "demo-2", 
+    id: "demo-2",
     title: "Imagine",
     artist: "John Lennon",
     artwork_url: "https://via.placeholder.com/300x300/3b82f6/ffffff?text=Imagine",
@@ -47,7 +47,7 @@ const fallbackTracks: Track[] = [
   {
     id: "demo-4",
     title: "Hotel California",
-    artist: "Eagles", 
+    artist: "Eagles",
     artwork_url: "https://via.placeholder.com/300x300/059669/ffffff?text=Eagles",
     album: "Hotel California",
     duration_ms: 391000,
@@ -169,7 +169,7 @@ export default function Home() {
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {featuredTracks.slice(0, 4).map((track) => (
-                <TrackCard
+                <PlayableTrackCard
                   key={track.id}
                   track={track}
                 />
@@ -187,7 +187,7 @@ export default function Home() {
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {recentTracks.slice(0, 4).map((track) => (
-                <TrackCard
+                <PlayableTrackCard
                   key={track.id}
                   track={track}
                 />

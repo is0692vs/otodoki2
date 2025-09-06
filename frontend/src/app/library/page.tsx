@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Container } from "@/components/Container";
-import { TrackCard } from "@/components/TrackCard";
+import { PlayableTrackCard } from "@/components/PlayableTrackCard";
 import { Button } from "@/components/ui/button";
 import { Heart, Trash2, RotateCcw } from "lucide-react";
 import Link from "next/link";
@@ -206,7 +206,7 @@ export default function Library() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {likedTracks.map((track, index) => (
               <div key={`${track.id}-${index}`} className="relative group">
-                <TrackCard track={track} className="h-full" />
+                <PlayableTrackCard track={track} className="h-full" />
 
                 {/* Remove button overlay */}
                 <Button
@@ -273,7 +273,7 @@ export default function Library() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {dislikedTracks.map((track, index) => (
                 <div key={`${track.id}-${index}`} className="relative group">
-                  <TrackCard track={track} className="h-full" />
+                  <PlayableTrackCard track={track} className="h-full" />
                   <Button
                     variant="secondary"
                     size="sm"
