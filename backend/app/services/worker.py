@@ -55,6 +55,8 @@ class QueueReplenishmentWorker:
         self._keyword_queue: Deque[str] = deque()
         # キーワード補充の閾値
         self._keyword_refill_threshold: int = 3 # キーワードが3個以下になったら補充
+        # キーワードキューの最大サイズ
+        self._keyword_queue_max_size: int = 20
 
         # ワーカー制御
         self._running = False
@@ -129,11 +131,13 @@ class QueueReplenishmentWorker:
 
                 # キューサイズチェック
                 current_size = self.queue_manager.size()
-                min_threshold = self.config.get_min_threshold()
+                # 補充の閾値をワーカーの最大容量の70%に設定（キュー管理と一致させる）
+                max_cap = self.config.get_max_cap()
+                refill_threshold = int(max_cap * 0.7)
 
-                if current_size < min_threshold:
+                if current_size < refill_threshold:
                     logger.info(
-                        f"Queue size ({current_size}) below threshold ({min_threshold}), attempting refill")
+                        f"Queue size ({current_size}) below threshold ({refill_threshold}), attempting refill")
 
                     async with self._refill_lock:
                         success = await self._attempt_refill()
@@ -144,7 +148,7 @@ class QueueReplenishmentWorker:
                             self._last_failure_time = time.time()
                 else:
                     logger.debug(
-                        f"Queue size ({current_size}) above threshold ({min_threshold}), no refill needed")
+                        f"Queue size ({current_size}) above threshold ({refill_threshold}), no refill needed")
 
                 await self._sleep_interval()
 
@@ -173,7 +177,7 @@ class QueueReplenishmentWorker:
             # 必要な補充数を計算
             need = min(batch_size, max_cap - current_size)
             if need <= 0:
-                logger.info(
+                logger.debug(
                     f"Queue is at capacity ({current_size}/{max_cap}), no refill needed")
                 return True
 
@@ -184,8 +188,9 @@ class QueueReplenishmentWorker:
             while filled < need and attempts < max_attempts:
                 current_keyword: Optional[str] = None
                 try:
-                    # キーワードキューが空の場合、検索戦略から新しいキーワードセットを補充
-                    if not self._keyword_queue:
+                    # キーワードキューが阾値以下の場合、検索戦略から新しいキーワードセットを補充
+                    keyword_threshold = int(self._keyword_queue_max_size * 0.7)
+                    if len(self._keyword_queue) <= keyword_threshold:
                         logger.info("キーワードキューが空です。検索戦略から新しいキーワードを生成します。")
                         success, generated_params = await self._generate_keywords_with_fallback()
 
@@ -246,6 +251,11 @@ class QueueReplenishmentWorker:
                         f"Failed to fetch tracks with keyword {current_keyword}: {e}")
 
                 attempts += 1
+
+                # API連続呼び出しを避けるために2秒待機
+                if filled < need and attempts < max_attempts:
+                    logger.debug("Waiting for 2 seconds before next API call...")
+                    await asyncio.sleep(2)
 
             # 結果ログ
             final_size = self.queue_manager.size()
@@ -323,10 +333,17 @@ class QueueReplenishmentWorker:
                 self._strategy_failure_info[current_strategy_name]["failures"] = 0
                 return True, generated_params
             except Exception as e:
+                error_message = str(e).lower()
                 logger.warning(f"戦略 '{current_strategy_name}' でキーワード生成に失敗しました: {e}")
-                self._strategy_failure_info[current_strategy_name]["failures"] += 1
-                self._strategy_failure_info[current_strategy_name]["last_failure_time"] = time.time()
-                
+                if "429" in error_message or "quota" in error_message:
+                    # クォータエラーの場合、約5分クールダウン
+                    self._strategy_failure_info[current_strategy_name]["failures"] = 2  # ~4分クールダウン
+                    self._strategy_failure_info[current_strategy_name]["last_failure_time"] = time.time()
+                    logger.info(f"クォータエラーが検出されました。戦略 '{current_strategy_name}' を約5分間スキップします。")
+                else:
+                    self._strategy_failure_info[current_strategy_name]["failures"] += 1
+                    self._strategy_failure_info[current_strategy_name]["last_failure_time"] = time.time()
+
                 # 次の戦略へ
                 self._strategy_index = (self._strategy_index + 1) % len(available_strategy_names)
         
@@ -364,6 +381,7 @@ class QueueReplenishmentWorker:
             "current_search_strategy": self.config.get_search_strategy(), # 現在設定されている戦略名
             "keyword_queue_size": len(self._keyword_queue),
             "keyword_refill_threshold": self._keyword_refill_threshold,
+            "keyword_queue_max_size": self._keyword_queue_max_size,
             "strategy_failure_info": {k: v for k, v in self._strategy_failure_info.items()} # 失敗情報も統計に含める
         }
         return stats_data

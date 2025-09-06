@@ -63,6 +63,73 @@ class QueueConfig:
         }
 
 
+class GeminiConfig:
+    """Gemini APIに関する設定値を管理するクラス"""
+
+    @staticmethod
+    def get_api_key() -> str:
+        """Gemini APIキーを取得
+
+        Returns:
+            str: Gemini APIキー
+        """
+        value = os.getenv("GEMINI_API_KEY")
+        if not value:
+            raise ValueError("GEMINI_API_KEY environment variable is not set.")
+        return value
+
+    @staticmethod
+    def get_model_name() -> str:
+        """Geminiモデル名を取得
+
+        Returns:
+            str: モデル名（デフォルト: "gemini-1.5-flash"）
+        """
+        return os.getenv("GEMINI_MODEL_NAME", "gemini-1.5-flash")
+
+    @staticmethod
+    def get_prompt() -> str:
+        """キーワード生成用のプロンプトを取得
+
+        Returns:
+            str: プロンプト文
+        """
+        default_prompt = """多様な音楽検索キーワードを生成してください。具体的なアーティスト名、曲名、ジャンル、年代などのキーワードを含めてください。日本国内の人気音楽を中心に考えてください。
+
+例: 米津玄師, YOASOBI, さくら, J-POP, 2023, ロック, Official髭男dism
+
+カンマ区切りで10個程度のキーワードを生成してください。"""
+        return os.getenv("GEMINI_PROMPT", default_prompt)
+
+    @staticmethod
+    def get_generation_config() -> dict:
+        """Gemini生成設定を取得
+
+        Returns:
+            dict: 生成設定
+        """
+        return {
+            "temperature": float(os.getenv("GEMINI_TEMPERATURE", "0.7")),
+            "top_p": float(os.getenv("GEMINI_TOP_P", "1")),
+            "top_k": int(os.getenv("GEMINI_TOP_K", "40")),
+            "max_output_tokens": int(os.getenv("GEMINI_MAX_TOKENS", "1024")),
+        }
+
+    @staticmethod
+    def get_all_settings() -> dict:
+        """すべての設定値を辞書で取得
+
+        Returns:
+            dict: 設定値の辞書
+        """
+        return {
+            "api_key": GeminiConfig.get_api_key(),
+            "model_name": GeminiConfig.get_model_name(),
+            "prompt": GeminiConfig.get_prompt(),
+            "generation_config": GeminiConfig.get_generation_config(),
+        }
+
+
 class WorkerConfig:
     """iTunes APIワーカーに関する設定値を管理するクラス"""
 
