@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, Query
+from fastapi import FastAPI, Depends, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import time
@@ -30,23 +30,6 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-# /healthエンドポイントの正常系アクセスログを無効化するフィルタ
-class HealthCheckFilter(logging.Filter):
-    def filter(self, record: logging.LogRecord) -> bool:
-        # uvicorn.accessのログレコードは、record.argsに(host, request_line, status_code)といった情報を持つ
-        if record.name == "uvicorn.access" and record.args and len(record.args) >= 3:
-            request_line = record.args[1]
-            status_code = record.args[2]
-            # /health へのリクエストで、かつステータスコードが2xx（正常系）の場合のみログを抑制
-            if isinstance(request_line, str) and "/health" in request_line and 200 <= status_code < 300:
-                return False
-        return True
-
-# uvicorn.accessロガーにフィルタを追加
-uvicorn_access_logger = logging.getLogger("uvicorn.access")
-uvicorn_access_logger.addFilter(HealthCheckFilter())
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """アプリケーションのライフサイクル管理"""
@@ -72,6 +55,20 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan
 )
+
+@app.middleware("http")
+async def logging_middleware(request: Request, call_next):
+    start_time = time.time()
+    response = await call_next(request)
+    process_time = time.time() - start_time
+
+    if request.url.path == "/health" and response.status_code == 200:
+        return response
+
+    logger.info(
+        f'{request.client.host}:{request.client.port} - "{request.method} {request.url.path}" {response.status_code} [{process_time:.2f}s]'
+    )
+    return response
 
 # CORS設定（開発環境用）
 origins = os.getenv("ORIGINS", "http://localhost:3000").split(",")
