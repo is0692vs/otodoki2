@@ -156,8 +156,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Create dummy .env file
-        run: touch .env
+      - name: Create .env for docker-compose (use GEMINI_API_KEY if available, else fallback)
+        run: |
+          # Default to a safe search strategy so API won't crash if GEMINI_API_KEY is missing (e.g. forks)
+          echo "OTODOKI_SEARCH_STRATEGY=random_keyword" > .env
+
+          # If repository secret GEMINI_API_KEY is present, append it and prefer gemini strategy
+          if [ -n "${{ secrets.GEMINI_API_KEY }}" ]; then
+            echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" >> .env
+            echo "OTODOKI_SEARCH_STRATEGY=gemini_keyword" >> .env
+          fi
+
+          # safe defaults used by the app
+          echo "OTODOKI_COUNTRY=JP" >> .env
 
       - name: Build and start services with docker compose
         run: |
