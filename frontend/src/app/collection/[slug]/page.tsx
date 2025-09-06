@@ -9,19 +9,7 @@ import { Button } from '@/components/ui/button';
 import { api, type Track } from '@/services';
 import { getLikedTracks, getDislikedTracks } from '@/lib/storage';
 import { ArrowLeft } from 'lucide-react';
-
-// Helper to convert stored tracks to the common Track type
-function storedTrackToTrack(storedTrack: any): Track {
-  return {
-    id: storedTrack.trackId,
-    title: storedTrack.trackName,
-    artist: storedTrack.artistName,
-    artwork_url: storedTrack.artworkUrl,
-    preview_url: storedTrack.previewUrl,
-    album: storedTrack.collectionName,
-    genre: storedTrack.primaryGenreName,
-  };
-}
+import { storedTrackToTrack, storedDislikedTrackToTrack } from '@/lib/utils';
 
 const collectionTitles: { [key: string]: string } = {
   featured: 'おすすめの楽曲',
@@ -51,7 +39,7 @@ export default function CollectionPage() {
           trackData = stored.map(storedTrackToTrack);
         } else if (slug === 'disliked') {
           const stored = getDislikedTracks();
-          trackData = stored.map(storedTrackToTrack);
+          trackData = stored.map(storedDislikedTrackToTrack);
         } else {
           // For 'featured' and 'trending', fetch from API
           // We can use a larger limit here to get "all" tracks
@@ -64,7 +52,8 @@ export default function CollectionPage() {
             if (slug === 'featured') {
               trackData = allTracks;
             } else if (slug === 'trending') {
-              // To get a different list, we can reverse or take another slice
+              // TODO: This is a placeholder. In the future, implement a separate API endpoint
+              // or logic to provide a distinct list of trending tracks.
               trackData = [...allTracks].reverse();
             }
           }
