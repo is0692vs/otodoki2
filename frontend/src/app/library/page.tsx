@@ -27,7 +27,7 @@ export default function Library() {
   const [likedTracks, setLikedTracks] = useState<Track[]>([]);
   const [dislikedTracks, setDislikedTracks] = useState<Track[]>([]);
   const [loading, setLoading] = useState(true);
-  const TRACK_LIMIT = 10;
+  const TRACK_LIMIT = 12;
 
   const loadTracks = useCallback(() => {
     setLoading(true);
