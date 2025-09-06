@@ -4,6 +4,7 @@
 """
 
 import logging
+import random
 import threading
 import time
 from collections import deque
@@ -147,8 +148,52 @@ class QueueManager:
 
         return result
 
+    def dequeue_random(self, n: Optional[int] = None) -> List[Track]:
+        """キューから指定件数のTrackをランダムに取り出し
+
+        Args:
+            n: 取り出す件数（None時はデフォルト値を使用）
+
+        Returns:
+            List[Track]: 取り出されたTrackのリスト
+        """
+        if n is None:
+            n = QueueConfig.get_dequeue_default_n()
+
+        if n <= 0:
+            return []
+
+        with self._lock:
+            current_size = len(self._queue)
+            actual_count = min(n, current_size)
+
+            if actual_count == 0:
+                return []
+
+            # デキューからリストに変換してランダムサンプリング
+            queue_as_list = list(self._queue)
+            random_samples = random.sample(queue_as_list, actual_count)
+
+            # サンプリングした要素を効率的に削除するためにsetを使用
+            sampled_ids = {item.id for item in random_samples}
+
+            # 新しいデキューを構築
+            self._queue = deque(item for item in self._queue if item.id not in sampled_ids)
+
+            self._dequeue_count += actual_count
+
+        logger.debug(
+            f"Randomly dequeued {actual_count} items (requested: {n}), "
+            f"current size: {len(self._queue)}"
+        )
+
+        # 低水位警告チェック
+        self._check_low_watermark()
+
+        return random_samples
+
     def bulk_dequeue(self, count: int) -> List[Track]:
-        """指定された数の楽曲をキューから一括取得
+        """指定された数の楽曲をキューから一括取得（ランダム）
 
         Args:
             count: 取得したい楽曲数
@@ -156,7 +201,7 @@ class QueueManager:
         Returns:
             List[Track]: 取得された楽曲リスト
         """
-        return self.dequeue(count)
+        return self.dequeue_random(count)
 
     def contains(self, track_id: Union[str, int]) -> bool:
         """指定されたIDの楽曲がキューに含まれているかチェック

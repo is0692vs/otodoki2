@@ -21,7 +21,7 @@ class GeminiKeywordSearchStrategy(BaseSearchStrategy):
         model = genai.GenerativeModel('gemini-1.5-flash-latest')
 
         # 日本語のプロンプト
-        prompt = "音楽検索のためのキーワード(アーティスト名やジャンルなど)を3〜5個提案してください。カンマ区切りで出力し、例: サカナクション,back number,ロック,夏,夢 のようにしてください。"
+        prompt = "音楽検索のためのキーワード(アーティスト名やジャンルなど)を3〜5個提案してください。カンマ区切りで出力し、例: サカナクション,back number,ロック,夏,2010年代 のようにしてください。"
 
         logger.info(f"Gemini APIへのプロンプト: {prompt}")
         response = await model.generate_content_async(prompt)

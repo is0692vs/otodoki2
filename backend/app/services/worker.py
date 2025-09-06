@@ -214,7 +214,7 @@ class QueueReplenishmentWorker:
                     current_keyword = self._keyword_queue.popleft()
                     logger.info(f"キューからキーワードを使用します: {current_keyword}")
 
-                    raw_tracks = await self.itunes_client.search_tracks(custom_params={"term": current_keyword}, limit=200)
+                    raw_tracks = await self.itunes_client.search_tracks(custom_params={"term": current_keyword}, limit=500)
                     if not raw_tracks:
                         logger.info(f"キーワード '{current_keyword}' でトラックが見つかりませんでした。短い遅延を追加します。")
                         await asyncio.sleep(1)
