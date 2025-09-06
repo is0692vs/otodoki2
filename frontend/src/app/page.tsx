@@ -28,7 +28,7 @@ const fallbackTracks: Track[] = [
     genre: "Rock"
   },
   {
-    id: "demo-2", 
+    id: "demo-2",
     title: "Imagine",
     artist: "John Lennon",
     artwork_url: "https://via.placeholder.com/300x300/3b82f6/ffffff?text=Imagine",
@@ -47,7 +47,7 @@ const fallbackTracks: Track[] = [
   {
     id: "demo-4",
     title: "Hotel California",
-    artist: "Eagles", 
+    artist: "Eagles",
     artwork_url: "https://via.placeholder.com/300x300/059669/ffffff?text=Eagles",
     album: "Hotel California",
     duration_ms: 391000,
@@ -161,7 +161,7 @@ export default function Home() {
         </Section>
 
         {/* Featured Music */}
-        <Section title="おすすめの楽曲" showViewAll>
+        <Section title="おすすめの楽曲" viewAllHref="/collection/featured">
           {loadingFeatured ? (
             <div className="text-center py-8">
               <p className="text-muted-foreground">楽曲を読み込み中...</p>
@@ -179,7 +179,7 @@ export default function Home() {
         </Section>
 
         {/* Recent/Trending */}
-        <Section title="最近人気の楽曲" showViewAll>
+        <Section title="最近人気の楽曲" viewAllHref="/collection/trending">
           {loadingRecent ? (
             <div className="text-center py-8">
               <p className="text-muted-foreground">楽曲を読み込み中...</p>

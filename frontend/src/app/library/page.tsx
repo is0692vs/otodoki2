@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Container } from "@/components/Container";
 import { TrackCard } from "@/components/TrackCard";
 import { Button } from "@/components/ui/button";
-import { Heart, Trash2, RotateCcw } from "lucide-react";
+import { Heart, Trash2, RotateCcw, ThumbsDown, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import {
   getLikedTracks,
@@ -15,7 +15,6 @@ import {
   clearDislikedTracks,
 } from "@/lib/storage";
 import { Track } from "@/services/types";
-import { ThumbsDown } from "lucide-react";
 
 // StoredTrack type definition (for liked tracks)
 interface StoredTrack {
@@ -71,6 +70,7 @@ export default function Library() {
   const [likedTracks, setLikedTracks] = useState<Track[]>([]);
   const [dislikedTracks, setDislikedTracks] = useState<Track[]>([]);
   const [loading, setLoading] = useState(true);
+  const TRACK_LIMIT = 10;
 
   const loadLikedTracks = () => {
     setLoading(true); // Assuming loading state is shared for both lists
@@ -155,6 +155,14 @@ export default function Library() {
           </div>
 
           <div className="flex gap-2">
+             {likedTracks.length > TRACK_LIMIT && (
+                <Link href="/collection/liked" passHref>
+                    <Button variant="ghost" className="h-auto p-0 text-sm">
+                    すべて見る
+                    <ChevronRight className="ml-1 h-4 w-4" />
+                    </Button>
+                </Link>
+            )}
             <Button
               variant="outline"
               size="sm"
@@ -204,7 +212,7 @@ export default function Library() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {likedTracks.map((track, index) => (
+            {likedTracks.slice(0, TRACK_LIMIT).map((track, index) => (
               <div key={`${track.id}-${index}`} className="relative group">
                 <TrackCard track={track} className="h-full" />
 
@@ -237,18 +245,27 @@ export default function Library() {
                 </p>
               </div>
             </div>
-
-            {dislikedTracks.length > 0 && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleClearDislikedTracks}
-                className="gap-2 text-destructive hover:bg-destructive/10"
-              >
-                <Trash2 className="h-4 w-4" />
-                すべて削除
-              </Button>
-            )}
+            <div className="flex gap-2">
+                {dislikedTracks.length > TRACK_LIMIT && (
+                    <Link href="/collection/disliked" passHref>
+                        <Button variant="ghost" className="h-auto p-0 text-sm">
+                        すべて見る
+                        <ChevronRight className="ml-1 h-4 w-4" />
+                        </Button>
+                    </Link>
+                )}
+                {dislikedTracks.length > 0 && (
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleClearDislikedTracks}
+                    className="gap-2 text-destructive hover:bg-destructive/10"
+                >
+                    <Trash2 className="h-4 w-4" />
+                    すべて削除
+                </Button>
+                )}
+            </div>
           </div>
 
           {dislikedTracks.length === 0 ? (
@@ -271,7 +288,7 @@ export default function Library() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {dislikedTracks.map((track, index) => (
+              {dislikedTracks.slice(0, TRACK_LIMIT).map((track, index) => (
                 <div key={`${track.id}-${index}`} className="relative group">
                   <TrackCard track={track} className="h-full" />
                   <Button
