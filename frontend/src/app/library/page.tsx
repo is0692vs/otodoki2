@@ -2,8 +2,15 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Container } from "@/components/Container";
+import { PlayableTrackCard } from "@/components/PlayableTrackCard";
 import { Button } from "@/components/ui/button";
-import { Heart, Trash2, RotateCcw, ThumbsDown, ChevronRight } from "lucide-react";
+import {
+  Heart,
+  Trash2,
+  RotateCcw,
+  ThumbsDown,
+  ChevronRight,
+} from "lucide-react";
 import Link from "next/link";
 import {
   getLikedTracks,
@@ -15,13 +22,12 @@ import {
 } from "@/lib/storage";
 import { Track } from "@/services/types";
 import { storedTrackToTrack, storedDislikedTrackToTrack } from "@/lib/utils";
-import { TrackGrid } from "@/components/TrackGrid";
 
 export default function Library() {
   const [likedTracks, setLikedTracks] = useState<Track[]>([]);
   const [dislikedTracks, setDislikedTracks] = useState<Track[]>([]);
   const [loading, setLoading] = useState(true);
-  const TRACK_LIMIT = 10;
+  const TRACK_LIMIT = 12;
 
   const loadTracks = useCallback(() => {
     setLoading(true);
@@ -44,7 +50,11 @@ export default function Library() {
   };
 
   const handleClearAll = () => {
-    if (confirm("すべてのお気に入り楽曲を削除しますか？この操作は元に戻せません。")) {
+    if (
+      confirm(
+        "すべてのお気に入り楽曲を削除しますか？この操作は元に戻せません。"
+      )
+    ) {
       if (clearLikedTracks()) {
         setLikedTracks([]);
         console.log("🗑️ Cleared all liked tracks");
@@ -60,7 +70,9 @@ export default function Library() {
   };
 
   const handleClearDislikedTracks = () => {
-    if (confirm("すべてのスキップ楽曲を削除しますか？この操作は元に戻せません。")) {
+    if (
+      confirm("すべてのスキップ楽曲を削除しますか？この操作は元に戻せません。")
+    ) {
       if (clearDislikedTracks()) {
         setDislikedTracks([]);
         console.log("🗑️ Cleared all disliked tracks");
@@ -76,7 +88,7 @@ export default function Library() {
           <div className="flex items-center gap-3">
             <Heart className="h-8 w-8 text-red-500" />
             <div>
-              <h1 className="text-3xl font-bold">お気に入りライブラリ</h1>
+              <h2 className="text-2xl font-bold">お気に入りライブラリ</h2>
               <p className="text-muted-foreground">
                 {likedTracks.length > 0
                   ? `${likedTracks.length} 曲のお気に入り楽曲`
@@ -93,7 +105,12 @@ export default function Library() {
                 </Button>
               </Link>
             )}
-            <Button variant="outline" size="sm" onClick={loadTracks} className="gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={loadTracks}
+              className="gap-2"
+            >
               <RotateCcw className="h-4 w-4" />
               更新
             </Button>
@@ -119,7 +136,9 @@ export default function Library() {
           <div className="text-center py-16 space-y-4">
             <Heart className="h-16 w-16 text-muted-foreground mx-auto" />
             <div>
-              <h3 className="text-xl font-semibold mb-2">お気に入りはまだありません</h3>
+              <h3 className="text-xl font-semibold mb-2">
+                お気に入りはまだありません
+              </h3>
               <p className="text-muted-foreground mb-4">
                 スワイプページで楽曲を右にスワイプしてお気に入りを追加しましょう
               </p>
@@ -132,22 +151,33 @@ export default function Library() {
             </div>
           </div>
         ) : (
-          <TrackGrid
-            tracks={likedTracks.slice(0, TRACK_LIMIT)}
-            onRemoveTrack={handleRemoveTrack}
-            RemoveIcon={<Trash2 className="h-3 w-3" />}
-            removeButtonLabel="削除"
-            removeButtonVariant="destructive"
-          />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {likedTracks.slice(0, TRACK_LIMIT).map((track, index) => (
+              <div key={`${track.id}-${index}`} className="relative group">
+                <PlayableTrackCard track={track} className="h-full" />
+
+                {/* Remove button overlay */}
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => handleRemoveTrack(track.id)}
+                  className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity gap-1"
+                >
+                  <Trash2 className="h-3 w-3" />
+                  削除
+                </Button>
+              </div>
+            ))}
+          </div>
         )}
 
         {/* Disliked Tracks Section */}
-        <div className="space-y-6 pt-12">
+        <div className="space-y-4 pt-12">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <ThumbsDown className="h-8 w-8 text-gray-500" />
               <div>
-                <h1 className="text-3xl font-bold">スキップした楽曲</h1>
+                <h2 className="text-2xl font-bold">スキップした楽曲</h2>
                 <p className="text-muted-foreground">
                   {dislikedTracks.length > 0
                     ? `${dislikedTracks.length} 曲のスキップ楽曲`
@@ -178,11 +208,17 @@ export default function Library() {
             </div>
           </div>
 
-          {dislikedTracks.length === 0 ? (
+          {loading ? (
+            <div className="text-center py-16">
+              <p className="text-muted-foreground">読み込み中...</p>
+            </div>
+          ) : dislikedTracks.length === 0 ? (
             <div className="text-center py-16 space-y-4">
               <ThumbsDown className="h-16 w-16 text-muted-foreground mx-auto" />
               <div>
-                <h3 className="text-xl font-semibold mb-2">スキップした楽曲はありません</h3>
+                <h3 className="text-xl font-semibold mb-2">
+                  スキップした楽曲はありません
+                </h3>
                 <p className="text-muted-foreground mb-4">
                   スワイプページで楽曲を左にスワイプしてスキップしましょう
                 </p>
@@ -195,13 +231,22 @@ export default function Library() {
               </div>
             </div>
           ) : (
-            <TrackGrid
-              tracks={dislikedTracks.slice(0, TRACK_LIMIT)}
-              onRemoveTrack={handleRemoveDislikedTrack}
-              RemoveIcon={<RotateCcw className="h-3 w-3" />}
-              removeButtonLabel="解除"
-              removeButtonVariant="secondary"
-            />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {dislikedTracks.slice(0, TRACK_LIMIT).map((track, index) => (
+                <div key={`${track.id}-${index}`} className="relative group">
+                  <PlayableTrackCard track={track} className="h-full" />
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => handleRemoveDislikedTrack(track.id)}
+                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity gap-1"
+                  >
+                    <RotateCcw className="h-3 w-3" />
+                    解除
+                  </Button>
+                </div>
+              ))}
+            </div>
           )}
         </div>
 

@@ -80,6 +80,7 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
     audio.preload = "metadata";
     audio.volume = state.isMuted ? 0 : opts.volume || 0.7;
     audio.muted = state.isMuted;
+    audio.loop = true; // Enable looping
 
     // Audio event listeners
     const handleCanPlay = () => {
@@ -104,13 +105,10 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
     };
 
     const handleEnded = () => {
-      if (audioRef.current) {
-        audioRef.current.currentTime = 0;
-        audioRef.current.play();
-      } else {
-        setState((prev) => ({ ...prev, isPlaying: false }));
-        onTrackEndRef.current?.();
-      }
+      // This is still useful for playlist logic (e.g., onTrackEnd) if we add it later.
+      // With audio.loop = true, this event may not fire as expected in all browsers
+      // but the audio will loop.
+      onTrackEndRef.current?.();
     };
 
     const handleError = () => {

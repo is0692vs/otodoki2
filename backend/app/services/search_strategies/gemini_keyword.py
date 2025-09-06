@@ -21,13 +21,14 @@ class GeminiKeywordSearchStrategy(BaseSearchStrategy):
         model = genai.GenerativeModel('gemini-1.5-flash-latest')
 
         # 日本語のプロンプト
-        prompt = "音楽検索のためのキーワードを3〜5個提案してください。カンマ区切りで出力し、例: J-POP,ロック,夏,夢,さくら のようにしてください。"
+        prompt = "音楽検索のためのキーワード(アーティスト名やジャンルなど)を3〜5個提案してください。カンマ区切りで出力し、例: サカナクション,back number,ロック,夏,夢 のようにしてください。"
 
         logger.info(f"Gemini APIへのプロンプト: {prompt}")
         response = await model.generate_content_async(prompt)
         raw_keywords = response.text.strip()
         # Handle both English and Japanese commas
-        keywords = [k.strip() for k in raw_keywords.replace('、', ',').split(',') if k.strip()]
+        keywords = [k.strip() for k in raw_keywords.replace(
+            '、', ',').split(',') if k.strip()]
 
         logger.info(f"Gemini APIからのレスポンス (生成されたキーワード): {raw_keywords}")
         logger.info(f"パースされたキーワードリスト: {keywords}")
