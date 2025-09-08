@@ -52,7 +52,7 @@ class GeminiKeywordSearchStrategy(BaseSearchStrategy):
                 f"Gemini API call rate limit: waiting for {wait_time:.2f} seconds.")
             await asyncio.sleep(wait_time)
 
-        prompt = "多様な音楽検索のためのキーワードをカンマ区切りで10個程度生成してください。具体的なアーティスト名、曲名、ジャンル、年代などのキーワードを含めてください。例: back number,春 ,卒業,J-POP, 2010年代, ロック..."
+        prompt = "多様な音楽検索のためのキーワードをカンマ区切りで10個程度生成してください。具体的なアーティスト名、曲名、ジャンル、年代などのキーワードを含めてください。例: back number,Official髭男dism, 春 ダンス,J-POP, 2010年代, ロック..."
         generation_config = self.config.get_generation_config()
 
         try:
