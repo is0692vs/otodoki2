@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { TrackCard, TrackCardProps } from './TrackCard';
 import { useSharedAudioPlayer } from '@/contexts/AudioPlayerContext';
 import { Track } from '@/services/types';
@@ -18,6 +18,7 @@ export function PlayableTrackCard({ track, className }: PlayableTrackCardProps) 
     error,
     playTrack,
     togglePlay,
+    stop,
   } = useSharedAudioPlayer();
 
   const isThisCardPlaying = nowPlayingTrackId === track.id.toString();
@@ -32,6 +33,15 @@ export function PlayableTrackCard({ track, className }: PlayableTrackCardProps) 
       }
     }
   };
+
+  useEffect(() => {
+    return () => {
+      const isThisCardPlaying = nowPlayingTrackId === track.id.toString();
+      if (isThisCardPlaying) {
+        stop();
+      }
+    };
+  }, [nowPlayingTrackId, track.id, stop]);
 
   return (
     <TrackCard
