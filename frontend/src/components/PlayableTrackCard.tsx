@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { TrackCard, TrackCardProps } from './TrackCard';
 import { useSharedAudioPlayer } from '@/contexts/AudioPlayerContext';
 import { Track } from '@/services/types';
@@ -24,6 +24,11 @@ export function PlayableTrackCard({ track, className }: PlayableTrackCardProps) 
   const isThisCardPlaying = nowPlayingTrackId === track.id.toString();
   const isThisCardLoading = isLoading && nowPlayingTrackId === track.id.toString();
 
+  // Use a ref to track if this card is playing. This avoids stale closures
+  // in the useEffect cleanup function.
+  const isPlayingRef = useRef(isThisCardPlaying);
+  isPlayingRef.current = isThisCardPlaying;
+
   const handlePlayToggle = () => {
     if (isThisCardPlaying) {
       togglePlay();
@@ -35,13 +40,14 @@ export function PlayableTrackCard({ track, className }: PlayableTrackCardProps) 
   };
 
   useEffect(() => {
+    // Return a cleanup function that will be called only on unmount.
     return () => {
-      const isThisCardPlaying = nowPlayingTrackId === track.id.toString();
-      if (isThisCardPlaying) {
+      // If this card was the one playing when it unmounted, stop playback.
+      if (isPlayingRef.current) {
         stop();
       }
     };
-  }, [nowPlayingTrackId, track.id, stop]);
+  }, [stop]); // `stop` is stable, so this effect runs only on mount/unmount.
 
   return (
     <TrackCard
