@@ -14,14 +14,17 @@ import {
   type SuggestionsResponse,
   type SuggestionsStats,
   type ErrorResponse,
-} from './types';
+} from "./types";
 
 export class ApiClient {
   private readonly baseUrl: string;
   private readonly timeout: number;
 
   constructor(config: ApiClientConfig = {}) {
-    this.baseUrl = config.baseUrl || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    this.baseUrl =
+      config.baseUrl ||
+      process.env.NEXT_PUBLIC_API_URL ||
+      "http://localhost:8000";
     this.timeout = config.timeout || 10000; // 10 seconds default timeout
   }
 
@@ -40,7 +43,7 @@ export class ApiClient {
         ...options,
         signal: controller.signal,
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
           ...options.headers,
         },
       });
@@ -72,12 +75,12 @@ export class ApiClient {
       };
     } catch (error) {
       clearTimeout(timeoutId);
-      
+
       if (error instanceof Error) {
-        if (error.name === 'AbortError') {
+        if (error.name === "AbortError") {
           return {
             error: {
-              error: 'Request timeout',
+              error: "Request timeout",
               detail: `Request timed out after ${this.timeout}ms`,
             },
             status: 408,
@@ -86,7 +89,7 @@ export class ApiClient {
 
         return {
           error: {
-            error: 'Network error',
+            error: "Network error",
             detail: error.message,
           },
           status: 0,
@@ -95,8 +98,8 @@ export class ApiClient {
 
       return {
         error: {
-          error: 'Unknown error',
-          detail: 'An unexpected error occurred',
+          error: "Unknown error",
+          detail: "An unexpected error occurred",
         },
         status: 0,
       };
@@ -135,39 +138,81 @@ export class ApiClient {
    * POST /worker/trigger-refill - Trigger worker refill
    */
   async triggerWorkerRefill(): Promise<ApiResponse<WorkerRefillResponse>> {
-    return this.fetchWithTimeout<WorkerRefillResponse>(`${this.baseUrl}/worker/trigger-refill`, {
-      method: 'POST',
-    });
+    return this.fetchWithTimeout<WorkerRefillResponse>(
+      `${this.baseUrl}/worker/trigger-refill`,
+      {
+        method: "POST",
+      }
+    );
   }
 
   /**
    * GET /api/v1/tracks/suggestions - Get track suggestions
    */
-  async getTrackSuggestions(params: {
-    limit?: number;
-    excludeIds?: string;
-  } = {}): Promise<ApiResponse<SuggestionsResponse>> {
+  async getTrackSuggestions(
+    params: {
+      limit?: number;
+      excludeIds?: string;
+    } = {}
+  ): Promise<ApiResponse<SuggestionsResponse>> {
     const searchParams = new URLSearchParams();
-    
+
     if (params.limit !== undefined) {
-      searchParams.append('limit', params.limit.toString());
+      searchParams.append("limit", params.limit.toString());
     }
-    
+
     if (params.excludeIds) {
-      searchParams.append('excludeIds', params.excludeIds);
+      searchParams.append("excludeIds", params.excludeIds);
     }
 
     const queryString = searchParams.toString();
-    const url = `${this.baseUrl}/api/v1/tracks/suggestions${queryString ? `?${queryString}` : ''}`;
-    
+    const url = `${this.baseUrl}/api/v1/tracks/suggestions${
+      queryString ? `?${queryString}` : ""
+    }`;
+
     return this.fetchWithTimeout<SuggestionsResponse>(url);
   }
 
   /**
-   * GET /api/v1/tracks/suggestions/stats - Get suggestions API statistics
+   * POST /api/v1/tracks/{track_id}/like - Like a track
    */
-  async getSuggestionsStats(): Promise<ApiResponse<SuggestionsStats>> {
-    return this.fetchWithTimeout<SuggestionsStats>(`${this.baseUrl}/api/v1/tracks/suggestions/stats`);
+  async likeTrack(
+    trackId: string
+  ): Promise<ApiResponse<{ success: boolean; message: string }>> {
+    return this.fetchWithTimeout<{ success: boolean; message: string }>(
+      `${this.baseUrl}/api/v1/tracks/${trackId}/like`,
+      { method: "POST" }
+    );
+  }
+
+  /**
+   * POST /api/v1/tracks/{track_id}/dislike - Dislike a track
+   */
+  async dislikeTrack(
+    trackId: string
+  ): Promise<ApiResponse<{ success: boolean; message: string }>> {
+    return this.fetchWithTimeout<{ success: boolean; message: string }>(
+      `${this.baseUrl}/api/v1/tracks/${trackId}/dislike`,
+      { method: "POST" }
+    );
+  }
+
+  /**
+   * GET /api/v1/tracks/disliked - Get disliked track IDs
+   */
+  async getDislikedTracks(): Promise<ApiResponse<{ disliked_ids: string[] }>> {
+    return this.fetchWithTimeout<{ disliked_ids: string[] }>(
+      `${this.baseUrl}/api/v1/tracks/disliked`
+    );
+  }
+
+  /**
+   * GET /api/v1/tracks/liked - Get liked tracks
+   */
+  async getLikedTracks(): Promise<ApiResponse<{ tracks: any[] }>> {
+    return this.fetchWithTimeout<{ tracks: any[] }>(
+      `${this.baseUrl}/api/v1/tracks/liked`
+    );
   }
 }
 
@@ -186,8 +231,12 @@ export const api = {
     triggerRefill: () => apiClient.triggerWorkerRefill(),
   },
   tracks: {
-    suggestions: (params?: { limit?: number; excludeIds?: string }) => 
+    suggestions: (params?: { limit?: number; excludeIds?: string }) =>
       apiClient.getTrackSuggestions(params || {}),
     stats: () => apiClient.getSuggestionsStats(),
+    like: (trackId: string) => apiClient.likeTrack(trackId),
+    dislike: (trackId: string) => apiClient.dislikeTrack(trackId),
+    disliked: () => apiClient.getDislikedTracks(),
+    liked: () => apiClient.getLikedTracks(),
   },
 };

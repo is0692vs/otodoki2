@@ -7,11 +7,6 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { api, type Track } from "@/services";
-import {
-  getDislikedTracks,
-  saveDislikedTrack,
-  saveLikedTrack,
-} from "@/lib/storage";
 
 const instructionCard: Track = {
   id: "instruction-card",
@@ -40,19 +35,28 @@ export default function SwipePage() {
     setNoMoreTracks(false);
     setError(null);
     try {
-      const dislikedIds = new Set(getDislikedTracks().map(t => t.trackId));
+      // DBからdislikeした楽曲を取得
+      const dislikedResponse = await api.tracks.disliked();
+      const dislikedIds = new Set(
+        dislikedResponse.data?.disliked_ids?.map((id) => id.toString()) || []
+      );
+
       const response = await api.tracks.suggestions({ limit: 20 });
       if (response.error) throw new Error(response.error.error);
 
       const apiTracks = response.data?.data || [];
       const filteredApiTracks = apiTracks.filter(
-        (track) => !dislikedIds.has(Number(track.id))
+        (track) => !dislikedIds.has(track.id.toString())
       );
 
       console.log(`📱 Loaded ${filteredApiTracks.length} initial tracks.`);
       setTracks([instructionCard, ...filteredApiTracks]);
     } catch (err: unknown) {
-      setError(`Error loading tracks: ${err instanceof Error ? err.message : String(err)}`);
+      setError(
+        `Error loading tracks: ${
+          err instanceof Error ? err.message : String(err)
+        }`
+      );
       setTracks([instructionCard, ...fallbackTracks]);
     } finally {
       setLoading(false);
@@ -65,9 +69,17 @@ export default function SwipePage() {
     setIsFetchingMore(true);
     console.log("[FETCH] Starting to fetch more tracks...");
     try {
-      const dislikedIds = new Set(getDislikedTracks().map(t => t.trackId));
-      const existingIds = new Set(tracks.map(t => t.id).filter(id => !isNaN(Number(id))));
-      const excludeIds = Array.from(new Set([...dislikedIds, ...existingIds])).join(',');
+      // DBからdislikeした楽曲を取得
+      const dislikedResponse = await api.tracks.disliked();
+      const dislikedIds = new Set(
+        dislikedResponse.data?.disliked_ids?.map((id) => id.toString()) || []
+      );
+      const existingIds = new Set(
+        tracks.map((t) => t.id).filter((id) => !isNaN(Number(id)))
+      );
+      const excludeIds = Array.from(
+        new Set([...dislikedIds, ...existingIds])
+      ).join(",");
 
       const response = await api.tracks.suggestions({ limit: 10, excludeIds });
       if (response.error) throw new Error(response.error.error);
@@ -85,7 +97,6 @@ export default function SwipePage() {
 
       console.log(`[FETCH] Fetched ${uniqueNewTracks.length} new tracks.`);
       setTracks((prevTracks) => [...prevTracks, ...uniqueNewTracks]);
-
     } catch (err: unknown) {
       console.error("Error fetching more tracks:", err);
       // Don't set a global error, just log it.
@@ -98,28 +109,35 @@ export default function SwipePage() {
     fetchInitialTracks();
   }, []);
 
-  const handleSwipe = useCallback((direction: "left" | "right", track: Track) => {
-    if (track.id === "instruction-card") {
-      console.log("Instruction card swiped.");
-      setTracks((prev) => prev.filter((t) => t.id !== "instruction-card"));
-      return;
-    }
-    if (typeof track.id === 'string' && track.id.startsWith("swipe-")) {
-      console.log(`[STORAGE] Skipping save for fallback track: ${track.title}`);
-      return;
-    }
-
-    console.log(`[TELEMETRY] Swiped ${direction} on track: ${track.title}`);
-    try {
-      if (direction === "right") {
-        saveLikedTrack(track);
-      } else {
-        saveDislikedTrack(track);
+  const handleSwipe = useCallback(
+    async (direction: "left" | "right", track: Track) => {
+      if (track.id === "instruction-card") {
+        console.log("Instruction card swiped.");
+        setTracks((prev) => prev.filter((t) => t.id !== "instruction-card"));
+        return;
       }
-    } catch (error) {
-      console.warn(`[STORAGE] Failed to save swipe action`, error);
-    }
-  }, []);
+      if (typeof track.id === "string" && track.id.startsWith("swipe-")) {
+        console.log(
+          `[STORAGE] Skipping save for fallback track: ${track.title}`
+        );
+        return;
+      }
+
+      console.log(`[TELEMETRY] Swiped ${direction} on track: ${track.title}`);
+      try {
+        if (direction === "right") {
+          // DBにlikeを保存
+          await api.tracks.like(track.id.toString());
+        } else {
+          // DBにdislikeを保存
+          await api.tracks.dislike(track.id.toString());
+        }
+      } catch (error) {
+        console.warn(`[DB] Failed to save swipe action`, error);
+      }
+    },
+    []
+  );
 
   const handleStackEmpty = () => {
     console.log("All tracks swiped! Resetting...");

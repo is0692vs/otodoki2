@@ -1,7 +1,17 @@
 /**
- * LocalStorage utility for otodoki2web
- * Safely stores and retrieves liked tracks and disliked track IDs
- * with SSR compatibility and error handling
+ * DEPRECATED: LocalStorage utility for otodoki2web
+ *
+ * This file is no longer used as the application has migrated to database storage.
+ * All like/dislike functionality now uses the backend API instead of localStorage.
+ *
+ * This file is kept for reference only and should not be used in new code.
+ * It will be removed in a future version.
+ *
+ * @deprecated Use the backend API endpoints instead:
+ * - POST /api/v1/tracks/{track_id}/like
+ * - POST /api/v1/tracks/{track_id}/dislike
+ * - GET /api/v1/tracks/liked
+ * - GET /api/v1/tracks/disliked
  */
 
 import { Track } from "@/services/types";
@@ -273,7 +283,9 @@ function saveDislikes(data: DislikesStorage): boolean {
 /**
  * Remove expired dislikes from array
  */
-function removeExpiredDislikes(items: StoredDislikedTrack[]): StoredDislikedTrack[] {
+function removeExpiredDislikes(
+  items: StoredDislikedTrack[]
+): StoredDislikedTrack[] {
   const now = new Date();
   return items.filter((item) => {
     const dislikedAt = new Date(item.dislikedAt);
@@ -483,7 +495,9 @@ export function saveDislikedTrack(
 
     const success = saveDislikes(dislikes);
     if (success) {
-      log.info(`Dislikes storage updated, total count: ${dislikes.items.length}`);
+      log.info(
+        `Dislikes storage updated, total count: ${dislikes.items.length}`
+      );
     }
     return success;
   } catch (error) {
@@ -515,7 +529,9 @@ export function getDislikedTracks(): StoredDislikedTrack[] {
     }
 
     // Return newest first
-    return [...validItems].sort((a, b) => b.dislikedAt.localeCompare(a.dislikedAt));
+    return [...validItems].sort((a, b) =>
+      b.dislikedAt.localeCompare(a.dislikedAt)
+    );
   } catch (error) {
     log.error("Failed to get disliked tracks", error);
     return [];
@@ -536,7 +552,9 @@ export function removeDislikedTrack(trackId: string | number): boolean {
     const dislikes = loadDislikes();
     const initialCount = dislikes.items.length;
 
-    dislikes.items = dislikes.items.filter((item) => item.trackId !== normalizedId);
+    dislikes.items = dislikes.items.filter(
+      (item) => item.trackId !== normalizedId
+    );
 
     if (dislikes.items.length < initialCount) {
       const success = saveDislikes(dislikes);

@@ -35,6 +35,26 @@ async def lifespan(app: FastAPI):
     """アプリケーションのライフサイクル管理"""
     # 起動時
     logger.info("Starting otodoki2 API application")
+
+    # DB初期化
+    logger.info("Initializing database...")
+    try:
+        import sys
+        import os
+        # backendディレクトリからの実行を考慮してパスを追加
+        backend_dir = os.path.dirname(
+            os.path.dirname(os.path.abspath(__file__)))
+        if backend_dir not in sys.path:
+            sys.path.insert(0, backend_dir)
+
+        from app.db.connection import get_database_connection
+        db_connection = get_database_connection()
+        db_connection.create_tables()
+        logger.info("✅ Database tables created successfully")
+    except Exception as e:
+        logger.error(f"❌ Failed to initialize database: {e}")
+        raise
+
     initialize_dependencies()
 
     # レート制限器を初期化
@@ -55,6 +75,7 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan
 )
+
 
 @app.middleware("http")
 async def logging_middleware(request: Request, call_next):
@@ -204,3 +225,110 @@ async def get_suggestions_stats():
     return {
         "rate_limit": rate_limit_stats
     }
+
+
+@app.post("/api/v1/tracks/{track_id}/like")
+async def like_track(track_id: str):
+    """楽曲をlikeする"""
+    try:
+        # DB接続を取得
+        from .db.connection import get_session
+        from .db.models import TrackDB
+
+        with get_session() as session:
+            # 楽曲を取得または作成
+            track = session.query(TrackDB).filter(
+                TrackDB.id == track_id).first()
+            if not track:
+                # 新しい楽曲の場合は作成（基本情報は後で更新される想定）
+                track = TrackDB(
+                    id=track_id,
+                    title="Unknown",
+                    artist="Unknown"
+                )
+                session.add(track)
+
+            # like状態を更新
+            track.liked = True
+            track.disliked = False
+            session.commit()
+
+            logger.info(f"Track {track_id} liked")
+            return {"success": True, "message": "Track liked successfully"}
+
+    except Exception as e:
+        logger.error(f"Error liking track {track_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to like track")
+
+
+@app.post("/api/v1/tracks/{track_id}/dislike")
+async def dislike_track(track_id: str):
+    """楽曲をdislikeする"""
+    try:
+        # DB接続を取得
+        from .db.connection import get_session
+        from .db.models import TrackDB
+
+        with get_session() as session:
+            # 楽曲を取得または作成
+            track = session.query(TrackDB).filter(
+                TrackDB.id == track_id).first()
+            if not track:
+                # 新しい楽曲の場合は作成（基本情報は後で更新される想定）
+                track = TrackDB(
+                    id=track_id,
+                    title="Unknown",
+                    artist="Unknown"
+                )
+                session.add(track)
+
+            # dislike状態を更新
+            track.disliked = True
+            track.liked = False
+            session.commit()
+
+            logger.info(f"Track {track_id} disliked")
+            return {"success": True, "message": "Track disliked successfully"}
+
+    except Exception as e:
+        logger.error(f"Error disliking track {track_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to dislike track")
+
+
+@app.get("/api/v1/tracks/disliked")
+async def get_disliked_tracks():
+    """dislikeした楽曲のIDリストを取得"""
+    try:
+        from .db.connection import get_session
+        from .db.models import TrackDB
+
+        with get_session() as session:
+            tracks = session.query(TrackDB).filter(
+                TrackDB.disliked == True).all()
+            disliked_ids = [track.id for track in tracks]
+
+            return {"disliked_ids": disliked_ids}
+
+    except Exception as e:
+        logger.error(f"Error getting disliked tracks: {e}")
+        raise HTTPException(
+            status_code=500, detail="Failed to get disliked tracks")
+
+
+@app.get("/api/v1/tracks/liked")
+async def get_liked_tracks():
+    """likeした楽曲のリストを取得"""
+    try:
+        from .db.connection import get_session
+        from .db.models import TrackDB
+
+        with get_session() as session:
+            tracks = session.query(TrackDB).filter(TrackDB.liked == True).all()
+            liked_tracks = [track.to_pydantic() for track in tracks]
+
+            return {"tracks": liked_tracks}
+
+    except Exception as e:
+        logger.error(f"Error getting liked tracks: {e}")
+        raise HTTPException(
+            status_code=500, detail="Failed to get liked tracks")

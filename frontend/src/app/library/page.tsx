@@ -12,16 +12,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import Link from "next/link";
-import {
-  getLikedTracks,
-  removeLikedTrack,
-  clearLikedTracks,
-  getDislikedTracks,
-  removeDislikedTrack,
-  clearDislikedTracks,
-} from "@/lib/storage";
-import { Track } from "@/services/types";
-import { storedTrackToTrack, storedDislikedTrackToTrack } from "@/lib/utils";
+import { api, type Track } from "@/services";
 
 export default function Library() {
   const [likedTracks, setLikedTracks] = useState<Track[]>([]);
@@ -29,13 +20,36 @@ export default function Library() {
   const [loading, setLoading] = useState(true);
   const TRACK_LIMIT = 12;
 
-  const loadTracks = useCallback(() => {
+  const loadTracks = useCallback(async () => {
     setLoading(true);
-    const storedLiked = getLikedTracks();
-    setLikedTracks(storedLiked.map(storedTrackToTrack));
-    const storedDisliked = getDislikedTracks();
-    setDislikedTracks(storedDisliked.map(storedDislikedTrackToTrack));
-    setLoading(false);
+    try {
+      // DBからliked tracksを取得
+      const likedResponse = await api.tracks.liked();
+      if (likedResponse.data) {
+        setLikedTracks(likedResponse.data.tracks || []);
+      }
+
+      // DBからdisliked tracksを取得
+      const dislikedResponse = await api.tracks.disliked();
+      if (dislikedResponse.data) {
+        // disliked tracksをTrack型に変換
+        const dislikedTracksData =
+          dislikedResponse.data.disliked_ids?.map((id) => ({
+            id: id.toString(),
+            title: "Unknown",
+            artist: "Unknown",
+            artwork_url: "",
+            preview_url: "",
+            liked: false,
+            disliked: true,
+          })) || [];
+        setDislikedTracks(dislikedTracksData);
+      }
+    } catch (error) {
+      console.error("Failed to load tracks from DB:", error);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -43,41 +57,53 @@ export default function Library() {
   }, [loadTracks]);
 
   const handleRemoveTrack = (trackId: string | number) => {
-    if (removeLikedTrack(trackId)) {
-      loadTracks();
-      console.log(`🗑️ Removed track from library: ${trackId}`);
-    }
+    // TODO: DB APIに削除機能が実装されたら有効化
+    console.log(
+      `🗑️ Remove track from library: ${trackId} (DB API not implemented yet)`
+    );
+    // if (removeLikedTrack(trackId)) {
+    //   loadTracks();
+    //   console.log(`🗑️ Removed track from library: ${trackId}`);
+    // }
   };
 
   const handleClearAll = () => {
-    if (
-      confirm(
-        "すべてのお気に入り楽曲を削除しますか？この操作は元に戻せません。"
-      )
-    ) {
-      if (clearLikedTracks()) {
-        setLikedTracks([]);
-        console.log("🗑️ Cleared all liked tracks");
-      }
-    }
+    // TODO: DB APIに削除機能が実装されたら有効化
+    console.log("🗑️ Clear all liked tracks (DB API not implemented yet)");
+    // if (
+    //   confirm(
+    //     "すべてのお気に入り楽曲を削除しますか？この操作は元に戻せません。"
+    //   )
+    // ) {
+    //   if (clearLikedTracks()) {
+    //     setLikedTracks([]);
+    //     console.log("🗑️ Cleared all liked tracks");
+    //   }
+    // }
   };
 
   const handleRemoveDislikedTrack = (trackId: string | number) => {
-    if (removeDislikedTrack(trackId)) {
-      loadTracks();
-      console.log(`🗑️ Removed disliked track from library: ${trackId}`);
-    }
+    // TODO: DB APIに削除機能が実装されたら有効化
+    console.log(
+      `🗑️ Remove disliked track from library: ${trackId} (DB API not implemented yet)`
+    );
+    // if (removeDislikedTrack(trackId)) {
+    //   loadTracks();
+    //   console.log(`🗑️ Removed disliked track from library: ${trackId}`);
+    // }
   };
 
   const handleClearDislikedTracks = () => {
-    if (
-      confirm("すべてのスキップ楽曲を削除しますか？この操作は元に戻せません。")
-    ) {
-      if (clearDislikedTracks()) {
-        setDislikedTracks([]);
-        console.log("🗑️ Cleared all disliked tracks");
-      }
-    }
+    // TODO: DB APIに削除機能が実装されたら有効化
+    console.log("🗑️ Clear all disliked tracks (DB API not implemented yet)");
+    // if (
+    //   confirm("すべてのスキップ楽曲を削除しますか？この操作は元に戻せません。")
+    // ) {
+    //   if (clearDislikedTracks()) {
+    //     setDislikedTracks([]);
+    //     console.log("🗑️ Cleared all disliked tracks");
+    //   }
+    // }
   };
 
   return (
