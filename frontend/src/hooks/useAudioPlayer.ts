@@ -8,6 +8,7 @@ interface AudioPlayerState {
   isLoading: boolean;
   error: string | null;
   canPlay: boolean;
+  playbackRate: number;
 }
 
 interface AudioPlayerActions {
@@ -17,12 +18,14 @@ interface AudioPlayerActions {
   toggleMute: () => void;
   togglePlay: () => void;
   setVolume: (volume: number) => void;
+  setPlaybackRate: (rate: number) => void;
 }
 
 interface UseAudioPlayerOptions {
   autoPlay?: boolean;
   defaultMuted?: boolean;
   volume?: number;
+  playbackRate?: number;
   onTrackEnd?: () => void;
   onPlaybackError?: (error: string) => void;
   preloadNextCount?: number;
@@ -33,6 +36,7 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
     autoPlay = true,
     defaultMuted = false,
     volume = 0.7,
+    playbackRate = 1.0,
     preloadNextCount = 1,
     onTrackEnd,
     onPlaybackError,
@@ -72,6 +76,7 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
     isLoading: false,
     error: null,
     canPlay: false,
+    playbackRate: playbackRate,
   });
 
   // Initialize audio element
@@ -80,6 +85,7 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
     audio.preload = "metadata";
     audio.volume = state.isMuted ? 0 : opts.volume || 0.7;
     audio.muted = state.isMuted;
+    audio.playbackRate = state.playbackRate;
     audio.loop = true; // Enable looping
 
     // Audio event listeners
@@ -297,6 +303,18 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
     [opts]
   );
 
+  const setPlaybackRate = useCallback((rate: number) => {
+    const clampedRate = Math.max(0.5, Math.min(2.0, rate));
+    setState(prev => ({ ...prev, playbackRate: clampedRate }));
+  }, []);
+
+  // Apply playback rate changes
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.playbackRate = state.playbackRate;
+    }
+  }, [state.playbackRate]);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -315,6 +333,7 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
     toggleMute,
     togglePlay,
     setVolume,
+    setPlaybackRate,
   };
 
   return {

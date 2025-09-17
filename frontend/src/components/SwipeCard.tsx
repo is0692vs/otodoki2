@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { type Track } from "@/services";
 import { Play, Pause, Music, Info } from "lucide-react";
+import { SpeedDial } from "./ui/speed-dial";
 
 export interface SwipeCardProps {
   track: Track;
@@ -14,6 +15,8 @@ export interface SwipeCardProps {
   className?: string;
   isTop?: boolean;
   isPlaying?: boolean;
+  playbackRate?: number;
+  onRateChange?: (rate: number) => void;
 }
 
 export function SwipeCard({
@@ -22,6 +25,8 @@ export function SwipeCard({
   className,
   isTop = false,
   isPlaying = false,
+  playbackRate = 1.0,
+  onRateChange,
 }: SwipeCardProps) {
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-200, 200], [-30, 30]);
@@ -171,6 +176,12 @@ export function SwipeCard({
             >
               LIKE
             </motion.div>
+
+            {onRateChange && (
+              <div className="absolute bottom-4 left-4">
+                <SpeedDial currentRate={playbackRate} onRateChange={onRateChange} />
+              </div>
+            )}
 
             {isPlaying && (
               <div className="absolute bottom-4 right-4 bg-black/70 text-white p-2 rounded-full animate-pulse">

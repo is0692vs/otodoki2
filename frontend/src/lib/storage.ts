@@ -20,6 +20,7 @@ const DISLIKE_TTL_SEC = parseInt(
 // Storage keys
 const LIKES_KEY = "otodoki2:likes:v1";
 const DISLIKES_KEY = "otodoki2:dislikes:v1";
+const PLAYBACK_RATE_KEY = "otodoki2:playbackRate:v1";
 
 // Storage schemas
 interface StoredTrack {
@@ -644,4 +645,39 @@ export function migrateStorageIfNeeded(): void {
 // Initialize migration on module load
 if (isBrowser()) {
   migrateStorageIfNeeded();
+}
+
+/**
+ * Saves the playback rate to localStorage.
+ * @param rate The playback rate to save (e.g., 1.0, 1.2).
+ * @returns true if saved successfully.
+ */
+export function savePlaybackRate(rate: number): boolean {
+  if (!isBrowser()) {
+    return false;
+  }
+  // Basic validation for the rate
+  if (typeof rate !== 'number' || rate < 0.5 || rate > 2.0) {
+    log.warn(`Invalid playback rate provided: ${rate}. Must be between 0.5 and 2.0.`);
+    return false;
+  }
+  return storage.set(PLAYBACK_RATE_KEY, rate.toString());
+}
+
+/**
+ * Retrieves the playback rate from localStorage.
+ * @returns The stored playback rate, or 1.0 if not set or invalid.
+ */
+export function getPlaybackRate(): number {
+  if (!isBrowser()) {
+    return 1.0;
+  }
+  const rawRate = storage.get(PLAYBACK_RATE_KEY);
+  if (rawRate) {
+    const rate = parseFloat(rawRate);
+    if (!isNaN(rate) && rate >= 0.5 && rate <= 2.0) {
+      return rate;
+    }
+  }
+  return 1.0; // Default playback rate
 }

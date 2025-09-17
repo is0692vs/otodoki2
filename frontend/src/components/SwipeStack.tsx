@@ -18,6 +18,8 @@ import { useAudioPlayer } from "@/hooks/useAudioPlayer";
 import { useVisibility, usePageVisibility } from "@/hooks/useVisibility";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { REFILL_THRESHOLD } from "@/lib/constants";
+import { getPlaybackRate, savePlaybackRate } from "@/lib/storage";
+import { SpeedDial } from "./ui/speed-dial";
 
 export interface SwipeStackProps {
   tracks: Track[];
@@ -38,6 +40,7 @@ export function SwipeStack({
 }: SwipeStackProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [swipedTracks, setSwipedTracks] = useState<Track[]>([]);
+  const [playbackRate, setPlaybackRate] = useState<number>(() => getPlaybackRate());
 
   const currentTrack = tracks[currentIndex];
   const isInstructionCard = currentTrack?.id === "instruction-card";
@@ -46,6 +49,7 @@ export function SwipeStack({
     autoPlay: !isInstructionCard,
     defaultMuted: false,
     volume: 0.7,
+    playbackRate: playbackRate,
     onTrackEnd: useCallback(() => {
       // Note: We can't easily reference audioPlayerHook here before it's initialized.
       // This logic is now handled by the playTrack effect.
@@ -71,7 +75,14 @@ export function SwipeStack({
     isLoading,
     error: audioError,
     nowPlayingTrackId,
+    setPlaybackRate: setAudioPlaybackRate,
   } = audioPlayer;
+
+  const handleRateChange = useCallback((rate: number) => {
+    setPlaybackRate(rate);
+    setAudioPlaybackRate(rate);
+    savePlaybackRate(rate);
+  }, [setAudioPlaybackRate]);
 
 
   const { ref: stackRef, isVisible: isStackVisible } = useVisibility({
@@ -204,6 +215,8 @@ export function SwipeStack({
               isTop={track.id === currentTrack.id}
               onSwipe={handleSwipe}
               isPlaying={isPlaying && nowPlayingTrackId === track.id.toString() && track.id === currentTrack.id}
+              playbackRate={playbackRate}
+              onRateChange={handleRateChange}
             />
           )).reverse()}
         </AnimatePresence>
