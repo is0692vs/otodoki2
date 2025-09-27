@@ -56,6 +56,7 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+
 @app.middleware("http")
 async def logging_middleware(request: Request, call_next):
     start_time = time.time()

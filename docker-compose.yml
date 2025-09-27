@@ -1,4 +1,16 @@
 services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-otodoki2}
+      POSTGRES_USER: ${DB_USER:-user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
   api:
     build:
       context: ./backend
@@ -17,6 +29,9 @@ services:
       start_period: 60s
     volumes:
       - ./backend/app:/app/app
+    depends_on:
+      db:
+        condition: service_started
 
   web:
     build:
@@ -34,3 +49,6 @@ services:
     depends_on:
       api:
         condition: service_healthy
+
+volumes:
+  db_data:
