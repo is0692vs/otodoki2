@@ -137,7 +137,7 @@ export function PlaybackSpeedDial({
 
   const highlightStyle = useMemo<CSSProperties | undefined>(() => {
     if (positions.length <= 1) return undefined;
-    const start = pointerAngle - ANGLE_STEP / 2 - 90;
+    const start = pointerAngle - ANGLE_STEP / 2;
     const maskGradient =
       "radial-gradient(circle, transparent 58%, black 62%, black 80%, transparent 84%)";
 

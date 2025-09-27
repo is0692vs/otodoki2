@@ -159,8 +159,7 @@ export function SwipeStack({
     return `${normalized.toFixed(2).replace(/0+$/, "").replace(/\.$/, "")}x`;
   }, [playbackRate]);
 
-  const isPlayDisabled =
-    isInstructionCard || (!canPlay && !isPlaying);
+  const isPlayDisabled = isInstructionCard || (!canPlay && !isPlaying);
 
   const onExitComplete = () => {
     // This is called after the card disappears.
@@ -198,13 +197,13 @@ export function SwipeStack({
 
   return (
     <div className={className}>
-      <div className="flex justify-center gap-2 mb-4">
+      <div className="mb-6 flex w-full max-w-sm flex-wrap items-center justify-center gap-2 sm:mb-4">
         <Button
           variant="outline"
           size="sm"
           onClick={togglePlay}
           disabled={isPlayDisabled}
-          className="gap-2"
+          className="gap-2 min-w-[68px]"
         >
           {isPlaying ? <Pause /> : <Play />}
         </Button>
@@ -212,7 +211,7 @@ export function SwipeStack({
           variant="outline"
           size="sm"
           onClick={toggleMute}
-          className="gap-2"
+          className="gap-2 min-w-[68px]"
         >
           {isMuted ? <VolumeX /> : <Volume2 />}
         </Button>
@@ -220,7 +219,7 @@ export function SwipeStack({
           variant="outline"
           size="sm"
           onClick={() => setIsSpeedDialOpen(true)}
-          className="gap-1 px-3"
+          className="gap-1 px-3 min-w-[68px]"
         >
           <span className="text-sm font-medium">{playbackRateLabel}</span>
         </Button>
