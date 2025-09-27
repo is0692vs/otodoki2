@@ -15,10 +15,15 @@ import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
 import clsx from "clsx";
 
-const DEFAULT_SPEEDS = [1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 3];
-const ANGLE_RANGE = 240;
-const MIN_ANGLE = -ANGLE_RANGE / 2;
-const MAX_ANGLE = ANGLE_RANGE / 2;
+const DEFAULT_SPEEDS = [1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3];
+
+const ANGLE_STEP = 30;
+const MIN_ANGLE = -120;
+const MAX_ANGLE = 120;
+const ANGLE_TOLERANCE = 15;
+const DRAG_MIN_ANGLE = MIN_ANGLE - ANGLE_TOLERANCE;
+const DRAG_MAX_ANGLE = MAX_ANGLE + ANGLE_TOLERANCE;
+const MIN_INTERACTION_RADIUS = 56; // px
 
 interface PlaybackSpeedDialProps {
   open: boolean;
@@ -29,7 +34,9 @@ interface PlaybackSpeedDialProps {
 }
 
 function formatRate(rate: number): string {
-  return Number.isInteger(rate) ? `${rate.toFixed(0)}x` : `${rate.toFixed(1)}x`;
+  const normalized = Math.round(rate * 100) / 100;
+  const display = parseFloat(normalized.toFixed(2)).toString();
+  return `${display}x`;
 }
 
 export function PlaybackSpeedDial({
@@ -42,37 +49,18 @@ export function PlaybackSpeedDial({
   const dialRef = useRef<HTMLDivElement | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
-  const step = useMemo(() => {
-    return speeds.length > 1 ? ANGLE_RANGE / (speeds.length - 1) : 0;
-  }, [speeds]);
-
-  const angleForIndex = useCallback(
-    (index: number) => MIN_ANGLE + step * index,
-    [step]
+  const positions = useMemo(
+    () =>
+      speeds.map((speed, index) => ({
+        speed,
+        angle: MIN_ANGLE + ANGLE_STEP * index,
+      })),
+    [speeds]
   );
 
-  const clampAngle = useCallback((angle: number) => {
-    return Math.max(MIN_ANGLE, Math.min(MAX_ANGLE, angle));
-  }, []);
-
-  const getClosestIndexByAngle = useCallback(
-    (angle: number) => {
-      if (speeds.length === 0) return 0;
-      let closestIndex = 0;
-      let smallestDiff = Number.POSITIVE_INFINITY;
-
-      speeds.forEach((_, index) => {
-        const targetAngle = angleForIndex(index);
-        const diff = Math.abs(targetAngle - angle);
-        if (diff < smallestDiff) {
-          smallestDiff = diff;
-          closestIndex = index;
-        }
-      });
-
-      return closestIndex;
-    },
-    [angleForIndex, speeds]
+  const angleForIndex = useCallback(
+    (index: number) => positions[index]?.angle ?? 0,
+    [positions]
   );
 
   const getClosestIndex = useCallback(
@@ -94,6 +82,30 @@ export function PlaybackSpeedDial({
     [speeds]
   );
 
+  const getClosestIndexByAngle = useCallback(
+    (angle: number) => {
+      if (positions.length === 0) return null;
+
+      let closestIndex: number | null = null;
+      let smallestDiff = Number.POSITIVE_INFINITY;
+
+      positions.forEach(({ angle: targetAngle }, index) => {
+        const diff = Math.abs(targetAngle - angle);
+        if (diff < smallestDiff) {
+          smallestDiff = diff;
+          closestIndex = index;
+        }
+      });
+
+      if (closestIndex !== null && smallestDiff <= ANGLE_TOLERANCE) {
+        return closestIndex;
+      }
+
+      return null;
+    },
+    [positions]
+  );
+
   const selectedIndex = useMemo(
     () => getClosestIndex(value),
     [getClosestIndex, value]
@@ -112,34 +124,50 @@ export function PlaybackSpeedDial({
     [isDragging, pointerAngle]
   );
 
+  const disabledArcStyle = useMemo<CSSProperties>(
+    () => ({
+      background:
+        "conic-gradient(from -135deg, transparent 0deg 270deg, hsl(var(--muted-foreground) / 0.25) 270deg 360deg)",
+      WebkitMask:
+        "radial-gradient(circle, transparent 54%, black 58%, black 80%, transparent 84%)",
+      mask: "radial-gradient(circle, transparent 54%, black 58%, black 80%, transparent 84%)",
+    }),
+    []
+  );
+
   const highlightStyle = useMemo<CSSProperties | undefined>(() => {
-    if (speeds.length <= 1 || step === 0) return undefined;
-    const sweep = Math.max(step, 12);
-    const start = pointerAngle - sweep / 2 + 90;
+    if (positions.length <= 1) return undefined;
+    const start = pointerAngle - ANGLE_STEP / 2 + 90;
     const maskGradient =
-      "radial-gradient(circle, transparent 58%, black 59%, black 78%, transparent 79%)";
+      "radial-gradient(circle, transparent 58%, black 62%, black 80%, transparent 84%)";
 
     return {
-      background: `conic-gradient(from ${start}deg, hsl(var(--primary) / 0.25) 0deg ${sweep}deg, transparent ${sweep}deg 360deg)`,
+      background: `conic-gradient(from ${start}deg, hsl(var(--primary) / 0.35) 0deg ${ANGLE_STEP}deg, transparent ${ANGLE_STEP}deg 360deg)`,
       WebkitMask: maskGradient,
       mask: maskGradient,
       transition: isDragging
         ? "none"
         : "background 0.18s ease-out, transform 0.18s ease-out",
     } satisfies CSSProperties;
-  }, [isDragging, pointerAngle, speeds.length, step]);
+  }, [isDragging, pointerAngle, positions.length]);
 
   const selectByAngle = useCallback(
     (angle: number) => {
-      if (speeds.length === 0) return;
-      const clamped = clampAngle(angle);
-      const index = getClosestIndexByAngle(clamped);
-      const next = speeds[index];
+      if (positions.length === 0) return;
+      if (angle < DRAG_MIN_ANGLE || angle > DRAG_MAX_ANGLE) {
+        return;
+      }
+
+      const constrained = Math.min(MAX_ANGLE, Math.max(MIN_ANGLE, angle));
+      const index = getClosestIndexByAngle(constrained);
+      if (index === null) return;
+
+      const next = positions[index]?.speed;
       if (typeof next === "number") {
         onValueChange(next);
       }
     },
-    [clampAngle, getClosestIndexByAngle, onValueChange, speeds]
+    [getClosestIndexByAngle, onValueChange, positions]
   );
 
   const updateFromPointer = useCallback(
@@ -151,8 +179,14 @@ export function PlaybackSpeedDial({
       const centerX = rect.left + rect.width / 2;
       const centerY = rect.top + rect.height / 2;
       const deltaX = clientX - centerX;
-      const deltaY = centerY - clientY;
-      const angleRadians = Math.atan2(deltaY, deltaX);
+      const deltaY = clientY - centerY;
+      const radius = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+      if (radius < MIN_INTERACTION_RADIUS) {
+        return;
+      }
+
+      const angleRadians = Math.atan2(deltaX, -deltaY);
       const angleDegrees = (angleRadians * 180) / Math.PI;
 
       selectByAngle(angleDegrees);
@@ -232,7 +266,7 @@ export function PlaybackSpeedDial({
 
   const handleWheel = useCallback(
     (event: ReactWheelEvent<HTMLDivElement>) => {
-      if (speeds.length === 0) return;
+      if (positions.length === 0) return;
       const dominantDelta =
         Math.abs(event.deltaX) > Math.abs(event.deltaY)
           ? event.deltaX
@@ -243,15 +277,15 @@ export function PlaybackSpeedDial({
       event.preventDefault();
       const direction = dominantDelta > 0 ? 1 : -1;
       const nextIndex = Math.min(
-        speeds.length - 1,
+        positions.length - 1,
         Math.max(0, selectedIndex + direction)
       );
-      const next = speeds[nextIndex];
+      const next = positions[nextIndex]?.speed;
       if (typeof next === "number" && next !== value) {
         onValueChange(next);
       }
     },
-    [onValueChange, selectedIndex, speeds, value]
+    [onValueChange, positions, selectedIndex, value]
   );
 
   return (
@@ -308,6 +342,11 @@ export function PlaybackSpeedDial({
                 </div>
               </div>
 
+              <div
+                className="pointer-events-none absolute inset-3 rounded-full"
+                style={disabledArcStyle}
+              />
+
               {highlightStyle ? (
                 <div
                   className="pointer-events-none absolute inset-3 rounded-full"
@@ -323,13 +362,12 @@ export function PlaybackSpeedDial({
                 <div className="mt-2 h-3 w-3 rounded-full bg-primary shadow" />
               </div>
 
-              {speeds.map((speed, index) => {
-                const angle = angleForIndex(index);
+              {positions.map(({ speed, angle }, index) => {
                 const isSelected = index === selectedIndex;
                 return (
                   <div
                     key={speed}
-                    className="pointer-events-none absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2"
+                    className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2"
                     style={{
                       transform: `rotate(${angle}deg) translateY(-120px) rotate(${-angle}deg)`,
                       transition: isDragging
@@ -337,12 +375,14 @@ export function PlaybackSpeedDial({
                         : "transform 0.18s ease-out",
                     }}
                   >
-                    <span
+                    <button
+                      type="button"
+                      onClick={() => onValueChange(speed)}
                       className={clsx(
-                        "select-none rounded-full px-3 py-1 text-sm font-medium transition",
+                        "rounded-full px-3 py-1 text-sm font-medium transition",
                         isSelected
                           ? "bg-primary text-primary-foreground shadow-lg"
-                          : "bg-background/70 text-muted-foreground"
+                          : "bg-background/70 text-muted-foreground hover:bg-muted"
                       )}
                       style={{
                         transform: isSelected ? "scale(1.05)" : "scale(1)",
@@ -352,7 +392,7 @@ export function PlaybackSpeedDial({
                       }}
                     >
                       {formatRate(speed)}
-                    </span>
+                    </button>
                   </div>
                 );
               })}
