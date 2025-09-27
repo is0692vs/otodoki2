@@ -1,5 +1,10 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Track } from "@/services/types";
+import {
+  getPlaybackRateSetting,
+  normalizePlaybackRate,
+  savePlaybackRateSetting,
+} from "@/lib/storage";
 
 interface AudioPlayerState {
   nowPlayingTrackId: string | null;
@@ -8,6 +13,7 @@ interface AudioPlayerState {
   isLoading: boolean;
   error: string | null;
   canPlay: boolean;
+  playbackRate: number;
 }
 
 interface AudioPlayerActions {
@@ -17,6 +23,7 @@ interface AudioPlayerActions {
   toggleMute: () => void;
   togglePlay: () => void;
   setVolume: (volume: number) => void;
+  setPlaybackRate: (rate: number) => void;
 }
 
 interface UseAudioPlayerOptions {
@@ -55,16 +62,12 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
       volume,
       preloadNextCount,
     }),
-    [
-      autoPlay,
-      defaultMuted,
-      volume,
-      preloadNextCount,
-    ]
+    [autoPlay, defaultMuted, volume, preloadNextCount]
   );
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const preloadAudioRef = useRef<HTMLAudioElement | null>(null);
+  const playbackRateRef = useRef<number>(1);
   const [state, setState] = useState<AudioPlayerState>({
     nowPlayingTrackId: null,
     isMuted: opts.defaultMuted || false,
@@ -72,15 +75,36 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
     isLoading: false,
     error: null,
     canPlay: false,
+    playbackRate: 1,
   });
+
+  useEffect(() => {
+    const savedRate = getPlaybackRateSetting();
+    playbackRateRef.current = savedRate;
+    setState((prev) => {
+      if (prev.playbackRate === savedRate) {
+        return prev;
+      }
+      return {
+        ...prev,
+        playbackRate: savedRate,
+      };
+    });
+  }, []);
+
+  useEffect(() => {
+    playbackRateRef.current = state.playbackRate;
+  }, [state.playbackRate]);
 
   // Initialize audio element
   useEffect(() => {
     const audio = new Audio();
     audio.preload = "metadata";
-    audio.volume = state.isMuted ? 0 : opts.volume || 0.7;
-    audio.muted = state.isMuted;
+    const initialMuted = opts.defaultMuted || false;
+    audio.volume = initialMuted ? 0 : opts.volume || 0.7;
+    audio.muted = initialMuted;
     audio.loop = true; // Enable looping
+    audio.playbackRate = playbackRateRef.current;
 
     // Audio event listeners
     const handleCanPlay = () => {
@@ -160,6 +184,15 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
     }
   }, [state.isMuted, opts.volume]);
 
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.playbackRate = state.playbackRate;
+    }
+    if (preloadAudioRef.current) {
+      preloadAudioRef.current.playbackRate = state.playbackRate;
+    }
+  }, [state.playbackRate]);
+
   const playTrack = useCallback(
     async (track: Track): Promise<void> => {
       const audio = audioRef.current;
@@ -187,6 +220,7 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
         // Change source
         audio.src = track.preview_url;
         audio.load();
+        audio.playbackRate = playbackRateRef.current;
 
         // Try to play
         if (opts.autoPlay) {
@@ -272,6 +306,26 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
     [state.isMuted]
   );
 
+  const setPlaybackRate = useCallback((rate: number) => {
+    const normalized = normalizePlaybackRate(rate);
+    setState((prev) => {
+      if (prev.playbackRate === normalized) {
+        return prev;
+      }
+      return {
+        ...prev,
+        playbackRate: normalized,
+      };
+    });
+    if (audioRef.current) {
+      audioRef.current.playbackRate = normalized;
+    }
+    if (preloadAudioRef.current) {
+      preloadAudioRef.current.playbackRate = normalized;
+    }
+    savePlaybackRateSetting(normalized);
+  }, []);
+
   // Preload next track
   const preloadTrack = useCallback(
     (track: Track) => {
@@ -282,9 +336,13 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
         if (!preloadAudioRef.current) {
           preloadAudioRef.current = new Audio();
           preloadAudioRef.current.preload = "metadata";
+          preloadAudioRef.current.playbackRate = playbackRateRef.current;
         }
 
         const preloadAudio = preloadAudioRef.current;
+        if (preloadAudio.playbackRate !== playbackRateRef.current) {
+          preloadAudio.playbackRate = playbackRateRef.current;
+        }
         if (preloadAudio.src !== track.preview_url) {
           preloadAudio.src = track.preview_url;
           preloadAudio.load();
@@ -315,6 +373,7 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
     toggleMute,
     togglePlay,
     setVolume,
+    setPlaybackRate,
   };
 
   return {

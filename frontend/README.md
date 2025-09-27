@@ -7,6 +7,7 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 ## 主要機能
 
 - **スワイプ式楽曲推薦** (`/swipe`) - Tinder 風のインターフェースで楽曲を評価
+  - Spotify ポッドキャスト風のダイヤル UI でプレビュー再生の倍速を保持しながら調整
 - **楽曲ライブラリ** (`/library`) - 楽曲一覧の表示
 - **API デモ** (`/api-demo`) - バックエンド API の動作確認
 

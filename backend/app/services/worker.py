@@ -340,8 +340,12 @@ class QueueReplenishmentWorker:
                 logger.info(f"キーワード生成に戦略 '{current_strategy_name}' を使用します。")
                 generated_params = await current_strategy.generate_params()
 
+                if not self._validate_generated_params(generated_params):
+                    raise ValueError(
+                        f"戦略 '{current_strategy_name}' が有効なキーワードを生成できませんでした。")
+
                 # 成功した場合、失敗カウンタをリセット
-                self._strategy_failure_info[current_strategy_name]["failures"] = 0
+                current_strategy_info["failures"] = 0
                 return True, generated_params
             except Exception as e:
                 error_message = str(e).lower()
@@ -350,15 +354,15 @@ class QueueReplenishmentWorker:
                 if "429" in error_message or "quota" in error_message:
                     # クォータエラーの場合、約5分クールダウン
                     # ~4分クールダウン
-                    self._strategy_failure_info[current_strategy_name]["failures"] = 2
-                    self._strategy_failure_info[current_strategy_name]["last_failure_time"] = time.time(
-                    )
+                    current_strategy_info["failures"] = 2
+                    current_strategy_info["last_failure_time"] = time.time()
                     logger.info(
-                        f"クォータエラーが検出されました。戦略 '{current_strategy_name}' を約5分間スキップします。")
-                else:
-                    self._strategy_failure_info[current_strategy_name]["failures"] += 1
-                    self._strategy_failure_info[current_strategy_name]["last_failure_time"] = time.time(
+                        "クォータエラーが検出されました。戦略 '%s' を約5分間スキップします。",
+                        current_strategy_name,
                     )
+                else:
+                    current_strategy_info["failures"] += 1
+                    current_strategy_info["last_failure_time"] = time.time()
 
                 # 次の戦略へ
                 self._strategy_index = (
@@ -379,6 +383,37 @@ class QueueReplenishmentWorker:
                 logger.warning(
                     f"戦略 '{strategy_name}' のロードに失敗しました: {e}。スキップします。")
 
+    @staticmethod
+    def _validate_generated_params(params: Dict[str, Any]) -> bool:
+        """生成されたパラメータが有効かを検証する"""
+        if not params:
+            return False
+
+        if "terms" in params:
+            terms = params.get("terms")
+            if not isinstance(terms, list):
+                return False
+
+            normalized_terms = [
+                term.strip()
+                for term in terms
+                if isinstance(term, str) and term.strip()
+            ]
+            if not normalized_terms:
+                return False
+
+            params["terms"] = normalized_terms
+            return True
+
+        if "term" in params:
+            term = params.get("term")
+            if isinstance(term, str) and term.strip():
+                params["term"] = term.strip()
+                return True
+            return False
+
+        return False
+
     @property
     def is_running(self) -> bool:
         """ワーカーの実行状態を取得"""
@@ -391,14 +426,29 @@ class QueueReplenishmentWorker:
             "running": getattr(self, "_running", False),
             "consecutive_failures": getattr(self, "_consecutive_failures", 0),
             "max_failures": getattr(self, "_max_failures", 0),
-            "refill_in_progress": getattr(self, "_refill_lock", None) and self._refill_lock.locked(),
+            "refill_in_progress": (
+                getattr(self, "_refill_lock", None)
+                and self._refill_lock.locked()
+            ),
             "poll_interval_ms": self.config.get_poll_interval_ms(),
             "min_threshold": self.config.get_min_threshold(),
             "batch_size": self.config.get_batch_size(),
             "max_cap": self.config.get_max_cap(),
-            "current_search_strategy": getattr(self, "search_strategy_name", self.config.get_search_strategy()),
+            "current_search_strategy": getattr(
+                self,
+                "search_strategy_name",
+                self.config.get_search_strategy(),
+            ),
             "keyword_queue_size": len(getattr(self, "_keyword_queue", [])),
-            "keyword_refill_threshold": getattr(self, "_keyword_refill_threshold", 0),
-            "strategy_failure_info": getattr(self, "_strategy_failure_info", {}),
+            "keyword_refill_threshold": getattr(
+                self,
+                "_keyword_refill_threshold",
+                0,
+            ),
+            "strategy_failure_info": getattr(
+                self,
+                "_strategy_failure_info",
+                {},
+            ),
         }
         return stats_data

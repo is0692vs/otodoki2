@@ -40,7 +40,7 @@ export default function SwipePage() {
     setNoMoreTracks(false);
     setError(null);
     try {
-      const dislikedIds = new Set(getDislikedTracks().map(t => t.trackId));
+      const dislikedIds = new Set(getDislikedTracks().map((t) => t.trackId));
       const response = await api.tracks.suggestions({ limit: 20 });
       if (response.error) throw new Error(response.error.error);
 
@@ -52,7 +52,11 @@ export default function SwipePage() {
       console.log(`📱 Loaded ${filteredApiTracks.length} initial tracks.`);
       setTracks([instructionCard, ...filteredApiTracks]);
     } catch (err: unknown) {
-      setError(`Error loading tracks: ${err instanceof Error ? err.message : String(err)}`);
+      setError(
+        `Error loading tracks: ${
+          err instanceof Error ? err.message : String(err)
+        }`
+      );
       setTracks([instructionCard, ...fallbackTracks]);
     } finally {
       setLoading(false);
@@ -65,9 +69,13 @@ export default function SwipePage() {
     setIsFetchingMore(true);
     console.log("[FETCH] Starting to fetch more tracks...");
     try {
-      const dislikedIds = new Set(getDislikedTracks().map(t => t.trackId));
-      const existingIds = new Set(tracks.map(t => t.id).filter(id => !isNaN(Number(id))));
-      const excludeIds = Array.from(new Set([...dislikedIds, ...existingIds])).join(',');
+      const dislikedIds = new Set(getDislikedTracks().map((t) => t.trackId));
+      const existingIds = new Set(
+        tracks.map((t) => t.id).filter((id) => !isNaN(Number(id)))
+      );
+      const excludeIds = Array.from(
+        new Set([...dislikedIds, ...existingIds])
+      ).join(",");
 
       const response = await api.tracks.suggestions({ limit: 10, excludeIds });
       if (response.error) throw new Error(response.error.error);
@@ -85,7 +93,6 @@ export default function SwipePage() {
 
       console.log(`[FETCH] Fetched ${uniqueNewTracks.length} new tracks.`);
       setTracks((prevTracks) => [...prevTracks, ...uniqueNewTracks]);
-
     } catch (err: unknown) {
       console.error("Error fetching more tracks:", err);
       // Don't set a global error, just log it.
@@ -98,28 +105,33 @@ export default function SwipePage() {
     fetchInitialTracks();
   }, []);
 
-  const handleSwipe = useCallback((direction: "left" | "right", track: Track) => {
-    if (track.id === "instruction-card") {
-      console.log("Instruction card swiped.");
-      setTracks((prev) => prev.filter((t) => t.id !== "instruction-card"));
-      return;
-    }
-    if (typeof track.id === 'string' && track.id.startsWith("swipe-")) {
-      console.log(`[STORAGE] Skipping save for fallback track: ${track.title}`);
-      return;
-    }
-
-    console.log(`[TELEMETRY] Swiped ${direction} on track: ${track.title}`);
-    try {
-      if (direction === "right") {
-        saveLikedTrack(track);
-      } else {
-        saveDislikedTrack(track);
+  const handleSwipe = useCallback(
+    (direction: "left" | "right", track: Track) => {
+      if (track.id === "instruction-card") {
+        console.log("Instruction card swiped.");
+        setTracks((prev) => prev.filter((t) => t.id !== "instruction-card"));
+        return;
       }
-    } catch (error) {
-      console.warn(`[STORAGE] Failed to save swipe action`, error);
-    }
-  }, []);
+      if (typeof track.id === "string" && track.id.startsWith("swipe-")) {
+        console.log(
+          `[STORAGE] Skipping save for fallback track: ${track.title}`
+        );
+        return;
+      }
+
+      console.log(`[TELEMETRY] Swiped ${direction} on track: ${track.title}`);
+      try {
+        if (direction === "right") {
+          saveLikedTrack(track);
+        } else {
+          saveDislikedTrack(track);
+        }
+      } catch (error) {
+        console.warn(`[STORAGE] Failed to save swipe action`, error);
+      }
+    },
+    []
+  );
 
   const handleStackEmpty = () => {
     console.log("All tracks swiped! Resetting...");
@@ -140,7 +152,7 @@ export default function SwipePage() {
           <h1 className="text-2xl font-bold">楽曲スワイプ</h1>
           <div className="w-20" />
         </div>
-        <div className="text-center space-y-2">
+        <div className="mx-auto max-w-md space-y-2 text-center">
           <p className="text-muted-foreground">
             楽曲をスワイプして好みを設定しましょう
           </p>

@@ -20,6 +20,10 @@ const DISLIKE_TTL_SEC = parseInt(
 // Storage keys
 const LIKES_KEY = "otodoki2:likes:v1";
 const DISLIKES_KEY = "otodoki2:dislikes:v1";
+const PLAYBACK_RATE_KEY = "otodoki2:playbackRate:v1";
+const PLAYBACK_RATE_DEFAULT = 1;
+const PLAYBACK_RATE_MIN = 1;
+const PLAYBACK_RATE_MAX = 3;
 
 // Storage schemas
 interface StoredTrack {
@@ -53,6 +57,14 @@ interface StoredDislikedTrack {
 interface DislikesStorage {
   version: 1;
   items: StoredDislikedTrack[];
+}
+
+// ============================================================================
+// Utility helpers
+// ============================================================================
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
 }
 
 interface SaveDislikedOptions {
@@ -273,7 +285,9 @@ function saveDislikes(data: DislikesStorage): boolean {
 /**
  * Remove expired dislikes from array
  */
-function removeExpiredDislikes(items: StoredDislikedTrack[]): StoredDislikedTrack[] {
+function removeExpiredDislikes(
+  items: StoredDislikedTrack[]
+): StoredDislikedTrack[] {
   const now = new Date();
   return items.filter((item) => {
     const dislikedAt = new Date(item.dislikedAt);
@@ -299,6 +313,57 @@ function trimToMaxSize<T extends { savedAt?: string; dislikedAt?: string }>(
   });
 
   return sorted.slice(0, maxSize);
+}
+
+// ============================================================================
+// Playback rate persistence helpers
+// ============================================================================
+
+export function normalizePlaybackRate(rate: number): number {
+  if (typeof rate !== "number" || Number.isNaN(rate)) {
+    return PLAYBACK_RATE_DEFAULT;
+  }
+
+  const clampedRate = clamp(rate, PLAYBACK_RATE_MIN, PLAYBACK_RATE_MAX);
+  return Math.round(clampedRate * 100) / 100;
+}
+
+export function getPlaybackRateSetting(): number {
+  if (!isBrowser()) {
+    return PLAYBACK_RATE_DEFAULT;
+  }
+
+  try {
+    const raw = storage.get(PLAYBACK_RATE_KEY);
+    if (!raw) {
+      return PLAYBACK_RATE_DEFAULT;
+    }
+
+    const parsed = parseFloat(raw);
+    if (Number.isNaN(parsed)) {
+      return PLAYBACK_RATE_DEFAULT;
+    }
+
+    return normalizePlaybackRate(parsed);
+  } catch (error) {
+    log.warn("Failed to parse playback rate", error);
+    return PLAYBACK_RATE_DEFAULT;
+  }
+}
+
+export function savePlaybackRateSetting(rate: number): boolean {
+  if (!isBrowser()) {
+    log.info("savePlaybackRateSetting: SSR environment, skipping");
+    return false;
+  }
+
+  try {
+    const normalized = normalizePlaybackRate(rate);
+    return storage.set(PLAYBACK_RATE_KEY, normalized.toString());
+  } catch (error) {
+    log.error("Failed to save playback rate", error);
+    return false;
+  }
 }
 
 // ============================================================================
@@ -483,7 +548,9 @@ export function saveDislikedTrack(
 
     const success = saveDislikes(dislikes);
     if (success) {
-      log.info(`Dislikes storage updated, total count: ${dislikes.items.length}`);
+      log.info(
+        `Dislikes storage updated, total count: ${dislikes.items.length}`
+      );
     }
     return success;
   } catch (error) {
@@ -515,7 +582,9 @@ export function getDislikedTracks(): StoredDislikedTrack[] {
     }
 
     // Return newest first
-    return [...validItems].sort((a, b) => b.dislikedAt.localeCompare(a.dislikedAt));
+    return [...validItems].sort((a, b) =>
+      b.dislikedAt.localeCompare(a.dislikedAt)
+    );
   } catch (error) {
     log.error("Failed to get disliked tracks", error);
     return [];
@@ -536,7 +605,9 @@ export function removeDislikedTrack(trackId: string | number): boolean {
     const dislikes = loadDislikes();
     const initialCount = dislikes.items.length;
 
-    dislikes.items = dislikes.items.filter((item) => item.trackId !== normalizedId);
+    dislikes.items = dislikes.items.filter(
+      (item) => item.trackId !== normalizedId
+    );
 
     if (dislikes.items.length < initialCount) {
       const success = saveDislikes(dislikes);
