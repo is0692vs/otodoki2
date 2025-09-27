@@ -1,4 +1,4 @@
-# `frontend/src/components/` ディレクトリのAGENTルール
+# `frontend/src/components/` ディレクトリの AGENT ルール
 
 このディレクトリには、アプリケーション全体で再利用される UI コンポーネントが含まれます。
 
@@ -12,6 +12,7 @@
 - `Section.tsx`: セクションタイトルとコンテンツをまとめるコンポーネント。
 - `SwipeCard.tsx`: スワイプ可能なカードコンポーネント。
 - `SwipeStack.tsx`: スワイプカードをスタック表示するコンポーネント。
+- `PlaybackSpeedDial.tsx`: ポッドキャスト風の倍速ダイヤル UI を提供するコンポーネント。
 - `TrackCard.example.tsx`: `TrackCard` の使用例。
 - `TrackCard.tsx`: 楽曲トラック情報を表示するカードコンポーネント。
 - `ui/`: shadcn/ui から生成された基本的な UI コンポーネントが含まれます。
@@ -19,10 +20,11 @@
 ## 主要なコンポーネント
 
 - `MusicCard`, `SwipeCard`, `TrackCard`: 楽曲表示に関連する主要なコンポーネント。
+- `PlaybackSpeedDial`: スワイプページでの倍速調整 UI を司るコンポーネント。
 - `AppHeader`, `SearchBar`: アプリケーションのナビゲーションと検索機能。
 - `ui/`: ボタン、カード、入力フィールドなど、基本的な UI 要素。
 
-## AIエージェントへの指示
+## AI エージェントへの指示
 
 - 新しい UI コンポーネントを作成する場合は、このディレクトリ内に新しい `.tsx` ファイルを作成してください。
 - 既存のコンポーネントの見た目や挙動を変更する場合は、該当する `.tsx` ファイルを修正してください。

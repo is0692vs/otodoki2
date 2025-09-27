@@ -18,6 +18,7 @@ import { useAudioPlayer } from "@/hooks/useAudioPlayer";
 import { useVisibility, usePageVisibility } from "@/hooks/useVisibility";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { REFILL_THRESHOLD } from "@/lib/constants";
+import { PlaybackSpeedDial } from "@/components/PlaybackSpeedDial";
 
 export interface SwipeStackProps {
   tracks: Track[];
@@ -38,6 +39,7 @@ export function SwipeStack({
 }: SwipeStackProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [swipedTracks, setSwipedTracks] = useState<Track[]>([]);
+  const [isSpeedDialOpen, setIsSpeedDialOpen] = useState(false);
 
   const currentTrack = tracks[currentIndex];
   const isInstructionCard = currentTrack?.id === "instruction-card";
@@ -56,7 +58,6 @@ export function SwipeStack({
     }, []),
   });
 
-
   // By destructuring, we can ensure our effects only re-run when the specific props/functions we use change.
   const {
     playTrack,
@@ -68,11 +69,11 @@ export function SwipeStack({
     isPlaying,
     isMuted,
     canPlay,
-    isLoading,
     error: audioError,
     nowPlayingTrackId,
+    playbackRate,
+    setPlaybackRate,
   } = audioPlayer;
-
 
   const { ref: stackRef, isVisible: isStackVisible } = useVisibility({
     onVisibilityChange: (visible) => {
@@ -103,7 +104,16 @@ export function SwipeStack({
         preloadTrack(nextTrack);
       }
     }
-  }, [currentIndex, isStackVisible, isPageVisible, tracks, currentTrack, isInstructionCard, playTrack, preloadTrack]);
+  }, [
+    currentIndex,
+    isStackVisible,
+    isPageVisible,
+    tracks,
+    currentTrack,
+    isInstructionCard,
+    playTrack,
+    preloadTrack,
+  ]);
 
   useEffect(() => {
     if (!isPageVisible && isPlaying) {
@@ -124,7 +134,11 @@ export function SwipeStack({
       setCurrentIndex(newIndex);
       // Check if we need to fetch more tracks
       if (onLowOnTracks && tracks.length - newIndex <= REFILL_THRESHOLD) {
-        console.log(`[SwipeStack] Low on tracks (remaining: ${tracks.length - newIndex}), requesting more.`);
+        console.log(
+          `[SwipeStack] Low on tracks (remaining: ${
+            tracks.length - newIndex
+          }), requesting more.`
+        );
         onLowOnTracks();
       }
     }
@@ -159,7 +173,9 @@ export function SwipeStack({
   if (!currentTrack) {
     return (
       <div className="text-center py-16 space-y-4">
-        <p className="text-muted-foreground">すべての楽曲をスワイプしました！</p>
+        <p className="text-muted-foreground">
+          すべての楽曲をスワイプしました！
+        </p>
         <Button onClick={handleReset} variant="outline" className="gap-2">
           <RotateCcw className="h-4 w-4" />
           もう一度探す
@@ -190,22 +206,43 @@ export function SwipeStack({
             >
               {isMuted ? <VolumeX /> : <Volume2 />}
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsSpeedDialOpen(true)}
+              className="gap-1 px-3"
+            >
+              <span className="text-sm font-medium">
+                {Number.isInteger(playbackRate)
+                  ? `${playbackRate.toFixed(0)}x`
+                  : `${playbackRate.toFixed(1)}x`}
+              </span>
+            </Button>
           </div>
-
         </>
       )}
 
-      <div ref={stackRef} className="relative h-[500px] w-full max-w-sm mx-auto">
+      <div
+        ref={stackRef}
+        className="relative h-[500px] w-full max-w-sm mx-auto"
+      >
         <AnimatePresence onExitComplete={onExitComplete}>
-          {tracks.slice(currentIndex).map((track) => (
-            <SwipeCard
-              key={track.id}
-              track={track}
-              isTop={track.id === currentTrack.id}
-              onSwipe={handleSwipe}
-              isPlaying={isPlaying && nowPlayingTrackId === track.id.toString() && track.id === currentTrack.id}
-            />
-          )).reverse()}
+          {tracks
+            .slice(currentIndex)
+            .map((track) => (
+              <SwipeCard
+                key={track.id}
+                track={track}
+                isTop={track.id === currentTrack.id}
+                onSwipe={handleSwipe}
+                isPlaying={
+                  isPlaying &&
+                  nowPlayingTrackId === track.id.toString() &&
+                  track.id === currentTrack.id
+                }
+              />
+            ))
+            .reverse()}
         </AnimatePresence>
       </div>
 
@@ -234,12 +271,24 @@ export function SwipeStack({
 
       {swipedTracks.length > 0 && (
         <div className="mt-4 text-center">
-          <Button onClick={handleReset} variant="ghost" size="sm" className="gap-2">
+          <Button
+            onClick={handleReset}
+            variant="ghost"
+            size="sm"
+            className="gap-2"
+          >
             <RotateCcw className="h-4 w-4" />
             リセット
           </Button>
         </div>
       )}
+
+      <PlaybackSpeedDial
+        open={isSpeedDialOpen}
+        value={playbackRate}
+        onValueChange={setPlaybackRate}
+        onOpenChange={setIsSpeedDialOpen}
+      />
     </div>
   );
 }

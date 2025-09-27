@@ -1,16 +1,19 @@
 "use client";
 
-import React, { useEffect, useRef } from 'react';
-import { TrackCard, TrackCardProps } from './TrackCard';
-import { useSharedAudioPlayer } from '@/contexts/AudioPlayerContext';
-import { Track } from '@/services/types';
+import React, { useEffect, useRef } from "react";
+import { TrackCard } from "./TrackCard";
+import { useSharedAudioPlayer } from "@/contexts/AudioPlayerContext";
+import { Track } from "@/services/types";
 
 interface PlayableTrackCardProps {
   track: Track;
   className?: string;
 }
 
-export function PlayableTrackCard({ track, className }: PlayableTrackCardProps) {
+export function PlayableTrackCard({
+  track,
+  className,
+}: PlayableTrackCardProps) {
   const {
     nowPlayingTrackId,
     isPlaying,
@@ -22,7 +25,8 @@ export function PlayableTrackCard({ track, className }: PlayableTrackCardProps) 
   } = useSharedAudioPlayer();
 
   const isThisCardPlaying = nowPlayingTrackId === track.id.toString();
-  const isThisCardLoading = isLoading && nowPlayingTrackId === track.id.toString();
+  const isThisCardLoading =
+    isLoading && nowPlayingTrackId === track.id.toString();
 
   // Use a ref to track if this card is playing. This avoids stale closures
   // in the useEffect cleanup function.
