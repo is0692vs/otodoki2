@@ -22,7 +22,7 @@ const LIKES_KEY = "otodoki2:likes:v1";
 const DISLIKES_KEY = "otodoki2:dislikes:v1";
 const PLAYBACK_RATE_KEY = "otodoki2:playbackRate:v1";
 const PLAYBACK_RATE_DEFAULT = 1;
-const PLAYBACK_RATE_MIN = 0.5;
+const PLAYBACK_RATE_MIN = 1;
 const PLAYBACK_RATE_MAX = 3;
 
 // Storage schemas
