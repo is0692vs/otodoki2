@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { AnimatePresence } from "framer-motion";
 import { SwipeCard } from "./SwipeCard";
 import { Button } from "@/components/ui/button";
@@ -150,6 +150,18 @@ export function SwipeStack({
     }
   };
 
+  const playbackRateLabel = useMemo(() => {
+    const normalized = Math.round(playbackRate * 100) / 100;
+    if (Number.isInteger(normalized)) {
+      return `${normalized.toFixed(0)}x`;
+    }
+
+    return `${normalized.toFixed(2).replace(/0+$/, "").replace(/\.$/, "")}x`;
+  }, [playbackRate]);
+
+  const isPlayDisabled =
+    isInstructionCard || (!canPlay && !isPlaying);
+
   const onExitComplete = () => {
     // This is called after the card disappears.
     // We check if the queue is now empty and if there are no more tracks to be fetched.
@@ -186,41 +198,33 @@ export function SwipeStack({
 
   return (
     <div className={className}>
-      {!isInstructionCard && (
-        <>
-          <div className="flex justify-center gap-2 mb-4">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={togglePlay}
-              disabled={!canPlay && !isPlaying}
-              className="gap-2"
-            >
-              {isPlaying ? <Pause /> : <Play />}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={toggleMute}
-              className="gap-2"
-            >
-              {isMuted ? <VolumeX /> : <Volume2 />}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsSpeedDialOpen(true)}
-              className="gap-1 px-3"
-            >
-              <span className="text-sm font-medium">
-                {Number.isInteger(playbackRate)
-                  ? `${playbackRate.toFixed(0)}x`
-                  : `${playbackRate.toFixed(1)}x`}
-              </span>
-            </Button>
-          </div>
-        </>
-      )}
+      <div className="flex justify-center gap-2 mb-4">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={togglePlay}
+          disabled={isPlayDisabled}
+          className="gap-2"
+        >
+          {isPlaying ? <Pause /> : <Play />}
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={toggleMute}
+          className="gap-2"
+        >
+          {isMuted ? <VolumeX /> : <Volume2 />}
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setIsSpeedDialOpen(true)}
+          className="gap-1 px-3"
+        >
+          <span className="text-sm font-medium">{playbackRateLabel}</span>
+        </Button>
+      </div>
 
       <div
         ref={stackRef}

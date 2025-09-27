@@ -137,7 +137,7 @@ export function PlaybackSpeedDial({
 
   const highlightStyle = useMemo<CSSProperties | undefined>(() => {
     if (positions.length <= 1) return undefined;
-    const start = pointerAngle - ANGLE_STEP / 2 + 90;
+    const start = pointerAngle - ANGLE_STEP / 2 - 90;
     const maskGradient =
       "radial-gradient(circle, transparent 58%, black 62%, black 80%, transparent 84%)";
 
@@ -193,7 +193,6 @@ export function PlaybackSpeedDial({
     },
     [selectByAngle]
   );
-
   const handlePointerDown = useCallback(
     (event: ReactPointerEvent<HTMLDivElement>) => {
       event.preventDefault();
@@ -287,6 +286,34 @@ export function PlaybackSpeedDial({
     },
     [onValueChange, positions, selectedIndex, value]
   );
+
+  const selectByIndex = useCallback(
+    (index: number) => {
+      if (positions.length === 0) return;
+
+      const clamped = Math.min(positions.length - 1, Math.max(0, index));
+      const next = positions[clamped]?.speed;
+
+      if (typeof next === "number" && next !== value) {
+        onValueChange(next);
+      }
+    },
+    [onValueChange, positions, value]
+  );
+
+  const canDecrease = positions.length > 0 && selectedIndex > 0;
+  const canIncrease =
+    positions.length > 0 && selectedIndex < positions.length - 1;
+
+  const handleSlowClick = useCallback(() => {
+    if (!canDecrease) return;
+    selectByIndex(selectedIndex - 1);
+  }, [canDecrease, selectByIndex, selectedIndex]);
+
+  const handleFastClick = useCallback(() => {
+    if (!canIncrease) return;
+    selectByIndex(selectedIndex + 1);
+  }, [canIncrease, selectByIndex, selectedIndex]);
 
   return (
     <AnimatePresence>
@@ -398,10 +425,38 @@ export function PlaybackSpeedDial({
               })}
             </div>
 
-            <div className="mt-6 grid grid-cols-4 gap-2 text-center text-xs text-muted-foreground">
-              <span>ゆっくり</span>
-              <span className="col-span-2">タップまたはドラッグで調整</span>
-              <span>速く</span>
+            <div className="mt-6 flex items-center justify-between text-xs text-muted-foreground">
+              <button
+                type="button"
+                onClick={handleSlowClick}
+                disabled={!canDecrease}
+                aria-disabled={!canDecrease}
+                className={clsx(
+                  "rounded-full px-3 py-1 font-medium transition",
+                  canDecrease
+                    ? "hover:bg-muted hover:text-foreground"
+                    : "cursor-not-allowed opacity-30"
+                )}
+              >
+                ゆっくり
+              </button>
+              <span className="text-[11px] tracking-wide text-muted-foreground/80">
+                タップ・ドラッグ・スワイプで調整
+              </span>
+              <button
+                type="button"
+                onClick={handleFastClick}
+                disabled={!canIncrease}
+                aria-disabled={!canIncrease}
+                className={clsx(
+                  "rounded-full px-3 py-1 font-medium transition",
+                  canIncrease
+                    ? "hover:bg-muted hover:text-foreground"
+                    : "cursor-not-allowed opacity-30"
+                )}
+              >
+                速く
+              </button>
             </div>
           </motion.div>
         </motion.div>
