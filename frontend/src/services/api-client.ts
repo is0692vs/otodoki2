@@ -14,14 +14,28 @@ import {
   type SuggestionsResponse,
   type SuggestionsStats,
   type ErrorResponse,
-} from './types';
+  type TokenBundleResponse,
+  type RegisterRequest,
+  type LoginRequest,
+  type RefreshTokenRequest,
+  type EvaluationCreateRequest,
+  type EvaluationListResponse,
+  type EvaluationResponse,
+  type EvaluationStatus,
+  type PlayHistoryCreateRequest,
+  type PlayHistoryResponse,
+} from "./types";
 
 export class ApiClient {
   private readonly baseUrl: string;
   private readonly timeout: number;
+  private accessToken?: string;
 
   constructor(config: ApiClientConfig = {}) {
-    this.baseUrl = config.baseUrl || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    this.baseUrl =
+      config.baseUrl ||
+      process.env.NEXT_PUBLIC_API_URL ||
+      "http://localhost:8000";
     this.timeout = config.timeout || 10000; // 10 seconds default timeout
   }
 
@@ -36,13 +50,25 @@ export class ApiClient {
     const timeoutId = setTimeout(() => controller.abort(), this.timeout);
 
     try {
+      const headers = new Headers({ "Content-Type": "application/json" });
+
+      const incomingHeaders =
+        options.headers instanceof Headers
+          ? options.headers
+          : new Headers(options.headers ?? {});
+
+      incomingHeaders.forEach((value, key) => {
+        headers.set(key, value);
+      });
+
+      if (this.accessToken) {
+        headers.set("Authorization", `Bearer ${this.accessToken}`);
+      }
+
       const response = await fetch(url, {
         ...options,
         signal: controller.signal,
-        headers: {
-          'Content-Type': 'application/json',
-          ...options.headers,
-        },
+        headers,
       });
 
       clearTimeout(timeoutId);
@@ -65,19 +91,35 @@ export class ApiClient {
         };
       }
 
-      const data = await response.json();
+      const contentType = response.headers.get("content-type") ?? "";
+
+      if (contentType.includes("application/json")) {
+        const data = await response.json();
+        return {
+          data,
+          status: response.status,
+        };
+      }
+
+      const textData = await response.text();
+      if (textData) {
+        return {
+          data: textData as unknown as T,
+          status: response.status,
+        };
+      }
+
       return {
-        data,
         status: response.status,
       };
     } catch (error) {
       clearTimeout(timeoutId);
-      
+
       if (error instanceof Error) {
-        if (error.name === 'AbortError') {
+        if (error.name === "AbortError") {
           return {
             error: {
-              error: 'Request timeout',
+              error: "Request timeout",
               detail: `Request timed out after ${this.timeout}ms`,
             },
             status: 408,
@@ -86,7 +128,7 @@ export class ApiClient {
 
         return {
           error: {
-            error: 'Network error',
+            error: "Network error",
             detail: error.message,
           },
           status: 0,
@@ -95,12 +137,16 @@ export class ApiClient {
 
       return {
         error: {
-          error: 'Unknown error',
-          detail: 'An unexpected error occurred',
+          error: "Unknown error",
+          detail: "An unexpected error occurred",
         },
         status: 0,
       };
     }
+  }
+
+  setAccessToken(token: string | null | undefined): void {
+    this.accessToken = token || undefined;
   }
 
   /**
@@ -135,31 +181,38 @@ export class ApiClient {
    * POST /worker/trigger-refill - Trigger worker refill
    */
   async triggerWorkerRefill(): Promise<ApiResponse<WorkerRefillResponse>> {
-    return this.fetchWithTimeout<WorkerRefillResponse>(`${this.baseUrl}/worker/trigger-refill`, {
-      method: 'POST',
-    });
+    return this.fetchWithTimeout<WorkerRefillResponse>(
+      `${this.baseUrl}/worker/trigger-refill`,
+      {
+        method: "POST",
+      }
+    );
   }
 
   /**
    * GET /api/v1/tracks/suggestions - Get track suggestions
    */
-  async getTrackSuggestions(params: {
-    limit?: number;
-    excludeIds?: string;
-  } = {}): Promise<ApiResponse<SuggestionsResponse>> {
+  async getTrackSuggestions(
+    params: {
+      limit?: number;
+      excludeIds?: string;
+    } = {}
+  ): Promise<ApiResponse<SuggestionsResponse>> {
     const searchParams = new URLSearchParams();
-    
+
     if (params.limit !== undefined) {
-      searchParams.append('limit', params.limit.toString());
+      searchParams.append("limit", params.limit.toString());
     }
-    
+
     if (params.excludeIds) {
-      searchParams.append('excludeIds', params.excludeIds);
+      searchParams.append("excludeIds", params.excludeIds);
     }
 
     const queryString = searchParams.toString();
-    const url = `${this.baseUrl}/api/v1/tracks/suggestions${queryString ? `?${queryString}` : ''}`;
-    
+    const url = `${this.baseUrl}/api/v1/tracks/suggestions${
+      queryString ? `?${queryString}` : ""
+    }`;
+
     return this.fetchWithTimeout<SuggestionsResponse>(url);
   }
 
@@ -167,7 +220,130 @@ export class ApiClient {
    * GET /api/v1/tracks/suggestions/stats - Get suggestions API statistics
    */
   async getSuggestionsStats(): Promise<ApiResponse<SuggestionsStats>> {
-    return this.fetchWithTimeout<SuggestionsStats>(`${this.baseUrl}/api/v1/tracks/suggestions/stats`);
+    return this.fetchWithTimeout<SuggestionsStats>(
+      `${this.baseUrl}/api/v1/tracks/suggestions/stats`
+    );
+  }
+
+  /**
+   * POST /api/v1/auth/register - Register a new user account
+   */
+  async register(
+    payload: RegisterRequest
+  ): Promise<ApiResponse<TokenBundleResponse>> {
+    return this.fetchWithTimeout<TokenBundleResponse>(
+      `${this.baseUrl}/api/v1/auth/register`,
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }
+    );
+  }
+
+  /**
+   * POST /api/v1/auth/login - Login existing user
+   */
+  async login(
+    payload: LoginRequest
+  ): Promise<ApiResponse<TokenBundleResponse>> {
+    return this.fetchWithTimeout<TokenBundleResponse>(
+      `${this.baseUrl}/api/v1/auth/login`,
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }
+    );
+  }
+
+  /**
+   * POST /api/v1/auth/refresh - Refresh authentication tokens
+   */
+  async refresh(
+    payload: RefreshTokenRequest
+  ): Promise<ApiResponse<TokenBundleResponse>> {
+    return this.fetchWithTimeout<TokenBundleResponse>(
+      `${this.baseUrl}/api/v1/auth/refresh`,
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }
+    );
+  }
+
+  /**
+   * GET /api/v1/evaluations - List evaluations for current user
+   */
+  async listEvaluations(
+    params: {
+      status?: EvaluationStatus;
+      limit?: number;
+      offset?: number;
+    } = {}
+  ): Promise<ApiResponse<EvaluationListResponse>> {
+    const searchParams = new URLSearchParams();
+
+    if (params.status) {
+      searchParams.append("status", params.status);
+    }
+
+    if (params.limit !== undefined) {
+      searchParams.append("limit", params.limit.toString());
+    }
+
+    if (params.offset !== undefined) {
+      searchParams.append("offset", params.offset.toString());
+    }
+
+    const queryString = searchParams.toString();
+    const url = `${this.baseUrl}/api/v1/evaluations${
+      queryString ? `?${queryString}` : ""
+    }`;
+
+    return this.fetchWithTimeout<EvaluationListResponse>(url);
+  }
+
+  /**
+   * POST /api/v1/evaluations - Create a new evaluation for current user
+   */
+  async createEvaluation(
+    payload: EvaluationCreateRequest
+  ): Promise<ApiResponse<EvaluationResponse>> {
+    return this.fetchWithTimeout<EvaluationResponse>(
+      `${this.baseUrl}/api/v1/evaluations`,
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }
+    );
+  }
+
+  /**
+   * DELETE /api/v1/evaluations/{external_track_id} - Delete an evaluation for current user
+   */
+  async deleteEvaluation(externalTrackId: string): Promise<ApiResponse<void>> {
+    return this.fetchWithTimeout<void>(
+      `${this.baseUrl}/api/v1/evaluations/${encodeURIComponent(
+        externalTrackId
+      )}`,
+      {
+        method: "DELETE",
+      }
+    );
+  }
+
+  /**
+   * POST /api/v1/history/played - Record a playback event for the current user
+   */
+  async recordPlayback(
+    payload: PlayHistoryCreateRequest
+  ): Promise<ApiResponse<PlayHistoryResponse>> {
+    return this.fetchWithTimeout<PlayHistoryResponse>(
+      `${this.baseUrl}/api/v1/history/played`,
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }
+    );
   }
 }
 
@@ -186,8 +362,30 @@ export const api = {
     triggerRefill: () => apiClient.triggerWorkerRefill(),
   },
   tracks: {
-    suggestions: (params?: { limit?: number; excludeIds?: string }) => 
+    suggestions: (params?: { limit?: number; excludeIds?: string }) =>
       apiClient.getTrackSuggestions(params || {}),
     stats: () => apiClient.getSuggestionsStats(),
+  },
+  auth: {
+    register: (payload: RegisterRequest) => apiClient.register(payload),
+    login: (payload: LoginRequest) => apiClient.login(payload),
+    refresh: (payload: RefreshTokenRequest) => apiClient.refresh(payload),
+    setToken: (token: string | null | undefined) =>
+      apiClient.setAccessToken(token),
+  },
+  evaluations: {
+    list: (params?: {
+      status?: EvaluationStatus;
+      limit?: number;
+      offset?: number;
+    }) => apiClient.listEvaluations(params || {}),
+    create: (payload: EvaluationCreateRequest) =>
+      apiClient.createEvaluation(payload),
+    delete: (externalTrackId: string) =>
+      apiClient.deleteEvaluation(externalTrackId),
+  },
+  history: {
+    played: (payload: PlayHistoryCreateRequest) =>
+      apiClient.recordPlayback(payload),
   },
 };

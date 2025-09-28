@@ -53,7 +53,9 @@ class TestWorkerIntegration:
 
         # iTunes API searchをモック
         with patch.object(
-            worker.itunes_client, "search_tracks", new_callable=AsyncMock
+            worker.itunes_client,
+            "search_tracks",
+            new_callable=AsyncMock,
         ) as mock_search:
             mock_search.return_value = mock_itunes_data
 
@@ -104,7 +106,9 @@ class TestWorkerIntegration:
         ]
 
         with patch.object(
-            worker.itunes_client, "search_tracks", new_callable=AsyncMock
+            worker.itunes_client,
+            "search_tracks",
+            new_callable=AsyncMock,
         ) as mock_search:
             mock_search.return_value = mock_itunes_data
 
@@ -126,7 +130,9 @@ class TestWorkerIntegration:
 
         # iTunes API呼び出しで例外発生をモック
         with patch.object(
-            worker.itunes_client, "search_tracks", new_callable=AsyncMock
+            worker.itunes_client,
+            "search_tracks",
+            new_callable=AsyncMock,
         ) as mock_search:
             mock_search.side_effect = Exception("Network error")
 

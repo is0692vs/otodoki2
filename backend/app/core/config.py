@@ -1,10 +1,10 @@
 """
 アプリケーション設定管理モジュール
-キューの設定値を環境変数から読み込み、適切なデフォルト値を提供する
+各種設定値を環境変数から読み込み、適切なデフォルト値を提供する
 """
 
 import os
-from typing import List
+from typing import List, cast
 
 
 class QueueConfig:
@@ -253,18 +253,12 @@ class WorkerConfig:
         """
         default_genres = "J-POP,Rock,Anime,Jazz,Classic,Pop,Electronic,Hip-Hop"
         value = os.getenv("OTODOKI_SEARCH_GENRES", default_genres)
-        try:
-            genres = [
-                genre.strip()
-                for genre in value.split(",")
-                if genre.strip()
-            ]
-            if genres:
-                return genres
-        except (AttributeError, TypeError):
-            pass
-
-        return [genre for genre in default_genres.split(",")]
+        genres = [genre.strip() for genre in value.split(",") if genre.strip()]
+        return (
+            genres
+            if genres
+            else cast(List[str], default_genres.split(","))
+        )
 
     @staticmethod
     def get_search_years() -> List[str]:
@@ -275,18 +269,12 @@ class WorkerConfig:
         """
         default_years = "2020,2021,2022,2023,2024"
         value = os.getenv("OTODOKI_SEARCH_YEARS", default_years)
-        try:
-            years = [
-                year.strip()
-                for year in value.split(",")
-                if year.strip()
-            ]
-            if years:
-                return years
-        except (AttributeError, TypeError):
-            pass
-
-        return [year for year in default_years.split(",")]
+        years = [year.strip() for year in value.split(",") if year.strip()]
+        return (
+            years
+            if years
+            else cast(List[str], default_years.split(","))
+        )
 
     @staticmethod
     def get_all_settings() -> dict:
@@ -381,3 +369,43 @@ class SuggestionsConfig:
             "max_limit": SuggestionsConfig.get_max_limit(),
             "rate_limit_per_sec": SuggestionsConfig.get_rate_limit_per_sec(),
         }
+
+
+class AuthConfig:
+    """JWT 認証関連の設定値を管理するクラス"""
+
+    @staticmethod
+    def get_algorithm() -> str:
+        return os.getenv("JWT_ALGORITHM", "HS256")
+
+    @staticmethod
+    def get_secret_key() -> str:
+        value = os.getenv("JWT_SECRET_KEY")
+        if not value:
+            raise ValueError("JWT_SECRET_KEY environment variable is not set.")
+        return value
+
+    @staticmethod
+    def get_refresh_secret_key() -> str:
+        value = os.getenv("JWT_REFRESH_SECRET_KEY")
+        if not value:
+            raise ValueError(
+                "JWT_REFRESH_SECRET_KEY environment variable is not set."
+            )
+        return value
+
+    @staticmethod
+    def get_access_token_expire_minutes() -> int:
+        value = os.getenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", "30")
+        try:
+            return max(1, int(value))
+        except ValueError:
+            return 30
+
+    @staticmethod
+    def get_refresh_token_expire_minutes() -> int:
+        value = os.getenv("JWT_REFRESH_TOKEN_EXPIRE_MINUTES", "4320")
+        try:
+            return max(10, int(value))
+        except ValueError:
+            return 4320
