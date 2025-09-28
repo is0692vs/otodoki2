@@ -13,7 +13,7 @@ import {
   VolumeX,
   Volume2,
 } from "lucide-react";
-import { type Track } from "@/services";
+import { type Track } from "@otodoki2/shared";
 import { useAudioPlayer } from "@/hooks/useAudioPlayer";
 import { useVisibility, usePageVisibility } from "@/hooks/useVisibility";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";

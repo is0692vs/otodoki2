@@ -4,7 +4,7 @@
  * with SSR compatibility and error handling
  */
 
-import { Track } from "@/services/types";
+import { Track } from "@otodoki2/shared";
 
 // Environment configuration with defaults
 const LIKES_MAX = parseInt(process.env.NEXT_PUBLIC_LIKES_MAX || "500", 10);

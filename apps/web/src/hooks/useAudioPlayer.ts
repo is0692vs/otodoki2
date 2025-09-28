@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { Track } from "@/services/types";
+import { Track } from "@otodoki2/shared";
 import {
   getPlaybackRateSetting,
   normalizePlaybackRate,

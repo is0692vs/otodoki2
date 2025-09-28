@@ -3,7 +3,7 @@
 import React, { useEffect, useRef } from "react";
 import { TrackCard } from "./TrackCard";
 import { useSharedAudioPlayer } from "@/contexts/AudioPlayerContext";
-import { Track } from "@/services/types";
+import { Track } from "@otodoki2/shared";
 
 interface PlayableTrackCardProps {
   track: Track;

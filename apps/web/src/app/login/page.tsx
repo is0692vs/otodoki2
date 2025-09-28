@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Container } from "@/components/Container";
@@ -16,6 +16,20 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <Container className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center py-12">
+          <p className="text-muted-foreground">ページを読み込み中です...</p>
+        </Container>
+      }
+    >
+      <LoginPageContent />
+    </Suspense>
+  );
+}
+
+function LoginPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { login, status, loading, error, clearError, isAuthenticated } =

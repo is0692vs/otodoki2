@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { Suspense, useState, useEffect, useCallback } from "react";
 import { Container } from "@/components/Container";
 import { RequireAuth } from "@/components/RequireAuth";
 import { PlayableTrackCard } from "@/components/PlayableTrackCard";
@@ -14,8 +14,7 @@ import {
   Download,
 } from "lucide-react";
 import Link from "next/link";
-import { api } from "@/services";
-import { EvaluationResponse, Track } from "@/services/types";
+import { api, type EvaluationResponse, type Track } from "@otodoki2/shared";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 
@@ -258,157 +257,72 @@ export default function Library() {
     : `${API_BASE_URL}/api/v1/export/likes.csv`;
 
   return (
-    <RequireAuth loading={loadingNode} fallback={fallbackNode}>
-      <Container className="py-8">
-        <div className="space-y-6">
-          {error && (
-            <div className="rounded-md border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-              {error}
-            </div>
-          )}
-
-          {/* Liked Tracks Section */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Heart className="h-8 w-8 text-red-500" />
-              <div>
-                <h2 className="text-2xl font-bold">お気に入りライブラリ</h2>
-                <p className="text-muted-foreground">
-                  {likedTracks.length > 0
-                    ? `${likedTracks.length} 曲のお気に入り楽曲`
-                    : "お気に入りの楽曲はまだありません"}
-                </p>
+    <Suspense fallback={loadingNode}>
+      <RequireAuth loading={loadingNode} fallback={fallbackNode}>
+        <Container className="py-8">
+          <div className="space-y-6">
+            {error && (
+              <div className="rounded-md border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                {error}
               </div>
-            </div>
-            <div className="flex gap-2">
-              {isAuthenticated &&
-                user &&
-                likedTracks.length > 0 &&
-                tokens?.accessToken && (
-                  <a
-                    href={exportHref}
-                    download="otodoki2-likes.csv"
-                    className={cn(
-                      buttonVariants({ variant: "outline", size: "sm" }),
-                      "gap-2"
-                    )}
-                  >
-                    <Download className="h-4 w-4" />
-                    CSVでエクスポート
-                  </a>
-                )}
-              {likedTracks.length > TRACK_LIMIT && (
-                <Link href="/collection/liked" passHref>
-                  <Button variant="ghost" className="h-auto p-0 text-sm">
-                    すべて見る
-                    <ChevronRight className="ml-1 h-4 w-4" />
-                  </Button>
-                </Link>
-              )}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  void loadTracks();
-                }}
-                className="gap-2"
-                disabled={loading}
-              >
-                <RotateCcw className="h-4 w-4" />
-                更新
-              </Button>
-              {likedTracks.length > 0 && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    void handleClearAll();
-                  }}
-                  className="gap-2 text-destructive hover:bg-destructive/10"
-                  disabled={loading}
-                >
-                  <Trash2 className="h-4 w-4" />
-                  すべて削除
-                </Button>
-              )}
-            </div>
-          </div>
+            )}
 
-          {loading ? (
-            <div className="text-center py-16">
-              <p className="text-muted-foreground">読み込み中...</p>
-            </div>
-          ) : likedTracks.length === 0 ? (
-            <div className="text-center py-16 space-y-4">
-              <Heart className="h-16 w-16 text-muted-foreground mx-auto" />
-              <div>
-                <h3 className="text-xl font-semibold mb-2">
-                  お気に入りはまだありません
-                </h3>
-                <p className="text-muted-foreground mb-4">
-                  スワイプページで楽曲を右にスワイプしてお気に入りを追加しましょう
-                </p>
-                <Link href="/swipe">
-                  <Button className="gap-2">
-                    <Heart className="h-4 w-4" />
-                    楽曲を探す
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {likedTracks.slice(0, TRACK_LIMIT).map((track, index) => (
-                <div key={`${track.id}-${index}`} className="relative group">
-                  <PlayableTrackCard track={track} className="h-full" />
-
-                  {/* Remove button overlay */}
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => {
-                      void handleRemoveTrack(track.id);
-                    }}
-                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity gap-1"
-                    disabled={loading}
-                  >
-                    <Trash2 className="h-3 w-3" />
-                    削除
-                  </Button>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Disliked Tracks Section */}
-          <div className="space-y-4 pt-12">
+            {/* Liked Tracks Section */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <ThumbsDown className="h-8 w-8 text-gray-500" />
+                <Heart className="h-8 w-8 text-red-500" />
                 <div>
-                  <h2 className="text-2xl font-bold">スキップした楽曲</h2>
+                  <h2 className="text-2xl font-bold">お気に入りライブラリ</h2>
                   <p className="text-muted-foreground">
-                    {dislikedTracks.length > 0
-                      ? `${dislikedTracks.length} 曲のスキップ楽曲`
-                      : "スキップした楽曲はまだありません"}
+                    {likedTracks.length > 0
+                      ? `${likedTracks.length} 曲のお気に入り楽曲`
+                      : "お気に入りの楽曲はまだありません"}
                   </p>
                 </div>
               </div>
               <div className="flex gap-2">
-                {dislikedTracks.length > TRACK_LIMIT && (
-                  <Link href="/collection/disliked" passHref>
+                {isAuthenticated &&
+                  user &&
+                  likedTracks.length > 0 &&
+                  tokens?.accessToken && (
+                    <a
+                      href={exportHref}
+                      download="otodoki2-likes.csv"
+                      className={cn(
+                        buttonVariants({ variant: "outline", size: "sm" }),
+                        "gap-2"
+                      )}
+                    >
+                      <Download className="h-4 w-4" />
+                      CSVでエクスポート
+                    </a>
+                  )}
+                {likedTracks.length > TRACK_LIMIT && (
+                  <Link href="/collection/liked" passHref>
                     <Button variant="ghost" className="h-auto p-0 text-sm">
                       すべて見る
                       <ChevronRight className="ml-1 h-4 w-4" />
                     </Button>
                   </Link>
                 )}
-                {dislikedTracks.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    void loadTracks();
+                  }}
+                  className="gap-2"
+                  disabled={loading}
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  更新
+                </Button>
+                {likedTracks.length > 0 && (
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      void handleClearDislikedTracks();
+                      void handleClearAll();
                     }}
                     className="gap-2 text-destructive hover:bg-destructive/10"
                     disabled={loading}
@@ -424,19 +338,19 @@ export default function Library() {
               <div className="text-center py-16">
                 <p className="text-muted-foreground">読み込み中...</p>
               </div>
-            ) : dislikedTracks.length === 0 ? (
+            ) : likedTracks.length === 0 ? (
               <div className="text-center py-16 space-y-4">
-                <ThumbsDown className="h-16 w-16 text-muted-foreground mx-auto" />
+                <Heart className="h-16 w-16 text-muted-foreground mx-auto" />
                 <div>
                   <h3 className="text-xl font-semibold mb-2">
-                    スキップした楽曲はありません
+                    お気に入りはまだありません
                   </h3>
                   <p className="text-muted-foreground mb-4">
-                    スワイプページで楽曲を左にスワイプしてスキップしましょう
+                    スワイプページで楽曲を右にスワイプしてお気に入りを追加しましょう
                   </p>
                   <Link href="/swipe">
                     <Button className="gap-2">
-                      <ThumbsDown className="h-4 w-4" />
+                      <Heart className="h-4 w-4" />
                       楽曲を探す
                     </Button>
                   </Link>
@@ -444,35 +358,125 @@ export default function Library() {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {dislikedTracks.slice(0, TRACK_LIMIT).map((track, index) => (
+                {likedTracks.slice(0, TRACK_LIMIT).map((track, index) => (
                   <div key={`${track.id}-${index}`} className="relative group">
                     <PlayableTrackCard track={track} className="h-full" />
+
+                    {/* Remove button overlay */}
                     <Button
-                      variant="secondary"
+                      variant="destructive"
                       size="sm"
                       onClick={() => {
-                        void handleRemoveDislikedTrack(track.id);
+                        void handleRemoveTrack(track.id);
                       }}
                       className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity gap-1"
                       disabled={loading}
                     >
-                      <RotateCcw className="h-3 w-3" />
-                      解除
+                      <Trash2 className="h-3 w-3" />
+                      削除
                     </Button>
                   </div>
                 ))}
               </div>
             )}
-          </div>
 
-          {/* Navigation back */}
-          <div className="text-center pt-8">
-            <Link href="/">
-              <Button variant="outline">ホームに戻る</Button>
-            </Link>
+            {/* Disliked Tracks Section */}
+            <div className="space-y-4 pt-12">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <ThumbsDown className="h-8 w-8 text-gray-500" />
+                  <div>
+                    <h2 className="text-2xl font-bold">スキップした楽曲</h2>
+                    <p className="text-muted-foreground">
+                      {dislikedTracks.length > 0
+                        ? `${dislikedTracks.length} 曲のスキップ楽曲`
+                        : "スキップした楽曲はまだありません"}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  {dislikedTracks.length > TRACK_LIMIT && (
+                    <Link href="/collection/disliked" passHref>
+                      <Button variant="ghost" className="h-auto p-0 text-sm">
+                        すべて見る
+                        <ChevronRight className="ml-1 h-4 w-4" />
+                      </Button>
+                    </Link>
+                  )}
+                  {dislikedTracks.length > 0 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        void handleClearDislikedTracks();
+                      }}
+                      className="gap-2 text-destructive hover:bg-destructive/10"
+                      disabled={loading}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      すべて削除
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {loading ? (
+                <div className="text-center py-16">
+                  <p className="text-muted-foreground">読み込み中...</p>
+                </div>
+              ) : dislikedTracks.length === 0 ? (
+                <div className="text-center py-16 space-y-4">
+                  <ThumbsDown className="h-16 w-16 text-muted-foreground mx-auto" />
+                  <div>
+                    <h3 className="text-xl font-semibold mb-2">
+                      スキップした楽曲はありません
+                    </h3>
+                    <p className="text-muted-foreground mb-4">
+                      スワイプページで楽曲を左にスワイプしてスキップしましょう
+                    </p>
+                    <Link href="/swipe">
+                      <Button className="gap-2">
+                        <ThumbsDown className="h-4 w-4" />
+                        楽曲を探す
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {dislikedTracks.slice(0, TRACK_LIMIT).map((track, index) => (
+                    <div
+                      key={`${track.id}-${index}`}
+                      className="relative group"
+                    >
+                      <PlayableTrackCard track={track} className="h-full" />
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => {
+                          void handleRemoveDislikedTrack(track.id);
+                        }}
+                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity gap-1"
+                        disabled={loading}
+                      >
+                        <RotateCcw className="h-3 w-3" />
+                        解除
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Navigation back */}
+            <div className="text-center pt-8">
+              <Link href="/">
+                <Button variant="outline">ホームに戻る</Button>
+              </Link>
+            </div>
           </div>
-        </div>
-      </Container>
-    </RequireAuth>
+        </Container>
+      </RequireAuth>
+    </Suspense>
   );
 }

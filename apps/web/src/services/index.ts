@@ -1,7 +1,5 @@
 /**
- * Services module exports
- * Provides API client for backend communication
+ * Services module forwards exports from shared package for backward compatibility
  */
 
-export { ApiClient, apiClient, api } from './api-client';
-export * from './types';
+export * from "@otodoki2/shared";

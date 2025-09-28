@@ -5,7 +5,7 @@ import Image from "next/image";
 import { motion, PanInfo, useMotionValue, useTransform } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { type Track } from "@/services";
+import { type Track } from "@otodoki2/shared";
 import { Play, Pause, Music, Info } from "lucide-react";
 
 export interface SwipeCardProps {
@@ -89,7 +89,9 @@ export function SwipeCard({
               <p>💔 左にスワイプ: 次の曲へ</p>
               <p>💚 右にスワイプ: ライブラリに保存</p>
             </div>
-            <p className="pt-6 text-sm text-muted-foreground">このカードをスワイプして開始</p>
+            <p className="pt-6 text-sm text-muted-foreground">
+              このカードをスワイプして開始
+            </p>
           </CardContent>
         </Card>
       </motion.div>
@@ -189,17 +191,11 @@ export function SwipeCard({
             <h3 className="font-bold text-xl truncate" title={track.title}>
               {track.title}
             </h3>
-            <p
-              className="text-gray-300 text-lg truncate"
-              title={track.artist}
-            >
+            <p className="text-gray-300 text-lg truncate" title={track.artist}>
               {track.artist}
             </p>
             {track.album && (
-              <p
-                className="text-gray-400 text-sm truncate"
-                title={track.album}
-              >
+              <p className="text-gray-400 text-sm truncate" title={track.album}>
                 {track.album}
               </p>
             )}

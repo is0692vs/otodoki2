@@ -8,14 +8,14 @@ import {
   useMemo,
   useState,
 } from "react";
-import { api } from "@/services";
-import type {
-  LoginRequest,
-  RegisterRequest,
-  RefreshTokenRequest,
-  TokenBundleResponse,
-  UserProfile,
-} from "@/services/types";
+import {
+  api,
+  type LoginRequest,
+  type RegisterRequest,
+  type RefreshTokenRequest,
+  type TokenBundleResponse,
+  type UserProfile,
+} from "@otodoki2/shared";
 
 const AUTH_STORAGE_KEY = "otodoki2:auth:v1";
 

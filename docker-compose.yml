@@ -13,7 +13,7 @@ services:
 
   api:
     build:
-      context: ./backend
+      context: ./packages/backend
     ports:
       - "8000:8000"
     restart: unless-stopped
@@ -28,14 +28,14 @@ services:
       retries: 5
       start_period: 60s
     volumes:
-      - ./backend/app:/app/app
+      - ./packages/backend/app:/app/app
     depends_on:
       db:
         condition: service_started
 
   web:
     build:
-      context: ./frontend
+      context: ./apps/web
     ports:
       - "3000:3000"
     restart: unless-stopped
@@ -43,7 +43,7 @@ services:
       - CHOKIDAR_USEPOLLING=1
       - NEXT_PUBLIC_API_URL=http://localhost:8000
     volumes:
-      - ./frontend:/app
+      - ./apps/web:/app
       - /app/node_modules
       - /app/.next
     depends_on:

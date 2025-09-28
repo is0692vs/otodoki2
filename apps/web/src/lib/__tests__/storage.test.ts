@@ -15,7 +15,7 @@ import {
   migrateStorageIfNeeded,
   isBrowser,
 } from "@/lib/storage";
-import { Track } from "@/services/types";
+import { Track } from "@otodoki2/shared";
 
 // Sample test data
 const sampleTrack: Track = {
@@ -151,7 +151,9 @@ export function demoSwipeUsage() {
   handleSwipe("left", sampleTrack2);
 
   // Show filtering example
-  const dislikedTracksFiltered = new Set(getDislikedTracks().map(t => t.trackId));
+  const dislikedTracksFiltered = new Set(
+    getDislikedTracks().map((t) => t.trackId)
+  );
   const candidateTracks = [sampleTrack, sampleTrack2];
   const filteredTracks = candidateTracks.filter(
     (track) => !dislikedTracksFiltered.has(Number(track.id))

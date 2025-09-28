@@ -1,6 +1,6 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { type Track } from "@/services";
+import { type Track } from "@otodoki2/shared";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -44,7 +44,9 @@ export function storedTrackToTrack(storedTrack: StoredTrack): Track {
   };
 }
 
-export function storedDislikedTrackToTrack(storedDislikedTrack: StoredDislikedTrack): Track {
+export function storedDislikedTrackToTrack(
+  storedDislikedTrack: StoredDislikedTrack
+): Track {
   return {
     id: storedDislikedTrack.trackId,
     title: storedDislikedTrack.trackName,

@@ -14,7 +14,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { api, type Track } from "@/services";
+import { api, type Track } from "@otodoki2/shared";
 
 // Fallback demo tracks to show when API is unavailable
 const fallbackTracks: Track[] = [

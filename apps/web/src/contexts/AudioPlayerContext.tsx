@@ -12,8 +12,7 @@ import {
   AudioPlayerState,
   AudioPlayerActions,
 } from "@/hooks/useAudioPlayer";
-import { Track } from "@/services/types";
-import { api } from "@/services";
+import { Track, api } from "@otodoki2/shared";
 import { useAuth } from "@/contexts/AuthContext";
 
 // Define the shape of the context data

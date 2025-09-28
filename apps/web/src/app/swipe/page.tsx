@@ -1,15 +1,14 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { Suspense, useState, useEffect, useCallback, useRef } from "react";
 import { Container } from "@/components/Container";
 import { RequireAuth } from "@/components/RequireAuth";
 import { SwipeStack } from "@/components/SwipeStack";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { api, type Track } from "@/services";
 import { useAuth } from "@/contexts/AuthContext";
-import type { EvaluationStatus } from "@/services/types";
+import { api, type Track, type EvaluationStatus } from "@otodoki2/shared";
 
 const instructionCard: Track = {
   id: "instruction-card",
@@ -231,49 +230,72 @@ export default function SwipePage() {
     void fetchInitialTracks();
   }, [fetchInitialTracks]);
 
+  const authLoadingNode = (
+    <Container className="py-16">
+      <p className="text-center text-muted-foreground">
+        認証状態を確認しています...
+      </p>
+    </Container>
+  );
+
+  const authFallbackNode = (
+    <Container className="py-16 space-y-4 text-center">
+      <p className="text-muted-foreground">
+        このページを利用するにはログインが必要です。
+      </p>
+      <Link href="/login">
+        <Button size="sm" className="gap-2">
+          ログイン
+        </Button>
+      </Link>
+    </Container>
+  );
+
   return (
-    <RequireAuth>
-      <Container className="py-8">
-        <div className="max-w-md mx-auto space-y-8">
-          {/* Header and Instructions remain the same */}
-          <div className="flex items-center justify-between">
-            <Link href="/">
-              <Button variant="outline" size="sm" className="gap-2">
-                <ArrowLeft className="h-4 w-4" />
-                戻る
-              </Button>
-            </Link>
-            <h1 className="text-2xl font-bold">楽曲スワイプ</h1>
-            <div className="w-20" />
-          </div>
-          <div className="mx-auto max-w-md space-y-2 text-center">
-            <p className="text-muted-foreground">
-              楽曲をスワイプして好みを設定しましょう
-            </p>
-            {/* ... */}
-          </div>
-
-          {error && (
-            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-              <p className="text-orange-600 text-sm">{error}</p>
+    <Suspense fallback={authLoadingNode}>
+      <RequireAuth loading={authLoadingNode} fallback={authFallbackNode}>
+        <Container className="py-8">
+          <div className="max-w-md mx-auto space-y-8">
+            {/* Header and Instructions remain the same */}
+            <div className="flex items-center justify-between">
+              <Link href="/">
+                <Button variant="outline" size="sm" className="gap-2">
+                  <ArrowLeft className="h-4 w-4" />
+                  戻る
+                </Button>
+              </Link>
+              <h1 className="text-2xl font-bold">楽曲スワイプ</h1>
+              <div className="w-20" />
             </div>
-          )}
-
-          {loading ? (
-            <div className="text-center py-16">
-              <p className="text-muted-foreground">楽曲を読み込み中...</p>
+            <div className="mx-auto max-w-md space-y-2 text-center">
+              <p className="text-muted-foreground">
+                楽曲をスワイプして好みを設定しましょう
+              </p>
+              {/* ... */}
             </div>
-          ) : (
-            <SwipeStack
-              tracks={tracks}
-              onSwipe={handleSwipe}
-              onLowOnTracks={fetchMoreTracks}
-              onStackEmpty={handleStackEmpty}
-              noMoreTracks={noMoreTracks}
-            />
-          )}
-        </div>
-      </Container>
-    </RequireAuth>
+
+            {error && (
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                <p className="text-orange-600 text-sm">{error}</p>
+              </div>
+            )}
+
+            {loading ? (
+              <div className="text-center py-16">
+                <p className="text-muted-foreground">楽曲を読み込み中...</p>
+              </div>
+            ) : (
+              <SwipeStack
+                tracks={tracks}
+                onSwipe={handleSwipe}
+                onLowOnTracks={fetchMoreTracks}
+                onStackEmpty={handleStackEmpty}
+                noMoreTracks={noMoreTracks}
+              />
+            )}
+          </div>
+        </Container>
+      </RequireAuth>
+    </Suspense>
   );
 }

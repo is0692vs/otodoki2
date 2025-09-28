@@ -1,21 +1,21 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
-import Link from 'next/link';
-import { Container } from '@/components/Container';
-import { TrackCard } from '@/components/TrackCard';
-import { Button } from '@/components/ui/button';
-import { api, type Track } from '@/services';
-import { getLikedTracks, getDislikedTracks } from '@/lib/storage';
-import { ArrowLeft } from 'lucide-react';
-import { storedTrackToTrack, storedDislikedTrackToTrack } from '@/lib/utils';
+import { useState, useEffect } from "react";
+import { useParams } from "next/navigation";
+import Link from "next/link";
+import { Container } from "@/components/Container";
+import { TrackCard } from "@/components/TrackCard";
+import { Button } from "@/components/ui/button";
+import { api, type Track } from "@otodoki2/shared";
+import { getLikedTracks, getDislikedTracks } from "@/lib/storage";
+import { ArrowLeft } from "lucide-react";
+import { storedTrackToTrack, storedDislikedTrackToTrack } from "@/lib/utils";
 
 const collectionTitles: { [key: string]: string } = {
-  featured: 'おすすめの楽曲',
-  trending: '最近人気の楽曲',
-  liked: 'お気に入りライブラリ',
-  disliked: 'スキップした楽曲',
+  featured: "おすすめの楽曲",
+  trending: "最近人気の楽曲",
+  liked: "お気に入りライブラリ",
+  disliked: "スキップした楽曲",
 };
 
 export default function CollectionPage() {
@@ -34,10 +34,10 @@ export default function CollectionPage() {
       setError(null);
       try {
         let trackData: Track[] = [];
-        if (slug === 'liked') {
+        if (slug === "liked") {
           const stored = getLikedTracks();
           trackData = stored.map(storedTrackToTrack);
-        } else if (slug === 'disliked') {
+        } else if (slug === "disliked") {
           const stored = getDislikedTracks();
           trackData = stored.map(storedDislikedTrackToTrack);
         } else {
@@ -49,9 +49,9 @@ export default function CollectionPage() {
           } else {
             // Differentiate between featured and trending, e.g. by shuffling or slicing
             const allTracks = response.data?.data || [];
-            if (slug === 'featured') {
+            if (slug === "featured") {
               trackData = allTracks;
-            } else if (slug === 'trending') {
+            } else if (slug === "trending") {
               // TODO: This is a placeholder. In the future, implement a separate API endpoint
               // or logic to provide a distinct list of trending tracks.
               trackData = [...allTracks].reverse();
@@ -60,7 +60,7 @@ export default function CollectionPage() {
         }
         setTracks(trackData);
       } catch (err) {
-        setError('楽曲の読み込みに失敗しました。');
+        setError("楽曲の読み込みに失敗しました。");
         console.error(err);
       } finally {
         setLoading(false);
@@ -70,7 +70,7 @@ export default function CollectionPage() {
     fetchTracks();
   }, [slug]);
 
-  const title = collectionTitles[slug] || 'コレクション';
+  const title = collectionTitles[slug] || "コレクション";
 
   return (
     <Container className="py-8">
@@ -92,12 +92,14 @@ export default function CollectionPage() {
             <p className="text-muted-foreground">読み込み中...</p>
           </div>
         ) : error ? (
-           <div className="text-center py-16">
+          <div className="text-center py-16">
             <p className="text-destructive">{error}</p>
           </div>
         ) : tracks.length === 0 ? (
           <div className="text-center py-16">
-            <p className="text-muted-foreground">このコレクションには楽曲がありません。</p>
+            <p className="text-muted-foreground">
+              このコレクションには楽曲がありません。
+            </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
