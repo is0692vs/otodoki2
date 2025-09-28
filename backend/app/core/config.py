@@ -85,7 +85,7 @@ class GeminiConfig:
         Returns:
             str: モデル名（デフォルト: "gemini-1.5-flash"）
         """
-        return os.getenv("GEMINI_MODEL_NAME", "gemini-1.5-flash")
+        return os.getenv("GEMINI_MODEL_NAME", "gemini-2.0-flash-lite")
 
     @staticmethod
     def get_prompt() -> str:
