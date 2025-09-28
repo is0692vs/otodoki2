@@ -210,3 +210,52 @@ async def test_record_playback_history(test_client: AsyncClient) -> None:
     assert recorded["external_track_id"] == "track-456"
     assert recorded["source"] == "player"
     assert recorded["track"]["title"] == "History Song"
+
+
+@pytest.mark.asyncio
+async def test_create_evaluation_with_uppercase_status(test_client: AsyncClient) -> None:
+    # Register and login a user
+    register_payload = {
+        "email": "uppercase-test@example.com",
+        "password": "uppercase-pass",
+        "display_name": "Uppercase Test User",
+    }
+    register_response = await test_client.post(
+        "/api/v1/auth/register",
+        json=register_payload,
+    )
+    assert register_response.status_code == 201
+
+    login_payload = {
+        "email": register_payload["email"],
+        "password": register_payload["password"],
+    }
+    login_response = await test_client.post(
+        "/api/v1/auth/login",
+        json=login_payload,
+    )
+    assert login_response.status_code == 200
+    access_token = login_response.json()["access_token"]
+    auth_header = {"Authorization": f"Bearer {access_token}"}
+
+    # Create evaluation with uppercase status "LIKE"
+    evaluation_payload = {
+        "track": {
+            "external_id": "track-uppercase-123",
+            "source": "itunes",
+            "title": "Uppercase Test Song",
+            "artist": "Test Artist",
+        },
+        "status": "LIKE",  # Intentional uppercase
+        "note": "This should work",
+        "source": "test",
+    }
+    create_response = await test_client.post(
+        "/api/v1/evaluations",
+        json=evaluation_payload,
+        headers=auth_header,
+    )
+    assert create_response.status_code == 201
+    created = create_response.json()
+    assert created["external_track_id"] == "track-uppercase-123"
+    assert created["status"] == "like"  # Should be stored as lowercase

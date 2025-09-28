@@ -6,7 +6,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Optional, get_type_hints
 
-from sqlalchemy import Column, DateTime, UniqueConstraint, func
+from sqlalchemy import Column, DateTime, Enum as SAEnum, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, relationship
 from sqlmodel import Field, Relationship, SQLModel
 
@@ -15,6 +15,13 @@ class EvaluationStatus(str, Enum):
     LIKE = "like"
     DISLIKE = "dislike"
     SKIP = "skip"
+
+
+evaluation_status_enum = SAEnum(
+    EvaluationStatus,
+    name="evaluationstatus",
+    values_callable=lambda enum: [member.value for member in enum],
+)
 
 
 class User(SQLModel, table=True):
@@ -151,7 +158,13 @@ class Evaluation(SQLModel, table=True):
         index=True,
     )
     external_track_id: str = Field(nullable=False, index=True, max_length=100)
-    status: EvaluationStatus = Field(nullable=False, index=True)
+    status: EvaluationStatus = Field(
+        sa_column=Column(
+            evaluation_status_enum,
+            nullable=False,
+            index=True,
+        ),
+    )
     note: str | None = Field(default=None, max_length=500)
     source: str | None = Field(default=None, max_length=50)
     created_at: datetime | None = Field(

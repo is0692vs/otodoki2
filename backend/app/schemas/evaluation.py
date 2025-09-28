@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import List
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from app.db.models import EvaluationStatus
 
@@ -27,6 +27,13 @@ class EvaluationCreateRequest(BaseModel):
     status: EvaluationStatus
     note: str | None = Field(default=None, max_length=500)
     source: str | None = Field(default=None, max_length=50)
+
+    @field_validator('status', mode='before')
+    @classmethod
+    def validate_status(cls, value):
+        if isinstance(value, str):
+            return value.lower()
+        return value
 
 
 class EvaluationResponse(BaseModel):
