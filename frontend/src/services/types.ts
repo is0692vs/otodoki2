@@ -89,6 +89,40 @@ export interface ErrorResponse {
   detail?: string;
 }
 
+// User profile response
+export interface UserProfile {
+  id: string;
+  email: string;
+  display_name?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// Token bundle returned from auth endpoints
+export interface TokenBundleResponse {
+  access_token: string;
+  refresh_token: string;
+  token_type: string;
+  expires_in: number;
+  refresh_expires_in: number;
+  user: UserProfile;
+}
+
+export interface RegisterRequest {
+  email: string;
+  password: string;
+  display_name?: string | null;
+}
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface RefreshTokenRequest {
+  refresh_token: string;
+}
+
 // API client configuration
 export interface ApiClientConfig {
   baseUrl?: string;

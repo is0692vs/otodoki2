@@ -8,10 +8,12 @@
 - `Container.tsx`: レイアウトのためのコンテナコンポーネント。
 - `DevTools.tsx`: 開発者向けのツールコンポーネント。
 - `MusicCard.tsx`: 楽曲情報を表示するカードコンポーネント。
+- `PlayableTrackCard.tsx`: プレビュー再生や評価操作を統合したカード。
 - `SearchBar.tsx`: 検索バーコンポーネント。
 - `Section.tsx`: セクションタイトルとコンテンツをまとめるコンポーネント。
 - `SwipeCard.tsx`: スワイプ可能なカードコンポーネント。
 - `SwipeStack.tsx`: スワイプカードをスタック表示するコンポーネント。
+- `RequireAuth.tsx`: 認証が必要な領域を保護するためのラッパーコンポーネント。
 - `PlaybackSpeedDial.tsx`: ポッドキャスト風の倍速ダイヤル UI を提供するコンポーネント。
 - `TrackCard.example.tsx`: `TrackCard` の使用例。
 - `TrackCard.tsx`: 楽曲トラック情報を表示するカードコンポーネント。
@@ -19,9 +21,10 @@
 
 ## 主要なコンポーネント
 
-- `MusicCard`, `SwipeCard`, `TrackCard`: 楽曲表示に関連する主要なコンポーネント。
+- `MusicCard`, `SwipeCard`, `TrackCard`, `PlayableTrackCard`: 楽曲表示に関連する主要なコンポーネント。
 - `PlaybackSpeedDial`: スワイプページでの倍速調整 UI を司るコンポーネント。
-- `AppHeader`, `SearchBar`: アプリケーションのナビゲーションと検索機能。
+- `AppHeader`, `SearchBar`: アプリケーションのナビゲーションと検索機能。ログイン状態の表示も担当します。
+- `RequireAuth`: 認証が必要な子要素を保護し、未ログイン時のリダイレクトを行います。
 - `ui/`: ボタン、カード、入力フィールドなど、基本的な UI 要素。
 
 ## AI エージェントへの指示

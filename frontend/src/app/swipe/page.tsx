@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Container } from "@/components/Container";
+import { RequireAuth } from "@/components/RequireAuth";
 import { SwipeStack } from "@/components/SwipeStack";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -12,6 +13,7 @@ import {
   saveDislikedTrack,
   saveLikedTrack,
 } from "@/lib/storage";
+import { useAuth } from "@/contexts/AuthContext";
 
 const instructionCard: Track = {
   id: "instruction-card",
@@ -34,8 +36,9 @@ export default function SwipePage() {
   const [isFetchingMore, setIsFetchingMore] = useState(false);
   const [noMoreTracks, setNoMoreTracks] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { isAuthenticated } = useAuth();
 
-  const fetchInitialTracks = async () => {
+  const fetchInitialTracks = useCallback(async () => {
     setLoading(true);
     setNoMoreTracks(false);
     setError(null);
@@ -61,7 +64,7 @@ export default function SwipePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const fetchMoreTracks = useCallback(async () => {
     if (isFetchingMore || noMoreTracks || loading) return;
@@ -102,8 +105,13 @@ export default function SwipePage() {
   }, [isFetchingMore, noMoreTracks, loading, tracks]);
 
   useEffect(() => {
-    fetchInitialTracks();
-  }, []);
+    if (!isAuthenticated) {
+      setTracks([instructionCard]);
+      setLoading(false);
+      return;
+    }
+    void fetchInitialTracks();
+  }, [fetchInitialTracks, isAuthenticated]);
 
   const handleSwipe = useCallback(
     (direction: "left" | "right", track: Track) => {
@@ -133,10 +141,10 @@ export default function SwipePage() {
     []
   );
 
-  const handleStackEmpty = () => {
+  const handleStackEmpty = useCallback(() => {
     console.log("All tracks swiped! Resetting...");
-    fetchInitialTracks();
-  };
+    void fetchInitialTracks();
+  }, [fetchInitialTracks]);
 
   return (
     <Container className="py-8">

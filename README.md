@@ -1,86 +1,97 @@
 ![GitHub last commit](https://img.shields.io/github/last-commit/is0692vs/otodoki2web) ![GitHub issues](https://img.shields.io/github/issues/is0692vs/otodoki2web) ![GitHub pull requests](https://img.shields.io/github/issues-pr/is0692vs/otodoki2web)
 
-# 未完成
+## otodoki2web について
 
-# otodoki2web
+otodoki2web は、マッチングアプリのようなスワイプ UI で楽曲を評価・収集できる Web アプリケーションです。FastAPI + SQLModel で構成されたバックエンド API と Next.js (App Router) のフロントエンドにより、リアルタイムでキューを補充しながら新しい楽曲に出会えます。2025 年 2 月より、PostgreSQL を利用した永続化とユーザー認証 (メール + パスワード, JWT) をサポートしました。
 
-otodoki2web は、マッチングアプリのようなスワイプ式のインターフェースで手軽に新しい楽曲に出会える Web アプリケーションです。FastAPI を用いたバックエンド API と Next.js を用いたフロントエンドで構成されており、全体が Docker コンテナとして動作します。
+## 主な機能
 
-## 注意
+- **ユーザー登録 / ログイン**: `/register` と `/login` ページからユーザーを作成し、アクセストークン + リフレッシュトークンでセッション管理します。
+- **スワイプ式推薦**: `/swipe` でキューから音楽を取得し、Like / Skip を直感的に操作します。
+- **楽曲ライブラリ**: `/library` はログイン済みユーザー専用で、評価済みの楽曲を一覧表示します。
+- **バックグラウンド補充ワーカー**: iTunes API を活用し、PostgreSQL にキャッシュしながらキューを自動で補充します。
+- **API ドキュメント**: [http://localhost:8000/docs](http://localhost:8000/docs) にて FastAPI の OpenAPI スキーマを確認できます。
 
-- 本当は Flutter や React Native でモバイルアプリを作りたかったのですが、いち早くアイデアを形にするために Web アプリとして実装しました。
-- このプロジェクトは作者の個人学習とストレス解消を目的としており、Issue や Pull Request の形式が書きたい放題になっています。
-- 作者がストレスのままに作成しているため、コードの品質やドキュメントの整備が不十分な場合があります。ご了承ください。
-
-## プロジェクト構造
+## リポジトリ構成
 
 ```
 otodoki2web/
-├── backend/           # バックエンドAPI (FastAPI + Python)
-│   ├── app/          # アプリケーションコード
-│   ├── tests/        # ユニットテスト
-│   └── requirements.txt
-├── frontend/          # フロントエンド (Next.js + TypeScript)
-│   ├── src/          # ソースコード
-│   ├── public/       # 静的ファイル
-│   └── package.json
-├── scripts/           # 開発・テスト用スクリプト
-├── docs/              # ドキュメント
-├── .devcontainer/     # VS Code Dev Container設定
-├── .github/           # GitHub Actions設定
-├── docker-compose.yml # Docker Compose設定
-└── Makefile          # 開発用コマンド
+├── backend/           # FastAPI アプリケーションとテストコード
+├── frontend/          # Next.js フロントエンド (App Router)
+├── docs/              # 設計ドキュメント
+├── scripts/           # 開発・検証スクリプト
+├── docker-compose.yml # コンテナオーケストレーション
+└── Makefile           # 開発用ショートカットコマンド
 ```
 
-## 開発環境のスタートアップ
+## 開発環境の起動
 
-このプロジェクトは、VS Code Dev Containers を利用することで、簡単に開発環境をセットアップできます。
+初回は `.env.example` をコピーして必要な値を調整してください。
 
-### Dev Containers を利用する場合 (推奨)
+```bash
+cp .env.example .env
+```
 
-1.  **VS Code を開く:** プロジェクトのルートディレクトリを VS Code で開きます。
-2.  **Dev Container を再開/開く:** VS Code が自動的に Dev Container の利用を提案します。「Reopen in Container」または「Open in Container」をクリックしてください。
-3.  **サービスを起動:** Dev Container が起動し、ターミナルが開かれたら、以下のコマンドを実行してアプリケーションサービスを起動します。
-    ```bash
-    make up
-    # または直接: docker-compose up --build -d
-    ```
+その後、Dev Containers で開くと必要な依存関係が揃った状態で作業を開始できます。
 
-### Docker Compose を直接利用する場合
+```bash
+make up
+# もしくは
+docker compose up -d --build
+```
 
-Dev Containers を利用しない場合は、Docker と Docker Compose がインストールされていることを確認し、以下の手順でサービスを起動できます。
-
-1.  **プロジェクトをクローン:**
-    ```bash
-    git clone https://github.com/is0692vs/otodoki2web.git
-    cd otodoki2web
-    ```
-2.  **Docker Compose でサービスを起動:**
-    ```bash
-    make up
-    # または直接: docker-compose up --build -d
-    ```
-
-サービスが起動後：
+起動後は以下からアクセスできます。
 
 - フロントエンド: [http://localhost:3000](http://localhost:3000)
 - バックエンド API: [http://localhost:8000](http://localhost:8000)
-- API 仕様: [http://localhost:8000/docs](http://localhost:8000/docs)
 
-## 環境変数 (バックエンド)
+停止は `docker compose down` または `make down` を利用してください。
 
-バックエンドの挙動は、以下の環境変数でカスタマイズできます。
+## バックエンド環境変数
 
-| 環境変数名                 | 説明                                                                                                                                                                                                                                              | デフォルト値                                           |
-| :------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | :----------------------------------------------------- |
-| `OTODOKI_ITUNES_TERMS`     | iTunes API で楽曲を検索する際のキーワード (カンマ区切り)                                                                                                                                                                                          | `さくら,YOASOBI,米津玄師,あいみょん,Official髭男dism`  |
-| `OTODOKI_COUNTRY`          | iTunes API 検索の対象国コード (例: JP, US)                                                                                                                                                                                                        | `JP`                                                   |
-| `OTODOKI_MIN_THRESHOLD`    | キューに保持する楽曲の最小数。この値を下回ると補充が開始される                                                                                                                                                                                    | `30`                                                   |
-| `OTODOKI_BATCH_SIZE`       | 一度の補充でキューに追加を試みる楽曲の数                                                                                                                                                                                                          | `30`                                                   |
-| `OTODOKI_MAX_CAP`          | キューの最大容量                                                                                                                                                                                                                                  | `300`                                                  |
-| `OTODOKI_POLL_INTERVAL_MS` | キューの監視間隔 (ミリ秒)                                                                                                                                                                                                                         | `1500`                                                 |
-| `OTODOKI_HTTP_TIMEOUT_S`   | iTunes API への HTTP リクエストのタイムアウト時間 (秒)                                                                                                                                                                                            | `5.0`                                                  |
-| `OTODOKI_RETRY_MAX`        | iTunes API リクエストの最大リトライ回数                                                                                                                                                                                                           | `3`                                                    |
-| `OTODOKI_SEARCH_STRATEGY`  | 楽曲検索に利用する戦略。以下のいずれかを指定: <br> `random_keyword`: 定義済みキーワードからランダムに検索 <br> `genre_search`: 指定ジャンルで検索 <br> `release_year_search`: 指定リリース年で検索 <br> `artist_search`: 指定アーティスト名で検索 | `random_keyword`                                       |
-| `OTODOKI_SEARCH_GENRES`    | `genre_search` 戦略で利用するジャンル (カンマ区切り)                                                                                                                                                                                              | `J-POP,Rock,Anime,Jazz,Classic,Pop,Electronic,Hip-Hop` |
-| `OTODOKI_SEARCH_YEARS`     | `release_year_search` 戦略で利用するリリース年 (カンマ区切り)                                                                                                                                                                                     | `2020,2021,2022,2023,2024`                             |
+| 変数名                             | 説明                                                                                                                                                   | デフォルト  |
+| :--------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------- | :---------- |
+| `DATABASE_URL`                     | PostgreSQL 接続文字列。Docker Compose では `.env` の値 (デフォルト: `postgresql+asyncpg://otodoki:otodoki-password@db:5432/otodoki2`) が使用されます。 | `.env` 参照 |
+| `JWT_SECRET_KEY`                   | アクセストークン署名用のシークレットキー。                                                                                                             | (必須)      |
+| `JWT_REFRESH_SECRET_KEY`           | リフレッシュトークン署名用シークレット。                                                                                                               | (必須)      |
+| `JWT_ALGORITHM`                    | トークン署名アルゴリズム。                                                                                                                             | `HS256`     |
+| `JWT_ACCESS_TOKEN_EXPIRE_MINUTES`  | アクセストークンの有効期限 (分)。                                                                                                                      | `30`        |
+| `JWT_REFRESH_TOKEN_EXPIRE_MINUTES` | リフレッシュトークンの有効期限 (分)。                                                                                                                  | `4320`      |
+| `GEMINI_API_KEY`                   | Gemini を利用したキーワード生成に使用します。開発時はダミー値でも可。                                                                                  | `changeme`  |
+| `OTODOKI_*`                        | iTunes 検索戦略やワーカーの閾値を調整する環境変数群。詳細は `backend/app/core/config.py` を参照してください。                                          | -           |
+
+`.env` に値を記載すると、Docker Compose およびローカル実行で自動的に読み込まれます。
+
+## フロントエンド環境変数
+
+- `NEXT_PUBLIC_API_URL`: バックエンド API のベース URL。未設定の場合は `http://localhost:8000` が使用されます。
+
+## ユーザー認証フロー概要
+
+1. `/register` でメールアドレスとパスワードを送信すると、ユーザーを作成しアクセストークン & リフレッシュトークンを返します。
+2. `/login` は既存ユーザーの認証を行い、同様にトークンを受け取ります。
+3. フロントエンドの `AuthContext` がトークンを `localStorage` に保持し、定期的に `/auth/refresh` を呼び出してセッションを延長します。
+4. `RequireAuth` コンポーネントが `/library` などの保護ページで未ログインユーザーを `/login` にリダイレクトします。
+
+## 開発ワークフロー
+
+- **テスト**: Docker 上の PostgreSQL と連携したまま実行するには以下を推奨します。
+  ```bash
+  docker compose up -d db
+  DATABASE_URL=postgresql+asyncpg://otodoki:otodoki-password@localhost:5432/otodoki2 \
+  GEMINI_API_KEY=dummy \
+  PYTHONPATH=./backend pytest backend/tests/
+  ```
+  すべてのテストは 2025-02 時点で 60 件成功しています。
+- **マイグレーション**: Alembic を使用します。新しいモデルを追加したら `alembic revision --autogenerate -m "message"` を実行し、`alembic upgrade head` で反映します。
+- **ログ確認**: `docker compose logs --tail=200 api` や `docker compose logs -f worker` でバックエンドとキュー補充ワーカーの状態を追跡できます。
+
+## よくあるトラブル
+
+- **トークンが保持されない**: ブラウザの `localStorage` がブロックされていないか、`NEXT_PUBLIC_API_URL` が正しく設定されているか確認してください。
+- **pytest が失敗する**: `DATABASE_URL` が PostgreSQL を指しているか、`pip install -r backend/requirements.txt` が完了しているかを確認してください。
+- **フロントとバックを別々に起動する場合**: バックエンドを `uvicorn backend.app.main:app --reload` で起動し、フロントエンドを `npm run dev` で起動します。この場合でも `.env` の `NEXT_PUBLIC_API_URL` がバックエンドを指している必要があります。
+
+## ライセンス
+
+本プロジェクトは作者個人の学習目的で公開されています。詳細なライセンス宣言は未定ですが、コントリビュートする際は Issue で相談してください。

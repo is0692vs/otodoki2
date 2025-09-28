@@ -1,6 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 import time
 import os
 import logging
@@ -8,6 +7,7 @@ from datetime import datetime
 from contextlib import asynccontextmanager
 from typing import Optional
 
+from .api.routes import auth_router, evaluations_router, playback_router
 from .dependencies import (
     get_queue_manager,
     get_worker,
@@ -18,9 +18,9 @@ from .dependencies import (
 )
 from .core.queue import QueueManager
 from .core.rate_limit import global_rate_limiter
-from .services.worker import QueueReplenishmentWorker
 from .services.suggestions import SuggestionsService, check_rate_limit
-from .models.suggestions import SuggestionsResponse, ErrorResponse
+from .models.suggestions import SuggestionsResponse
+from .db.session import dispose_engine
 
 # ログ設定
 logging.basicConfig(
@@ -48,6 +48,7 @@ async def lifespan(app: FastAPI):
     logger.info("Shutting down otodoki2 API application")
     await stop_background_tasks()
     cleanup_dependencies()
+    await dispose_engine()
 
 
 app = FastAPI(
@@ -55,6 +56,10 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan
 )
+
+app.include_router(auth_router)
+app.include_router(evaluations_router)
+app.include_router(playback_router)
 
 
 @app.middleware("http")
@@ -66,8 +71,17 @@ async def logging_middleware(request: Request, call_next):
     if request.url.path == "/health" and response.status_code == 200:
         return response
 
+    client = request.client
+    client_host = client.host if client else "-"
+    client_port = client.port if client else "-"
     logger.info(
-        f'{request.client.host}:{request.client.port} - "{request.method} {request.url.path}" {response.status_code} [{process_time:.2f}s]'
+        "%s:%s - \"%s %s\" %s [%.2fs]",
+        client_host,
+        client_port,
+        request.method,
+        request.url.path,
+        response.status_code,
+        process_time,
     )
     return response
 
@@ -139,10 +153,12 @@ async def trigger_refill():
         return {"error": "Worker not initialized", "success": False}
 
     success = await worker.trigger_refill()
-    return {
-        "success": success,
-        "message": "Refill completed" if success else "Refill failed or already in progress"
-    }
+    message = (
+        "Refill completed"
+        if success
+        else "Refill failed or already in progress"
+    )
+    return {"success": success, "message": message}
 
 
 @app.get("/api/v1/tracks/suggestions", response_model=SuggestionsResponse)
@@ -171,22 +187,33 @@ async def get_track_suggestions(
         from .core.config import SuggestionsConfig
         config = SuggestionsConfig()
 
-        validated_limit = limit if limit is not None else config.get_default_limit()
-        validated_limit = max(1, min(validated_limit, config.get_max_limit()))
+        validated_limit = (
+            limit if limit is not None else config.get_default_limit()
+        )
+        validated_limit = max(
+            1,
+            min(validated_limit, config.get_max_limit()),
+        )
 
         # excludeIdsをリストに変換
         exclude_ids = []
         if excludeIds:
             try:
-                exclude_ids = [id_str.strip()
-                               for id_str in excludeIds.split(',') if id_str.strip()]
+                exclude_ids = [
+                    id_str.strip()
+                    for id_str in excludeIds.split(",")
+                    if id_str.strip()
+                ]
             except Exception:
                 exclude_ids = []
 
         # SuggestionsServiceでリクエスト処理
         worker = get_worker()
         suggestions_service = SuggestionsService(queue_manager, worker)
-        response = await suggestions_service.get_suggestions(validated_limit, exclude_ids)
+        response = await suggestions_service.get_suggestions(
+            validated_limit,
+            exclude_ids,
+        )
 
         return response
 

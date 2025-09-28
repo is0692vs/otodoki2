@@ -7,6 +7,7 @@ from alembic import context
 from sqlmodel import SQLModel
 
 from app.db.session import DATABASE_URL, engine
+from app.db import models  # noqa: F401  # Ensure models are imported
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
