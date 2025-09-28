@@ -240,10 +240,9 @@ class WorkerConfig:
         """検索戦略を取得
 
         Returns:
-            str: 検索戦略名（デフォルト: "gemini_keyword"）
+            str: 検索戦略名（デフォルト: "chart_keyword"）
         """
-        # README.md に記載のデフォルト値 'gemini_keyword' を使用し、環境変数から読み込むように修正
-        return os.getenv("OTODOKI_SEARCH_STRATEGY", "gemini_keyword")
+        return os.getenv("OTODOKI_SEARCH_STRATEGY", "chart_keyword")
 
     @staticmethod
     def get_search_genres() -> List[str]:
@@ -255,11 +254,17 @@ class WorkerConfig:
         default_genres = "J-POP,Rock,Anime,Jazz,Classic,Pop,Electronic,Hip-Hop"
         value = os.getenv("OTODOKI_SEARCH_GENRES", default_genres)
         try:
-            genres = [genre.strip()
-                      for genre in value.split(",") if genre.strip()]
-            return genres if genres else default_genres.split(",")
-        except Exception:
-            return default_genres.split(",")
+            genres = [
+                genre.strip()
+                for genre in value.split(",")
+                if genre.strip()
+            ]
+            if genres:
+                return genres
+        except (AttributeError, TypeError):
+            pass
+
+        return [genre for genre in default_genres.split(",")]
 
     @staticmethod
     def get_search_years() -> List[str]:
@@ -271,10 +276,17 @@ class WorkerConfig:
         default_years = "2020,2021,2022,2023,2024"
         value = os.getenv("OTODOKI_SEARCH_YEARS", default_years)
         try:
-            years = [year.strip() for year in value.split(",") if year.strip()]
-            return years if years else default_years.split(",")
-        except Exception:
-            return default_years.split(",")
+            years = [
+                year.strip()
+                for year in value.split(",")
+                if year.strip()
+            ]
+            if years:
+                return years
+        except (AttributeError, TypeError):
+            pass
+
+        return [year for year in default_years.split(",")]
 
     @staticmethod
     def get_all_settings() -> dict:
@@ -305,7 +317,14 @@ class WorkerConfig:
             List[str]: 利用可能な検索戦略名のリスト
         """
         # ここに利用可能なすべての戦略名を追加
-        return ["gemini_keyword", "random_keyword", "artist_search", "genre_search", "release_year_search"]
+        return [
+            "chart_keyword",
+            "gemini_keyword",
+            "random_keyword",
+            "artist_search",
+            "genre_search",
+            "release_year_search",
+        ]
 
 
 class SuggestionsConfig:
