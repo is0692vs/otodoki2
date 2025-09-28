@@ -28,16 +28,27 @@ export function RequireAuth({
     return query ? `${basePath}?${query}` : basePath;
   }, [pathname, searchParams]);
 
+  const redirectTarget = useMemo(() => {
+    const base = redirectTo ?? "/login";
+    if (!base.startsWith("/login")) {
+      return base;
+    }
+
+    const encoded = encodeURIComponent(currentLocation || "/");
+
+    if (base.includes("redirect=")) {
+      return base.replace(/redirect=[^&]*/g, `redirect=${encoded}`);
+    }
+
+    const separator = base.includes("?") ? "&" : "?";
+    return `${base}${separator}redirect=${encoded}`;
+  }, [redirectTo, currentLocation]);
+
   useEffect(() => {
     if (status === "unauthenticated" && !isAuthenticated) {
-      const redirectParam = encodeURIComponent(currentLocation);
-      const target =
-        redirectTo ||
-        "/login" +
-          (currentLocation !== "/" ? `?redirect=${redirectParam}` : "");
-      router.replace(target);
+      router.replace(redirectTarget);
     }
-  }, [status, isAuthenticated, redirectTo, currentLocation, router]);
+  }, [status, isAuthenticated, redirectTarget, router]);
 
   if (status === "checking") {
     return (

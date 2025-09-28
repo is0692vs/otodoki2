@@ -14,6 +14,7 @@
 - `app/main.py`: FastAPI アプリケーションのエントリポイント。API ルートの定義とアプリケーションの初期化を行います。
 - `app/core/config.py`: アプリケーション全体の設定を管理します。環境変数からの値の読み込みとデフォルト値の提供を行います。
 - `app/services/worker.py`: バックグラウンドで動作し、iTunes API から楽曲データを取得し、キューを補充するワーカーロジックが含まれます。
+- `app/services/play_history.py`: ユーザーの再生履歴 (`PlayHistory`) を永続化するサービス。トラックメタデータのキャッシュ確保と `/api/v1/history/played` からのリクエスト処理を担います。
 
 ## テストと検証のポイント
 

@@ -135,3 +135,57 @@ export interface ApiResponse<T> {
   error?: ErrorResponse;
   status: number;
 }
+
+// Evaluation types
+export type EvaluationStatus = "like" | "dislike" | "skip";
+
+export interface EvaluationTrackPayload {
+  external_id: string;
+  source?: string | null;
+  title?: string | null;
+  artist?: string | null;
+  album?: string | null;
+  artwork_url?: string | null;
+  preview_url?: string | null;
+  primary_genre?: string | null;
+  duration_ms?: number | null;
+}
+
+export interface EvaluationResponse {
+  id: string;
+  external_track_id: string;
+  status: EvaluationStatus;
+  note?: string | null;
+  source?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+  track?: EvaluationTrackPayload | null;
+}
+
+export interface EvaluationListResponse {
+  items: EvaluationResponse[];
+  limit: number;
+  offset: number;
+  total: number;
+}
+
+export interface EvaluationCreateRequest {
+  track: EvaluationTrackPayload;
+  status: EvaluationStatus;
+  note?: string | null;
+  source?: string | null;
+}
+
+export interface PlayHistoryCreateRequest {
+  track: EvaluationTrackPayload;
+  source?: string | null;
+  played_at?: string | null;
+}
+
+export interface PlayHistoryResponse {
+  id: string;
+  external_track_id: string;
+  source?: string | null;
+  played_at?: string | null;
+  track?: EvaluationTrackPayload | null;
+}

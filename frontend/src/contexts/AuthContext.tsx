@@ -177,7 +177,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } else {
       setStatus("authenticated");
     }
-  }, [refresh, clearAuthState]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const register = useCallback(
     async (payload: RegisterRequest): Promise<boolean> => {

@@ -163,3 +163,50 @@ async def test_auth_and_evaluation_crud_flow(test_client: AsyncClient) -> None:
     new_tokens = refresh_response.json()
     assert new_tokens["access_token"] != access_token
     assert new_tokens["refresh_token"] != refresh_token
+
+
+@pytest.mark.asyncio
+async def test_record_playback_history(test_client: AsyncClient) -> None:
+    register_payload = {
+        "email": "history-user@example.com",
+        "password": "history-pass",
+        "display_name": "History User",
+    }
+    register_response = await test_client.post(
+        "/api/v1/auth/register",
+        json=register_payload,
+    )
+    assert register_response.status_code == 201
+
+    login_response = await test_client.post(
+        "/api/v1/auth/login",
+        json={
+            "email": register_payload["email"],
+            "password": register_payload["password"],
+        },
+    )
+    assert login_response.status_code == 200
+    access_token = login_response.json()["access_token"]
+    auth_header = {"Authorization": f"Bearer {access_token}"}
+
+    playback_payload = {
+        "track": {
+            "external_id": "track-456",
+            "title": "History Song",
+            "artist": "History Artist",
+            "album": "History Album",
+            "preview_url": "https://example.com/preview.mp3",
+        },
+        "source": "player",
+        "played_at": "2025-01-01T00:00:00Z",
+    }
+    record_response = await test_client.post(
+        "/api/v1/history/played",
+        json=playback_payload,
+        headers=auth_header,
+    )
+    assert record_response.status_code == 201
+    recorded = record_response.json()
+    assert recorded["external_track_id"] == "track-456"
+    assert recorded["source"] == "player"
+    assert recorded["track"]["title"] == "History Song"

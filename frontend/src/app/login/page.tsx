@@ -26,7 +26,14 @@ export default function LoginPage() {
   const [localError, setLocalError] = useState<string | null>(null);
 
   const redirectTarget = useMemo(() => {
-    return searchParams?.get("redirect") || "/swipe";
+    const raw = searchParams?.get("redirect");
+    if (!raw) {
+      return "/swipe";
+    }
+
+    const safeValue =
+      raw.startsWith("/") && !raw.startsWith("//") ? raw : "/swipe";
+    return safeValue;
   }, [searchParams]);
 
   useEffect(() => {

@@ -15,6 +15,7 @@ from app.db.crud import UserCRUD
 from app.dependencies import get_db_session
 from app.services.auth import AuthService
 from app.services.evaluations import EvaluationService
+from app.services.play_history import PlayHistoryService
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +38,12 @@ async def get_evaluation_service(
     session: AsyncSession = Depends(get_session),
 ) -> EvaluationService:
     return EvaluationService(session)
+
+
+async def get_play_history_service(
+    session: AsyncSession = Depends(get_session),
+) -> PlayHistoryService:
+    return PlayHistoryService(session)
 
 
 async def get_current_user(
@@ -85,5 +92,6 @@ __all__ = [
     "get_auth_service",
     "get_current_user",
     "get_evaluation_service",
+    "get_play_history_service",
     "get_session",
 ]

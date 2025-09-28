@@ -11,6 +11,7 @@ from .evaluation import (
     EvaluationListResponse,
     EvaluationResponse,
 )
+from .history import PlayHistoryCreateRequest, PlayHistoryResponse
 from .settings import PlaybackSettingRequest, PlaybackSettingResponse
 from .user import UserResponse
 
@@ -18,6 +19,8 @@ __all__ = [
     "EvaluationCreateRequest",
     "EvaluationListResponse",
     "EvaluationResponse",
+    "PlayHistoryCreateRequest",
+    "PlayHistoryResponse",
     "LoginRequest",
     "PlaybackSettingRequest",
     "PlaybackSettingResponse",

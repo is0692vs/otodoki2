@@ -9,6 +9,7 @@ otodoki2web は、マッチングアプリのようなスワイプ UI で楽曲�
 - **ユーザー登録 / ログイン**: `/register` と `/login` ページからユーザーを作成し、アクセストークン + リフレッシュトークンでセッション管理します。
 - **スワイプ式推薦**: `/swipe` でキューから音楽を取得し、Like / Skip を直感的に操作します。
 - **楽曲ライブラリ**: `/library` はログイン済みユーザー専用で、評価済みの楽曲を一覧表示します。
+- **評価・再生履歴の永続化**: スワイプ結果は `/api/v1/evaluations` に保存され、再生開始時には `/api/v1/history/played` を呼び出してユーザー別の履歴を記録します。
 - **バックグラウンド補充ワーカー**: iTunes API を活用し、PostgreSQL にキャッシュしながらキューを自動で補充します。
 - **API ドキュメント**: [http://localhost:8000/docs](http://localhost:8000/docs) にて FastAPI の OpenAPI スキーマを確認できます。
 
@@ -82,7 +83,7 @@ docker compose up -d --build
   GEMINI_API_KEY=dummy \
   PYTHONPATH=./backend pytest backend/tests/
   ```
-  すべてのテストは 2025-02 時点で 60 件成功しています。
+  すべてのテストは 2025-02 時点で 61 件成功しています。
 - **マイグレーション**: Alembic を使用します。新しいモデルを追加したら `alembic revision --autogenerate -m "message"` を実行し、`alembic upgrade head` で反映します。
 - **ログ確認**: `docker compose logs --tail=200 api` や `docker compose logs -f worker` でバックエンドとキュー補充ワーカーの状態を追跡できます。
 

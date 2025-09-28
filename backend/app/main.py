@@ -1,13 +1,17 @@
 from fastapi import FastAPI, Depends, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 import time
-import os
 import logging
 from datetime import datetime
 from contextlib import asynccontextmanager
 from typing import Optional
 
-from .api.routes import auth_router, evaluations_router, playback_router
+from .api.routes import (
+    auth_router,
+    evaluations_router,
+    history_router,
+    playback_router,
+)
 from .dependencies import (
     get_queue_manager,
     get_worker,
@@ -59,6 +63,7 @@ app = FastAPI(
 
 app.include_router(auth_router)
 app.include_router(evaluations_router)
+app.include_router(history_router)
 app.include_router(playback_router)
 
 
@@ -86,14 +91,12 @@ async def logging_middleware(request: Request, call_next):
     return response
 
 # CORS設定（開発環境用）
-origins = os.getenv("ORIGINS", "http://localhost:3000").split(",")
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=False,  # 当面はCookieを使わない前提
-    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type", "*"],
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # アプリケーション開始時刻を記録

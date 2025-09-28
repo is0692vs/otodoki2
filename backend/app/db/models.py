@@ -67,6 +67,13 @@ class User(SQLModel, table=True):
             cascade="all, delete-orphan",
         ),
     )
+    play_history: Mapped[list["PlayHistory"]] = Relationship(
+        sa_relationship=relationship(
+            "PlayHistory",
+            back_populates="user",
+            cascade="all, delete-orphan",
+        ),
+    )
 
 
 class TrackCache(SQLModel, table=True):
@@ -106,6 +113,12 @@ class TrackCache(SQLModel, table=True):
     evaluations: Mapped[list["Evaluation"]] = Relationship(
         sa_relationship=relationship(
             "Evaluation",
+            back_populates="track",
+        ),
+    )
+    play_history_entries: Mapped[list["PlayHistory"]] = Relationship(
+        sa_relationship=relationship(
+            "PlayHistory",
             back_populates="track",
         ),
     )
@@ -173,6 +186,50 @@ class Evaluation(SQLModel, table=True):
     )
 
 
+class PlayHistory(SQLModel, table=True):
+    __tablename__ = "play_history"  # type: ignore[assignment]
+
+    id: uuid.UUID = Field(
+        default_factory=uuid.uuid4,
+        primary_key=True,
+        index=True,
+        nullable=False,
+    )
+    user_id: uuid.UUID = Field(
+        foreign_key="users.id",
+        nullable=False,
+        index=True,
+    )
+    track_id: int | None = Field(
+        default=None,
+        foreign_key="track_cache.id",
+        index=True,
+    )
+    external_track_id: str = Field(nullable=False, index=True, max_length=100)
+    played_at: datetime | None = Field(
+        default=None,
+        sa_column=Column(
+            DateTime(timezone=True),
+            server_default=func.now(),
+            nullable=False,
+        ),
+    )
+    source: str | None = Field(default=None, max_length=50)
+
+    user: Mapped["User"] = Relationship(
+        sa_relationship=relationship(
+            "User",
+            back_populates="play_history",
+        ),
+    )
+    track: Mapped["TrackCache | None"] = Relationship(
+        sa_relationship=relationship(
+            "TrackCache",
+            back_populates="play_history_entries",
+        ),
+    )
+
+
 class PlaybackSetting(SQLModel, table=True):
     __tablename__ = "playback_settings"  # type: ignore[assignment]
 
@@ -217,6 +274,7 @@ class PlaybackSetting(SQLModel, table=True):
 __all__ = [
     "Evaluation",
     "EvaluationStatus",
+    "PlayHistory",
     "PlaybackSetting",
     "TrackCache",
     "User",
@@ -225,6 +283,7 @@ __all__ = [
 User.__annotations__ = get_type_hints(User, globals(), locals())
 TrackCache.__annotations__ = get_type_hints(TrackCache, globals(), locals())
 Evaluation.__annotations__ = get_type_hints(Evaluation, globals(), locals())
+PlayHistory.__annotations__ = get_type_hints(PlayHistory, globals(), locals())
 PlaybackSetting.__annotations__ = get_type_hints(
     PlaybackSetting,
     globals(),

@@ -18,6 +18,12 @@ import {
   type RegisterRequest,
   type LoginRequest,
   type RefreshTokenRequest,
+  type EvaluationCreateRequest,
+  type EvaluationListResponse,
+  type EvaluationResponse,
+  type EvaluationStatus,
+  type PlayHistoryCreateRequest,
+  type PlayHistoryResponse,
 } from "./types";
 
 export class ApiClient {
@@ -247,6 +253,68 @@ export class ApiClient {
       }
     );
   }
+
+  /**
+   * GET /api/v1/evaluations - List evaluations for current user
+   */
+  async listEvaluations(
+    params: {
+      status?: EvaluationStatus;
+      limit?: number;
+      offset?: number;
+    } = {}
+  ): Promise<ApiResponse<EvaluationListResponse>> {
+    const searchParams = new URLSearchParams();
+
+    if (params.status) {
+      searchParams.append("status", params.status);
+    }
+
+    if (params.limit !== undefined) {
+      searchParams.append("limit", params.limit.toString());
+    }
+
+    if (params.offset !== undefined) {
+      searchParams.append("offset", params.offset.toString());
+    }
+
+    const queryString = searchParams.toString();
+    const url = `${this.baseUrl}/api/v1/evaluations${
+      queryString ? `?${queryString}` : ""
+    }`;
+
+    return this.fetchWithTimeout<EvaluationListResponse>(url);
+  }
+
+  /**
+   * POST /api/v1/evaluations - Create a new evaluation for current user
+   */
+  async createEvaluation(
+    payload: EvaluationCreateRequest
+  ): Promise<ApiResponse<EvaluationResponse>> {
+    return this.fetchWithTimeout<EvaluationResponse>(
+      `${this.baseUrl}/api/v1/evaluations`,
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }
+    );
+  }
+
+  /**
+   * POST /api/v1/history/played - Record a playback event for the current user
+   */
+  async recordPlayback(
+    payload: PlayHistoryCreateRequest
+  ): Promise<ApiResponse<PlayHistoryResponse>> {
+    return this.fetchWithTimeout<PlayHistoryResponse>(
+      `${this.baseUrl}/api/v1/history/played`,
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }
+    );
+  }
 }
 
 // Default client instance
@@ -274,5 +342,18 @@ export const api = {
     refresh: (payload: RefreshTokenRequest) => apiClient.refresh(payload),
     setToken: (token: string | null | undefined) =>
       apiClient.setAccessToken(token),
+  },
+  evaluations: {
+    list: (params?: {
+      status?: EvaluationStatus;
+      limit?: number;
+      offset?: number;
+    }) => apiClient.listEvaluations(params || {}),
+    create: (payload: EvaluationCreateRequest) =>
+      apiClient.createEvaluation(payload),
+  },
+  history: {
+    played: (payload: PlayHistoryCreateRequest) =>
+      apiClient.recordPlayback(payload),
   },
 };
