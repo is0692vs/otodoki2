@@ -13,81 +13,213 @@ import {
   ChevronRight,
 } from "lucide-react";
 import Link from "next/link";
-import {
-  getLikedTracks,
-  removeLikedTrack,
-  clearLikedTracks,
-  getDislikedTracks,
-  removeDislikedTrack,
-  clearDislikedTracks,
-} from "@/lib/storage";
-import { Track } from "@/services/types";
-import { storedTrackToTrack, storedDislikedTrackToTrack } from "@/lib/utils";
+import { api } from "@/services";
+import { EvaluationResponse, Track } from "@/services/types";
 import { useAuth } from "@/contexts/AuthContext";
+
+const FALLBACK_TITLE = "タイトル情報なし";
+const FALLBACK_ARTIST = "アーティスト情報なし";
+
+function evaluationToTrack(evaluation: EvaluationResponse): Track {
+  const payload = evaluation.track;
+
+  return {
+    id: payload?.external_id ?? evaluation.external_track_id,
+    title: payload?.title ?? FALLBACK_TITLE,
+    artist: payload?.artist ?? FALLBACK_ARTIST,
+    artwork_url: payload?.artwork_url ?? undefined,
+    preview_url: payload?.preview_url ?? undefined,
+    album: payload?.album ?? undefined,
+    duration_ms: payload?.duration_ms ?? undefined,
+    genre: payload?.primary_genre ?? undefined,
+  };
+}
+
+function mapEvaluationsToTracks(items?: EvaluationResponse[]): Track[] {
+  if (!items || items.length === 0) {
+    return [];
+  }
+  return items.map(evaluationToTrack);
+}
 
 export default function Library() {
   const { isAuthenticated } = useAuth();
   const [likedTracks, setLikedTracks] = useState<Track[]>([]);
   const [dislikedTracks, setDislikedTracks] = useState<Track[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const TRACK_LIMIT = 12;
 
-  const loadTracks = useCallback(() => {
-    setLoading(true);
-    const storedLiked = getLikedTracks();
-    setLikedTracks(storedLiked.map(storedTrackToTrack));
-    const storedDisliked = getDislikedTracks();
-    setDislikedTracks(storedDisliked.map(storedDislikedTrackToTrack));
-    setLoading(false);
-  }, []);
-
-  useEffect(() => {
+  const loadTracks = useCallback(async () => {
     if (!isAuthenticated) {
       setLikedTracks([]);
       setDislikedTracks([]);
+      setError(null);
       setLoading(false);
       return;
     }
-    loadTracks();
-  }, [loadTracks, isAuthenticated]);
 
-  const handleRemoveTrack = (trackId: string | number) => {
-    if (removeLikedTrack(trackId)) {
-      loadTracks();
-      console.log(`🗑️ Removed track from library: ${trackId}`);
-    }
-  };
+    setLoading(true);
+    setError(null);
 
-  const handleClearAll = () => {
-    if (
-      confirm(
-        "すべてのお気に入り楽曲を削除しますか？この操作は元に戻せません。"
-      )
-    ) {
-      if (clearLikedTracks()) {
+    try {
+      const [likedRes, dislikedRes] = await Promise.all([
+        api.evaluations.list({ status: "like", limit: 200, offset: 0 }),
+        api.evaluations.list({ status: "dislike", limit: 200, offset: 0 }),
+      ]);
+
+      let nextError: string | null = null;
+
+      if (likedRes.data) {
+        setLikedTracks(mapEvaluationsToTracks(likedRes.data.items));
+      } else {
         setLikedTracks([]);
-        console.log("🗑️ Cleared all liked tracks");
+        nextError =
+          likedRes.error?.detail ??
+          likedRes.error?.error ??
+          "お気に入り楽曲の取得に失敗しました。";
       }
-    }
-  };
 
-  const handleRemoveDislikedTrack = (trackId: string | number) => {
-    if (removeDislikedTrack(trackId)) {
-      loadTracks();
-      console.log(`🗑️ Removed disliked track from library: ${trackId}`);
-    }
-  };
-
-  const handleClearDislikedTracks = () => {
-    if (
-      confirm("すべてのスキップ楽曲を削除しますか？この操作は元に戻せません。")
-    ) {
-      if (clearDislikedTracks()) {
+      if (dislikedRes.data) {
+        setDislikedTracks(mapEvaluationsToTracks(dislikedRes.data.items));
+      } else {
         setDislikedTracks([]);
-        console.log("🗑️ Cleared all disliked tracks");
+        if (!nextError) {
+          nextError =
+            dislikedRes.error?.detail ??
+            dislikedRes.error?.error ??
+            "スキップした楽曲の取得に失敗しました。";
+        }
       }
+
+      if (nextError) {
+        setError(nextError);
+      }
+    } catch (err) {
+      console.error("ライブラリの取得中にエラーが発生しました", err);
+      setLikedTracks([]);
+      setDislikedTracks([]);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "ライブラリの取得中に予期しないエラーが発生しました。"
+      );
+    } finally {
+      setLoading(false);
     }
-  };
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    void loadTracks();
+  }, [loadTracks]);
+
+  const handleRemoveTrack = useCallback(
+    async (trackId: string | number) => {
+      setError(null);
+      setLoading(true);
+
+      const response = await api.evaluations.delete(String(trackId));
+      if (response.error) {
+        const message =
+          response.error.detail ??
+          response.error.error ??
+          "お気に入りから削除できませんでした。";
+        setError(message);
+        setLoading(false);
+        return;
+      }
+
+      await loadTracks();
+    },
+    [loadTracks]
+  );
+
+  const handleClearAll = useCallback(async () => {
+    if (likedTracks.length === 0) {
+      return;
+    }
+
+    const confirmed = confirm(
+      "すべてのお気に入り楽曲を削除しますか？この操作は元に戻せません。"
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    setError(null);
+    setLoading(true);
+
+    const responses = await Promise.all(
+      likedTracks.map((track) => api.evaluations.delete(String(track.id)))
+    );
+
+    const failed = responses.find((res) => res.error);
+    if (failed?.error) {
+      const message =
+        failed.error.detail ??
+        failed.error.error ??
+        "お気に入りの一括削除に失敗しました。";
+      setError(message);
+      setLoading(false);
+      return;
+    }
+
+    await loadTracks();
+  }, [likedTracks, loadTracks]);
+
+  const handleRemoveDislikedTrack = useCallback(
+    async (trackId: string | number) => {
+      setError(null);
+      setLoading(true);
+
+      const response = await api.evaluations.delete(String(trackId));
+      if (response.error) {
+        const message =
+          response.error.detail ??
+          response.error.error ??
+          "スキップ履歴から削除できませんでした。";
+        setError(message);
+        setLoading(false);
+        return;
+      }
+
+      await loadTracks();
+    },
+    [loadTracks]
+  );
+
+  const handleClearDislikedTracks = useCallback(async () => {
+    if (dislikedTracks.length === 0) {
+      return;
+    }
+
+    const confirmed = confirm(
+      "すべてのスキップ楽曲を削除しますか？この操作は元に戻せません。"
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    setError(null);
+    setLoading(true);
+
+    const responses = await Promise.all(
+      dislikedTracks.map((track) => api.evaluations.delete(String(track.id)))
+    );
+
+    const failed = responses.find((res) => res.error);
+    if (failed?.error) {
+      const message =
+        failed.error.detail ??
+        failed.error.error ??
+        "スキップ楽曲の一括削除に失敗しました。";
+      setError(message);
+      setLoading(false);
+      return;
+    }
+
+    await loadTracks();
+  }, [dislikedTracks, loadTracks]);
 
   const loadingNode = (
     <Container className="py-16">
@@ -119,6 +251,12 @@ export default function Library() {
     <RequireAuth loading={loadingNode} fallback={fallbackNode}>
       <Container className="py-8">
         <div className="space-y-6">
+          {error && (
+            <div className="rounded-md border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+              {error}
+            </div>
+          )}
+
           {/* Liked Tracks Section */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -144,8 +282,11 @@ export default function Library() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={loadTracks}
+                onClick={() => {
+                  void loadTracks();
+                }}
                 className="gap-2"
+                disabled={loading}
               >
                 <RotateCcw className="h-4 w-4" />
                 更新
@@ -154,8 +295,11 @@ export default function Library() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={handleClearAll}
+                  onClick={() => {
+                    void handleClearAll();
+                  }}
                   className="gap-2 text-destructive hover:bg-destructive/10"
+                  disabled={loading}
                 >
                   <Trash2 className="h-4 w-4" />
                   すべて削除
@@ -196,8 +340,11 @@ export default function Library() {
                   <Button
                     variant="destructive"
                     size="sm"
-                    onClick={() => handleRemoveTrack(track.id)}
+                    onClick={() => {
+                      void handleRemoveTrack(track.id);
+                    }}
                     className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity gap-1"
+                    disabled={loading}
                   >
                     <Trash2 className="h-3 w-3" />
                     削除
@@ -234,8 +381,11 @@ export default function Library() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={handleClearDislikedTracks}
+                    onClick={() => {
+                      void handleClearDislikedTracks();
+                    }}
                     className="gap-2 text-destructive hover:bg-destructive/10"
+                    disabled={loading}
                   >
                     <Trash2 className="h-4 w-4" />
                     すべて削除
@@ -274,8 +424,11 @@ export default function Library() {
                     <Button
                       variant="secondary"
                       size="sm"
-                      onClick={() => handleRemoveDislikedTrack(track.id)}
+                      onClick={() => {
+                        void handleRemoveDislikedTrack(track.id);
+                      }}
                       className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity gap-1"
+                      disabled={loading}
                     >
                       <RotateCcw className="h-3 w-3" />
                       解除

@@ -91,9 +91,25 @@ export class ApiClient {
         };
       }
 
-      const data = await response.json();
+      const contentType = response.headers.get("content-type") ?? "";
+
+      if (contentType.includes("application/json")) {
+        const data = await response.json();
+        return {
+          data,
+          status: response.status,
+        };
+      }
+
+      const textData = await response.text();
+      if (textData) {
+        return {
+          data: textData as unknown as T,
+          status: response.status,
+        };
+      }
+
       return {
-        data,
         status: response.status,
       };
     } catch (error) {
@@ -302,6 +318,20 @@ export class ApiClient {
   }
 
   /**
+   * DELETE /api/v1/evaluations/{external_track_id} - Delete an evaluation for current user
+   */
+  async deleteEvaluation(externalTrackId: string): Promise<ApiResponse<void>> {
+    return this.fetchWithTimeout<void>(
+      `${this.baseUrl}/api/v1/evaluations/${encodeURIComponent(
+        externalTrackId
+      )}`,
+      {
+        method: "DELETE",
+      }
+    );
+  }
+
+  /**
    * POST /api/v1/history/played - Record a playback event for the current user
    */
   async recordPlayback(
@@ -351,6 +381,8 @@ export const api = {
     }) => apiClient.listEvaluations(params || {}),
     create: (payload: EvaluationCreateRequest) =>
       apiClient.createEvaluation(payload),
+    delete: (externalTrackId: string) =>
+      apiClient.deleteEvaluation(externalTrackId),
   },
   history: {
     played: (payload: PlayHistoryCreateRequest) =>

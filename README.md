@@ -8,7 +8,7 @@ otodoki2web は、マッチングアプリのようなスワイプ UI で楽曲�
 
 - **ユーザー登録 / ログイン**: `/register` と `/login` ページからユーザーを作成し、アクセストークン + リフレッシュトークンでセッション管理します。
 - **スワイプ式推薦**: `/swipe` でキューから音楽を取得し、Like / Skip を直感的に操作します。
-- **楽曲ライブラリ**: `/library` はログイン済みユーザー専用で、評価済みの楽曲を一覧表示します。
+- **楽曲ライブラリ**: `/library` はログイン済みユーザー専用で、バックエンド API を使用して評価済みの楽曲を一覧表示します。
 - **評価・再生履歴の永続化**: スワイプ結果は `/api/v1/evaluations` に保存され、再生開始時には `/api/v1/history/played` を呼び出してユーザー別の履歴を記録します。
 - **バックグラウンド補充ワーカー**: iTunes API を活用し、PostgreSQL にキャッシュしながらキューを自動で補充します。
 - **API ドキュメント**: [http://localhost:8000/docs](http://localhost:8000/docs) にて FastAPI の OpenAPI スキーマを確認できます。
@@ -46,20 +46,25 @@ docker compose up -d --build
 - フロントエンド: [http://localhost:3000](http://localhost:3000)
 - バックエンド API: [http://localhost:8000](http://localhost:8000)
 
+API コンテナ起動時に Alembic を使用したデータベースマイグレーションが自動実行されます。手動でマイグレーションを実行する必要はありません。
+
 停止は `docker compose down` または `make down` を利用してください。
 
 ## バックエンド環境変数
 
-| 変数名                             | 説明                                                                                                                                                   | デフォルト  |
-| :--------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------- | :---------- |
-| `DATABASE_URL`                     | PostgreSQL 接続文字列。Docker Compose では `.env` の値 (デフォルト: `postgresql+asyncpg://otodoki:otodoki-password@db:5432/otodoki2`) が使用されます。 | `.env` 参照 |
-| `JWT_SECRET_KEY`                   | アクセストークン署名用のシークレットキー。                                                                                                             | (必須)      |
-| `JWT_REFRESH_SECRET_KEY`           | リフレッシュトークン署名用シークレット。                                                                                                               | (必須)      |
-| `JWT_ALGORITHM`                    | トークン署名アルゴリズム。                                                                                                                             | `HS256`     |
-| `JWT_ACCESS_TOKEN_EXPIRE_MINUTES`  | アクセストークンの有効期限 (分)。                                                                                                                      | `30`        |
-| `JWT_REFRESH_TOKEN_EXPIRE_MINUTES` | リフレッシュトークンの有効期限 (分)。                                                                                                                  | `4320`      |
-| `GEMINI_API_KEY`                   | Gemini を利用したキーワード生成に使用します。開発時はダミー値でも可。                                                                                  | `changeme`  |
-| `OTODOKI_*`                        | iTunes 検索戦略やワーカーの閾値を調整する環境変数群。詳細は `backend/app/core/config.py` を参照してください。                                          | -           |
+| 変数名                             | 説明                                                                                                                                                   | デフォルト         |
+| :--------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------- | :----------------- |
+| `DATABASE_URL`                     | PostgreSQL 接続文字列。Docker Compose では `.env` の値 (デフォルト: `postgresql+asyncpg://otodoki:otodoki-password@db:5432/otodoki2`) が使用されます。 | `.env` 参照        |
+| `POSTGRES_DB`                      | PostgreSQL データベース名。Docker Compose の db サービスで使用されます。                                                                               | `otodoki2`         |
+| `POSTGRES_USER`                    | PostgreSQL ユーザー名。Docker Compose の db サービスで使用されます。                                                                                   | `otodoki`          |
+| `POSTGRES_PASSWORD`                | PostgreSQL パスワード。Docker Compose の db サービスで使用されます。                                                                                   | `otodoki-password` |
+| `JWT_SECRET_KEY`                   | アクセストークン署名用のシークレットキー。                                                                                                             | (必須)             |
+| `JWT_REFRESH_SECRET_KEY`           | リフレッシュトークン署名用シークレット。                                                                                                               | (必須)             |
+| `JWT_ALGORITHM`                    | トークン署名アルゴリズム。                                                                                                                             | `HS256`            |
+| `JWT_ACCESS_TOKEN_EXPIRE_MINUTES`  | アクセストークンの有効期限 (分)。                                                                                                                      | `30`               |
+| `JWT_REFRESH_TOKEN_EXPIRE_MINUTES` | リフレッシュトークンの有効期限 (分)。                                                                                                                  | `4320`             |
+| `GEMINI_API_KEY`                   | Gemini を利用したキーワード生成に使用します。開発時はダミー値でも可。                                                                                  | `changeme`         |
+| `OTODOKI_*`                        | iTunes 検索戦略やワーカーの閾値を調整する環境変数群。詳細は `backend/app/core/config.py` を参照してください。                                          | -                  |
 
 `.env` に値を記載すると、Docker Compose およびローカル実行で自動的に読み込まれます。
 

@@ -30,6 +30,6 @@
 
 - 新しいページやルートを追加する場合は、`src/app/` ディレクトリ内に新しいディレクトリと `page.tsx` ファイルを作成してください。
 - 認証が必要なページでは `RequireAuth` を利用し、リダイレクトやローディング状態を適切に扱ってください。
-- ログイン状態やトークン操作は `AuthContext` / `useAuth` を通じて行い、独自に `localStorage` を操作しないことを推奨します。
+- ログイン状態やトークン操作は `AuthContext` / `useAuth` を通じて行い、独自に `localStorage` を操作しないことを推奨します。`/library` ページではバックエンド API を使用して評価データを取得します。
 - バックエンド API と通信する際は `src/services/api-client.ts` を拡張し、`NEXT_PUBLIC_API_URL` を基準にエンドポイントを構築してください。
 - 依存関係を追加する場合は、`package.json` を更新し、`npm install` または `yarn install` を実行してください。
