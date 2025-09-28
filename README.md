@@ -2,7 +2,7 @@
 
 ## otodoki2web について
 
-otodoki2web は、マッチングアプリのようなスワイプ UI で楽曲を評価・収集できる Web アプリケーションです。FastAPI + SQLModel で構成されたバックエンド API と Next.js (App Router) のフロントエンドにより、リアルタイムでキューを補充しながら新しい楽曲に出会えます。2025 年 2 月より、PostgreSQL を利用した永続化とユーザー認証 (メール + パスワード, JWT) をサポートしました。
+otodoki2web は、マッチングアプリのようなスワイプ UI で楽曲を評価・収集できる Web アプリケーション及びモバイルアプリケーションです。FastAPI + SQLModel で構成されたバックエンド API と Next.js (App Router) の Web フロントエンド、React Native のモバイルアプリにより、リアルタイムでキューを補充しながら新しい楽曲に出会えます。2025 年 2 月より、PostgreSQL を利用した永続化とユーザー認証 (メール + パスワード, JWT) をサポートしました。
 
 ## 主な機能
 
@@ -18,7 +18,8 @@ otodoki2web は、マッチングアプリのようなスワイプ UI で楽曲�
 ```
 otodoki2web/
 ├── backend/           # FastAPI アプリケーションとテストコード
-├── frontend/          # Next.js フロントエンド (App Router)
+├── frontend-web/      # Next.js Web フロントエンド (App Router)
+├── frontend-mobile/   # React Native モバイルアプリ
 ├── docs/              # 設計ドキュメント
 ├── scripts/           # 開発・検証スクリプト
 ├── docker-compose.yml # コンテナオーケストレーション
@@ -43,10 +44,28 @@ docker compose up -d --build
 
 起動後は以下からアクセスできます。
 
-- フロントエンド: [http://localhost:3000](http://localhost:3000)
+- Web フロントエンド: [http://localhost:3000](http://localhost:3000)
 - バックエンド API: [http://localhost:8000](http://localhost:8000)
 
 API コンテナ起動時に Alembic を使用したデータベースマイグレーションが自動実行されます。手動でマイグレーションを実行する必要はありません。
+
+### モバイルアプリの起動
+
+React Native モバイルアプリを起動するには:
+
+```bash
+cd frontend-mobile
+npm install
+
+# iOS の場合
+cd ios && pod install && cd ..
+npm run ios
+
+# Android の場合
+npm run android
+```
+
+**注意**: モバイルアプリ開発には React Native の開発環境（Xcode または Android Studio）が必要です。
 
 停止は `docker compose down` または `make down` を利用してください。
 
@@ -70,7 +89,11 @@ API コンテナ起動時に Alembic を使用したデータベースマイグ�
 
 ## フロントエンド環境変数
 
+### Web版
 - `NEXT_PUBLIC_API_URL`: バックエンド API のベース URL。未設定の場合は `http://localhost:8000` が使用されます。
+
+### モバイル版
+モバイルアプリのAPI接続先は `frontend-mobile/src/services/api-client.ts` で設定できます。開発時のデフォルトは `http://localhost:8000` です。
 
 ## ユーザー認証フロー概要
 
