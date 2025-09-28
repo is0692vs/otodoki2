@@ -7,8 +7,11 @@ gha-creds-*.json
 .vscode/
 .idea/
 
+node_modules/
+
 # Python
 venv/
+,venv/
 __pycache__/
 *.pyc
 *.pyo
