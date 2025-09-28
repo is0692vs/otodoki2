@@ -4,18 +4,20 @@ import { useState, useEffect, useCallback } from "react";
 import { Container } from "@/components/Container";
 import { RequireAuth } from "@/components/RequireAuth";
 import { PlayableTrackCard } from "@/components/PlayableTrackCard";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Heart,
   Trash2,
   RotateCcw,
   ThumbsDown,
   ChevronRight,
+  Download,
 } from "lucide-react";
 import Link from "next/link";
 import { api } from "@/services";
 import { EvaluationResponse, Track } from "@/services/types";
 import { useAuth } from "@/contexts/AuthContext";
+import { cn } from "@/lib/utils";
 
 const FALLBACK_TITLE = "タイトル情報なし";
 const FALLBACK_ARTIST = "アーティスト情報なし";
@@ -42,8 +44,10 @@ function mapEvaluationsToTracks(items?: EvaluationResponse[]): Track[] {
   return items.map(evaluationToTrack);
 }
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
 export default function Library() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user, tokens } = useAuth();
   const [likedTracks, setLikedTracks] = useState<Track[]>([]);
   const [dislikedTracks, setDislikedTracks] = useState<Track[]>([]);
   const [loading, setLoading] = useState(true);
@@ -247,6 +251,12 @@ export default function Library() {
     </Container>
   );
 
+  const exportHref = tokens?.accessToken
+    ? `${API_BASE_URL}/api/v1/export/likes.csv?access_token=${encodeURIComponent(
+        tokens.accessToken
+      )}`
+    : `${API_BASE_URL}/api/v1/export/likes.csv`;
+
   return (
     <RequireAuth loading={loadingNode} fallback={fallbackNode}>
       <Container className="py-8">
@@ -271,6 +281,22 @@ export default function Library() {
               </div>
             </div>
             <div className="flex gap-2">
+              {isAuthenticated &&
+                user &&
+                likedTracks.length > 0 &&
+                tokens?.accessToken && (
+                  <a
+                    href={exportHref}
+                    download="otodoki2-likes.csv"
+                    className={cn(
+                      buttonVariants({ variant: "outline", size: "sm" }),
+                      "gap-2"
+                    )}
+                  >
+                    <Download className="h-4 w-4" />
+                    CSVでエクスポート
+                  </a>
+                )}
               {likedTracks.length > TRACK_LIMIT && (
                 <Link href="/collection/liked" passHref>
                   <Button variant="ghost" className="h-auto p-0 text-sm">

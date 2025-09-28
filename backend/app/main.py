@@ -9,6 +9,7 @@ from typing import Optional
 from .api.routes import (
     auth_router,
     evaluations_router,
+    export_router,
     history_router,
     playback_router,
 )
@@ -63,6 +64,7 @@ app = FastAPI(
 
 app.include_router(auth_router)
 app.include_router(evaluations_router)
+app.include_router(export_router)
 app.include_router(history_router)
 app.include_router(playback_router)
 
