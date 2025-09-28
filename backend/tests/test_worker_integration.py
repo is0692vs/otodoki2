@@ -1,18 +1,20 @@
-"""
-ワーカー統合テスト
+"""ワーカー統合テスト.
+
 モックデータを使用してワーカーの動作を検証
 """
 
-import pytest
 from unittest.mock import AsyncMock, patch
+
+import pytest
 
 from app.core.queue import QueueManager
 from app.services.worker import QueueReplenishmentWorker
 
 
 @pytest.fixture(autouse=True)
-def _setup_gemini_key(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("GEMINI_API_KEY", "test-gemini-key")
+def _set_gemini_api_key(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Gemini戦略がロードされるためダミーのAPIキーを設定する。"""
+    monkeypatch.setenv("GEMINI_API_KEY", "dummy-key")
 
 
 class TestWorkerIntegration:

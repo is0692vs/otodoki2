@@ -1,6 +1,6 @@
 """
 アプリケーション設定管理モジュール
-キューの設定値を環境変数から読み込み、適切なデフォルト値を提供する
+各種設定値を環境変数から読み込み、適切なデフォルト値を提供する
 """
 
 import os
@@ -240,10 +240,9 @@ class WorkerConfig:
         """検索戦略を取得
 
         Returns:
-            str: 検索戦略名（デフォルト: "gemini_keyword"）
+            str: 検索戦略名（デフォルト: "chart_keyword"）
         """
-        # README.md に記載のデフォルト値 'gemini_keyword' を使用し、環境変数から読み込むように修正
-        return os.getenv("OTODOKI_SEARCH_STRATEGY", "gemini_keyword")
+        return os.getenv("OTODOKI_SEARCH_STRATEGY", "chart_keyword")
 
     @staticmethod
     def get_search_genres() -> List[str]:
@@ -307,6 +306,7 @@ class WorkerConfig:
         """
         # ここに利用可能なすべての戦略名を追加
         return [
+            "chart_keyword",
             "gemini_keyword",
             "random_keyword",
             "artist_search",
