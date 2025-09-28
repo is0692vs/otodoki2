@@ -1,4 +1,16 @@
 services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
   api:
     build:
       context: ./backend
@@ -17,6 +29,9 @@ services:
       start_period: 60s
     volumes:
       - ./backend/app:/app/app
+    depends_on:
+      db:
+        condition: service_started
 
   web:
     build:
@@ -26,7 +41,7 @@ services:
     restart: unless-stopped
     environment:
       - CHOKIDAR_USEPOLLING=1
-      - NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
     volumes:
       - ./frontend:/app
       - /app/node_modules
@@ -34,3 +49,6 @@ services:
     depends_on:
       api:
         condition: service_healthy
+
+volumes:
+  postgres_data:

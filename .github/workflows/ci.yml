@@ -1,4 +1,4 @@
-name: CI
+name: CI Updated
 
 on:
   push:
@@ -36,19 +36,26 @@ jobs:
           cat docker-compose.yml
           echo "-------------------------------------"
 
-      - name: Create .env for docker-compose (use GEMINI_API_KEY if available, else fallback)
+      - name: Create .env for docker-compose
         run: |
-          # Always set a safe default search strategy for CI (useful for forks where secrets are not available)
-          echo "OTODOKI_SEARCH_STRATEGY=random_keyword" > .env
+          # PostgreSQL settings
+          echo "POSTGRES_DB=otodoki2" > .env
+          echo "POSTGRES_USER=otodoki" >> .env
+          echo "POSTGRES_PASSWORD=otodoki-password" >> .env
+          echo "DATABASE_URL=postgresql+asyncpg://otodoki:otodoki-password@db:5432/otodoki2" >> .env
 
-          # If repository secret GEMINI_API_KEY is present, append it (this will be empty for forks)
+          # JWT settings (dummy values for CI)
+          echo "JWT_SECRET_KEY=dummy-secret-key-for-ci-testing" >> .env
+          echo "JWT_REFRESH_SECRET_KEY=dummy-refresh-secret-key-for-ci-testing" >> .env
+
+          # Search strategy settings
+          echo "OTODOKI_SEARCH_STRATEGY=random_keyword" >> .env
           if [ -n "${{ secrets.GEMINI_API_KEY }}" ]; then
             echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" >> .env
-            # Optionally enable the default strategy if you prefer Gemini in CI
             echo "OTODOKI_SEARCH_STRATEGY=gemini_keyword" >> .env
           fi
 
-          # (任意) 他の env を必要ならここに追加
+          # Other settings
           echo "OTODOKI_COUNTRY=JP" >> .env
 
       - name: Build and start services with docker compose
@@ -156,18 +163,26 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Create .env for docker-compose (use GEMINI_API_KEY if available, else fallback)
+      - name: Create .env for docker-compose
         run: |
-          # Default to a safe search strategy so API won't crash if GEMINI_API_KEY is missing (e.g. forks)
-          echo "OTODOKI_SEARCH_STRATEGY=random_keyword" > .env
+          # PostgreSQL settings
+          echo "POSTGRES_DB=otodoki2" > .env
+          echo "POSTGRES_USER=otodoki" >> .env
+          echo "POSTGRES_PASSWORD=otodoki-password" >> .env
+          echo "DATABASE_URL=postgresql+asyncpg://otodoki:otodoki-password@db:5432/otodoki2" >> .env
 
-          # If repository secret GEMINI_API_KEY is present, append it and prefer gemini strategy
+          # JWT settings (dummy values for CI)
+          echo "JWT_SECRET_KEY=dummy-secret-key-for-ci-testing" >> .env
+          echo "JWT_REFRESH_SECRET_KEY=dummy-refresh-secret-key-for-ci-testing" >> .env
+
+          # Search strategy settings
+          echo "OTODOKI_SEARCH_STRATEGY=random_keyword" >> .env
           if [ -n "${{ secrets.GEMINI_API_KEY }}" ]; then
             echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" >> .env
             echo "OTODOKI_SEARCH_STRATEGY=gemini_keyword" >> .env
           fi
 
-          # safe defaults used by the app
+          # Other settings
           echo "OTODOKI_COUNTRY=JP" >> .env
 
       - name: Build and start services with docker compose

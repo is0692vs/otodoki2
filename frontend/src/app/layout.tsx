@@ -4,6 +4,7 @@ import "./globals.css";
 import { AppHeader } from "@/components/AppHeader";
 import { AudioPlayerProvider } from "@/contexts/AudioPlayerContext";
 import { DevTools } from "@/components/DevTools";
+import { AuthProvider } from "@/contexts/AuthContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,12 +33,15 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-screen bg-background font-sans antialiased">
-        <div className="relative flex min-h-screen flex-col">
-          <AppHeader />
-          <AudioPlayerProvider>
-            <main className="flex-1">{children}</main>
-          </AudioPlayerProvider>
-        </div>
+        <AuthProvider>
+          <div className="relative flex min-h-screen flex-col">
+            <AppHeader />
+            <AudioPlayerProvider>
+              <main className="flex-1">{children}</main>
+            </AudioPlayerProvider>
+          </div>
+          <DevTools />
+        </AuthProvider>
       </body>
     </html>
   );

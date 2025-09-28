@@ -6,7 +6,8 @@
 
 - [WORKER_README.md](./WORKER_README.md) - iTunes API 非同期補充ワーカーのドキュメント
 - [API.md](./API.md) - API 仕様ドキュメント（予定）
-- [DEPLOYMENT.md](./DEPLOYMENT.md) - デプロイメントガイド（予定）
+- [DEPLOYMENT.md](./DEPLOYMENT.md) - デプロイメントガイド
+- [AUDIO_PREVIEW_IMPLEMENTATION.md](./AUDIO_PREVIEW_IMPLEMENTATION.md) - オーディオプレビュー実装ドキュメント
 
 ## プロジェクト構造
 

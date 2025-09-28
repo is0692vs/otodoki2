@@ -1,55 +1,46 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
-
 ## Otodoki2Web Frontend
 
-楽曲推薦システムのフロントエンド部分。スワイプ式の楽曲評価機能を提供します。
+楽曲推薦システムのフロントエンド。Next.js (App Router) + TypeScript で構築され、FastAPI バックエンドの認証付き API と連携します。
 
-## 主要機能
+## 主な画面
 
-- **スワイプ式楽曲推薦** (`/swipe`) - Tinder 風のインターフェースで楽曲を評価
-  - Spotify ポッドキャスト風のダイヤル UI でプレビュー再生の倍速を保持しながら調整
-- **楽曲ライブラリ** (`/library`) - 楽曲一覧の表示
-- **API デモ** (`/api-demo`) - バックエンド API の動作確認
+- **/register**: メールアドレスとパスワードで新規ユーザーを作成。
+- **/login**: 認証後に `AuthContext` がアクセストークンとリフレッシュトークンを保存します。
+- **/swipe**: スワイプ式で楽曲を評価するメイン画面。楽曲プレビューの再生と Like / Skip をサポート。
+- **/library**: 認証済みユーザー向けに評価済み楽曲を一覧表示。`RequireAuth` で未ログイン時は `/login` へリダイレクトします。
+- **/api-demo**: バックエンド API のレスポンスをブラウザで確認できる開発用ページ。
 
 ## 技術スタック
 
-- **Next.js 14** with App Router
-- **TypeScript** for type safety
-- **Tailwind CSS** for styling
-- **Framer Motion** for animations (swipe functionality)
-- **Shadcn/ui** for UI components
+- Next.js 14 (App Router)
+- React 19 + TypeScript
+- Tailwind CSS / shadcn/ui コンポーネント
+- Framer Motion (スワイプアニメーション)
+- React Context + Hooks (`AuthContext`, `useAudioPlayer` など)
 
-## Getting Started
+## セットアップ
 
-First, run the development server:
+1. ルートで `.env.example` を `.env` にコピーし、バックエンドと同じ値を設定します。特に `NEXT_PUBLIC_API_URL` が FastAPI の URL を指していることを確認してください。
+2. Docker Compose を利用する場合は、リポジトリルートで `make up` または `docker compose up -d --build` を実行すると、バックエンド・フロントエンド・PostgreSQL が同時に起動します。
+3. フロントエンドのみをローカル実行したい場合は、依存関係をインストールして開発サーバーを起動します。
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+ブラウザで [http://localhost:3000](http://localhost:3000) にアクセスするとアプリが表示されます。
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 認証フロー概要
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. `/register` または `/login` ページでフォーム送信。
+2. バックエンドから受け取ったトークンを `AuthContext` が `localStorage` に保存。
+3. 保護ページは `RequireAuth` コンポーネントを通過し、未ログインの場合は自動的に `/login` に移動。
+4. トークンの有効期限が近づくと `/auth/refresh` を呼び出して更新します。
 
-## Learn More
+## 開発時のヒント
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `src/contexts/AuthContext.tsx` がアプリ全体の認証状態を提供します。フロントエンドでログイン状態に依存する場合はこのコンテキストを利用してください。
+- `src/services/api-client.ts` にバックエンド API との通信ロジックがまとまっています。新しいエンドポイントを追加する場合はここを拡張します。
+- UI の追加は再利用性を意識し `src/components/` に配置し、画面単位の処理は `src/app/` 配下で行います。
+- `npm run lint` で静的解析、`npm run build` で本番ビルドを確認できます。
