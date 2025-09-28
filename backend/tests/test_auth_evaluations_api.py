@@ -213,7 +213,9 @@ async def test_record_playback_history(test_client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_create_evaluation_with_uppercase_status(test_client: AsyncClient) -> None:
+async def test_create_evaluation_with_uppercase_status(
+    test_client: AsyncClient,
+) -> None:
     # Register and login a user
     register_payload = {
         "email": "uppercase-test@example.com",
@@ -259,3 +261,70 @@ async def test_create_evaluation_with_uppercase_status(test_client: AsyncClient)
     created = create_response.json()
     assert created["external_track_id"] == "track-uppercase-123"
     assert created["status"] == "like"  # Should be stored as lowercase
+
+
+@pytest.mark.asyncio
+async def test_export_liked_tracks_csv(test_client: AsyncClient) -> None:
+    register_payload = {
+        "email": "export-user@example.com",
+        "password": "export-pass",
+        "display_name": "Export User",
+    }
+    register_response = await test_client.post(
+        "/api/v1/auth/register",
+        json=register_payload,
+    )
+    assert register_response.status_code == 201
+
+    login_response = await test_client.post(
+        "/api/v1/auth/login",
+        json={
+            "email": register_payload["email"],
+            "password": register_payload["password"],
+        },
+    )
+    assert login_response.status_code == 200
+    login_data = login_response.json()
+    access_token = login_data["access_token"]
+    auth_header = {"Authorization": f"Bearer {access_token}"}
+
+    evaluation_payload = {
+        "track": {
+            "external_id": "export-track-1",
+            "source": "itunes",
+            "title": "Export Song",
+            "artist": "Export Artist",
+            "album": "Export Album",
+        },
+        "status": "like",
+        "source": "library",
+    }
+    create_response = await test_client.post(
+        "/api/v1/evaluations",
+        json=evaluation_payload,
+        headers=auth_header,
+    )
+    assert create_response.status_code == 201
+
+    export_response = await test_client.get(
+        "/api/v1/export/likes.csv",
+        headers=auth_header,
+    )
+    assert export_response.status_code == 200
+    assert (
+        export_response.headers.get("content-disposition")
+        == 'attachment; filename="otodoki2-likes.csv"'
+    )
+
+    csv_lines = [
+        line for line in export_response.text.strip().splitlines() if line
+    ]
+    assert csv_lines[0] == "trackName,artistName,collectionName"
+    assert any("Export Song" in line for line in csv_lines[1:])
+    assert any("Export Artist" in line for line in csv_lines[1:])
+
+    query_param_response = await test_client.get(
+        "/api/v1/export/likes.csv",
+        params={"access_token": access_token},
+    )
+    assert query_param_response.status_code == 200

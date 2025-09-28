@@ -5,13 +5,13 @@ import logging
 from typing import AsyncGenerator
 from uuid import UUID
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import TokenError, decode_access_token
-from app.db.models import User
 from app.db.crud import UserCRUD
+from app.db.models import User
 from app.dependencies import get_db_session
 from app.services.auth import AuthService
 from app.services.evaluations import EvaluationService
@@ -19,36 +19,15 @@ from app.services.play_history import PlayHistoryService
 
 logger = logging.getLogger(__name__)
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+oauth2_scheme = OAuth2PasswordBearer(
+    tokenUrl="/api/v1/auth/login",
+    auto_error=False,
+)
 
 
-async def get_session() -> AsyncGenerator[AsyncSession, None]:
-    """Expose the application DB session factory for overrides in tests."""
-    async for session in get_db_session():
-        yield session
-
-
-async def get_auth_service(
-    session: AsyncSession = Depends(get_session),
-) -> AuthService:
-    return AuthService(session)
-
-
-async def get_evaluation_service(
-    session: AsyncSession = Depends(get_session),
-) -> EvaluationService:
-    return EvaluationService(session)
-
-
-async def get_play_history_service(
-    session: AsyncSession = Depends(get_session),
-) -> PlayHistoryService:
-    return PlayHistoryService(session)
-
-
-async def get_current_user(
-    token: str = Depends(oauth2_scheme),
-    session: AsyncSession = Depends(get_session),
+async def _get_user_from_token(
+    token: str,
+    session: AsyncSession,
 ) -> User:
     try:
         payload = decode_access_token(token)
@@ -88,8 +67,63 @@ async def get_current_user(
     return user
 
 
+async def get_session() -> AsyncGenerator[AsyncSession, None]:
+    """Expose the application DB session factory for overrides in tests."""
+    async for session in get_db_session():
+        yield session
+
+
+async def get_auth_service(
+    session: AsyncSession = Depends(get_session),
+) -> AuthService:
+    return AuthService(session)
+
+
+async def get_evaluation_service(
+    session: AsyncSession = Depends(get_session),
+) -> EvaluationService:
+    return EvaluationService(session)
+
+
+async def get_play_history_service(
+    session: AsyncSession = Depends(get_session),
+) -> PlayHistoryService:
+    return PlayHistoryService(session)
+
+
+async def get_current_user(
+    token: str | None = Depends(oauth2_scheme),
+    session: AsyncSession = Depends(get_session),
+) -> User:
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    return await _get_user_from_token(token, session)
+
+
+async def get_current_active_user(
+    request: Request,
+    token: str | None = Depends(oauth2_scheme),
+    session: AsyncSession = Depends(get_session),
+) -> User:
+    raw_token = token or request.query_params.get("access_token")
+    if not raw_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    return await _get_user_from_token(raw_token, session)
+
+
 __all__ = [
     "get_auth_service",
+    "get_current_active_user",
     "get_current_user",
     "get_evaluation_service",
     "get_play_history_service",
