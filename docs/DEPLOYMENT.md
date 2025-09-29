@@ -1,6 +1,6 @@
 # Deployment Guide
 
-このドキュメントでは、otodoki2web のデプロイメント手順と設定について説明します。
+このドキュメントでは、otodoki2 のデプロイメント手順と設定について説明します。
 
 ## Docker Compose 設定
 

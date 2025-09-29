@@ -1,8 +1,8 @@
-![GitHub last commit](https://img.shields.io/github/last-commit/is0692vs/otodoki2web) ![GitHub issues](https://img.shields.io/github/issues/is0692vs/otodoki2web) ![GitHub pull requests](https://img.shields.io/github/issues-pr/is0692vs/otodoki2web)
+![GitHub last commit](https://img.shields.io/github/last-commit/is0692vs/otodoki2) ![GitHub issues](https://img.shields.io/github/issues/is0692vs/otodoki2) ![GitHub pull requests](https://img.shields.io/github/issues-pr/is0692vs/otodoki2)
 
-## otodoki2web について
+## otodoki2 について
 
-otodoki2web は、マッチングアプリのようなスワイプ UI で楽曲を評価・収集できる Web アプリケーションです。FastAPI + SQLModel で構成されたバックエンド API と Next.js (App Router) のフロントエンドにより、リアルタイムでキューを補充しながら新しい楽曲に出会えます。2025 年 2 月より、PostgreSQL を利用した永続化とユーザー認証 (メール + パスワード, JWT) をサポートしました。
+otodoki2 は、マッチングアプリのようなスワイプ UI で楽曲を評価・収集できる Web アプリケーションです。FastAPI + SQLModel で構成されたバックエンド API と Next.js (App Router) のフロントエンドにより、リアルタイムでキューを補充しながら新しい楽曲に出会えます。2025 年 2 月より、PostgreSQL を利用した永続化とユーザー認証 (メール + パスワード, JWT) をサポートしました。
 
 ## 主な機能
 
@@ -16,7 +16,7 @@ otodoki2web は、マッチングアプリのようなスワイプ UI で楽曲�
 ## リポジトリ構成
 
 ```
-otodoki2web/
+otodoki2/
 ├── backend/           # FastAPI アプリケーションとテストコード
 ├── frontend/          # Next.js フロントエンド (App Router)
 ├── docs/              # 設計ドキュメント

@@ -1,6 +1,6 @@
-# otodoki2web Documentation
+# otodoki2 Documentation
 
-このディレクトリには、otodoki2web プロジェクトのドキュメントが含まれています。
+このディレクトリには、otodoki2 プロジェクトのドキュメントが含まれています。
 
 ## ドキュメント一覧
 
@@ -12,7 +12,7 @@
 ## プロジェクト構造
 
 ```
-otodoki2web/
+otodoki2/
 ├── backend/           # バックエンドAPI (FastAPI + Python)
 ├── frontend/          # フロントエンド (Next.js + TypeScript)
 ├── scripts/           # 開発・テスト用スクリプト

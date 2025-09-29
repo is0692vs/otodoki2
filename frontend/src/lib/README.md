@@ -2,7 +2,7 @@
 
 ## Overview
 
-This localStorage utility provides safe storage and retrieval of liked tracks and disliked track IDs for the otodoki2web application. It includes SSR compatibility, error handling, and automatic data migration.
+This localStorage utility provides safe storage and retrieval of liked tracks and disliked track IDs for the otodoki2 application. It includes SSR compatibility, error handling, and automatic data migration.
 
 ## Features
 

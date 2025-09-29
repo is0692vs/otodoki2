@@ -171,4 +171,4 @@ The localStorage utility is now ready for:
 - **Issue #16**: Discovery filtering (already integrated)
 - **Future enhancements**: Analytics, sync, advanced filtering
 
-This implementation provides a solid, production-ready foundation for user preference storage in the otodoki2web application.
+This implementation provides a solid, production-ready foundation for user preference storage in the otodoki2 application.

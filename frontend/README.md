@@ -1,4 +1,4 @@
-## Otodoki2Web Frontend
+## Otodoki2 Frontend
 
 楽曲推薦システムのフロントエンド。Next.js (App Router) + TypeScript で構築され、FastAPI バックエンドの認証付き API と連携します。
 
