@@ -24,7 +24,7 @@
 
 ```bash
 # プロジェクトルートから実行
-cd /workspaces/otodoki2web
+cd /workspaces/otodoki2
 
 # iTunes API基本テスト
 python scripts/itunes_test.py

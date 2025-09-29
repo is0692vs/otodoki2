@@ -42,7 +42,8 @@
         "kilocode.kilo-code",
         "yzhang.markdown-all-in-one",
         "marp-team.marp-vscode",
-        "donjayamanne.python-extension-pack"
+        "donjayamanne.python-extension-pack",
+        "cweijan.vscode-mysql-client2"
       ],
       "settings": {
         "terminal.integrated.defaultProfile.linux": "bash",
@@ -57,7 +58,7 @@
   "forwardPorts": [3000, 8000],
   "postCreateCommand": "cd frontend && npm install && cd ../backend && pip install -r requirements.txt",
   "remoteUser": "vscode",
-  "workspaceFolder": "/workspaces/otodoki2web",
+  "workspaceFolder": "/workspaces/otodoki2",
   "remoteEnv": {
     "GEMINI_API_KEY": "${localEnv:GEMINI_API_KEY}"
   }

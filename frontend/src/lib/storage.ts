@@ -1,5 +1,5 @@
 /**
- * LocalStorage utility for otodoki2web
+ * LocalStorage utility for otodoki2
  * Safely stores and retrieves liked tracks and disliked track IDs
  * with SSR compatibility and error handling
  */
