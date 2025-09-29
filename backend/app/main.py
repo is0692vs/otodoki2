@@ -96,8 +96,8 @@ async def logging_middleware(request: Request, call_next):
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:3000",
-        "http://localhost:8081"
+        "exp://192.168.40.133:8081",   # Expo開発サーバー
+        "http://192.168.40.133:8081",  # Web版
     ],
     allow_credentials=True,
     allow_methods=["*"],

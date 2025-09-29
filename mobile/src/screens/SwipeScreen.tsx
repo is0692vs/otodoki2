@@ -14,6 +14,7 @@ import {
   SafeAreaView,
   AppState,
   AppStateStatus,
+  useWindowDimensions,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { useAuth } from "../contexts/AuthContext";
@@ -23,18 +24,19 @@ import { useAudioPlayer } from "../hooks/useAudioPlayer";
 import TrackCard from "../components/TrackCard";
 import LoadingScreen from "./LoadingScreen";
 
-const { width: screenWidth } = Dimensions.get("window");
-const SWIPE_THRESHOLD = 120;
-
-// Instruction card for first-time users
-const instructionCard: Track = {
-  id: "instruction",
-  title: "使い方",
-  artist: "otodoki2",
-  album: "左右にスワイプするか、下のボタンで評価を始めましょう",
-};
-
 export default function SwipeScreen() {
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
+  const cardWidth = screenWidth * 0.8;
+  const cardHeight = screenHeight * 0.6;
+  const SWIPE_THRESHOLD = screenWidth * 0.15;
+
+  // Instruction card for first-time users
+  const instructionCard: Track = {
+    id: "instruction",
+    title: "使い方",
+    artist: "otodoki2",
+    album: "左右にスワイプするか、下のボタンで評価を始めましょう",
+  };
   const [tracks, setTracks] = useState<Track[]>([instructionCard]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -390,7 +392,6 @@ export default function SwipeScreen() {
             <View
               key={track.id}
               style={[
-                styles.card,
                 {
                   zIndex: -index - 1,
                   transform: [
@@ -398,6 +399,10 @@ export default function SwipeScreen() {
                     { translateY: (index + 1) * 8 },
                   ],
                   opacity: 0.8 - index * 0.2,
+                  position: "absolute",
+                  width: cardWidth,
+                  height: cardHeight,
+                  left: (screenWidth - cardWidth) / 2,
                 },
               ]}
             >
@@ -413,7 +418,6 @@ export default function SwipeScreen() {
         {/* Current card on top */}
         <Animated.View
           style={[
-            styles.card,
             {
               zIndex: 10,
               transform: [
@@ -426,6 +430,10 @@ export default function SwipeScreen() {
                 ...position.getTranslateTransform(),
               ],
               opacity: opacity,
+              position: "absolute",
+              width: cardWidth,
+              height: cardHeight,
+              left: (screenWidth - cardWidth) / 2,
             },
           ]}
           {...panResponder.panHandlers}
@@ -488,12 +496,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     position: "relative",
-  },
-  card: {
-    position: "absolute",
-    width: 300,
-    height: 400,
-    left: (screenWidth - 300) / 2,
   },
   controls: {
     flexDirection: "row",

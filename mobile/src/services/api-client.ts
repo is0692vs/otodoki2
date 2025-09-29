@@ -28,7 +28,7 @@ import {
 } from '../types/api';
 
 const DEFAULT_TIMEOUT = 30000; // 30 seconds
-const DEFAULT_BASE_URL = 'http://localhost:8000';
+const DEFAULT_BASE_URL = 'http://192.168.40.133:8000';
 
 export class ApiClient {
   private baseUrl: string;
