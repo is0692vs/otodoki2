@@ -328,21 +328,33 @@ export default function SwipeScreen() {
   // Auto-play current track when index changes
   useEffect(() => {
     const currentTrack = tracks[currentIndex];
-    // Only auto-play when we have a preview URL, the player isn't already
-    // playing this same track, and the audio player isn't currently loading.
-    if (!currentTrack || currentTrack.id === "instruction") return;
-    if (!currentTrack.preview_url) return;
+    const isPlayable =
+      currentTrack &&
+      currentTrack.id !== "instruction" &&
+      currentTrack.preview_url;
 
-    const isSameTrackPlaying =
-      audioState.currentTrack?.id === currentTrack.id && audioState.isPlaying;
-    if (isSameTrackPlaying) return;
+    if (isPlayable) {
+      const isSameTrackPlaying =
+        audioState.currentTrack?.id === currentTrack.id && audioState.isPlaying;
 
-    // If the player is loading or has a different currentTrack, request play
-    console.log(
-      `[SwipeScreen] Auto-play check: track=${currentTrack.id}, isPlaying=${audioState.isPlaying}, currentTrack=${audioState.currentTrack?.id}`
-    );
-    audioActions.play(currentTrack);
-  }, [currentIndex, tracks]);
+      if (!isSameTrackPlaying) {
+        console.log(
+          `[SwipeScreen] Auto-play check: track=${currentTrack.id}, isPlaying=${audioState.isPlaying}, currentTrack=${audioState.currentTrack?.id}`
+        );
+        audioActions.play(currentTrack);
+      }
+    } else {
+      // If not playable (e.g., instruction card), ensure audio is paused
+      if (audioState.isPlaying) {
+        console.log(
+          `[SwipeScreen] Pausing audio for non-playable track: ${
+            currentTrack?.id || "N/A"
+          }`
+        );
+        audioActions.pause();
+      }
+    }
+  }, [currentIndex, tracks, audioState, audioActions]);
 
   // Handle play/pause
   const handlePlayToggle = () => {
