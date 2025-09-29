@@ -185,6 +185,7 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
             volume: state.isMuted ? 0 : state.volume,
             rate: state.playbackRate,
             shouldCorrectPitch: true,
+            isLooping: true, // Enable looping
           }
         );
 

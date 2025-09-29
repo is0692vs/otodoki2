@@ -12,7 +12,10 @@ import {
   Dimensions,
   StyleSheet,
   SafeAreaView,
+  AppState,
+  AppStateStatus,
 } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import { useAuth } from "../contexts/AuthContext";
 import { api } from "../services/api-client";
 import { Track, EvaluationStatus } from "../types/api";
@@ -44,16 +47,40 @@ export default function SwipeScreen() {
 
   const [audioState, audioActions] = useAudioPlayer({
     autoPlay: false,
-    onTrackEnd: () => {
-      // Auto-advance to next track when current one ends
-      if (currentIndex < tracks.length - 1) {
-        setCurrentIndex(currentIndex + 1);
+    onTrackEnd: (track) => {
+      // Loop the current track instead of advancing
+      console.log("Track ended, looping:", track.title);
+      if (audioState.currentTrack) {
+        audioActions.play(audioState.currentTrack);
       }
     },
     onPlaybackError: (error, track) => {
       console.warn("Playback error:", error, track);
     },
   });
+
+  // Handle app state changes
+  useEffect(() => {
+    const handleAppStateChange = (nextAppState: AppStateStatus) => {
+      if (nextAppState === "background" || nextAppState === "inactive") {
+        audioActions.pause();
+      }
+    };
+
+    const subscription = AppState.addEventListener("change", handleAppStateChange);
+    return () => subscription?.remove();
+  }, [audioActions]);
+
+  // Handle navigation focus
+  useFocusEffect(
+    useCallback(() => {
+      // Resume playback when screen comes into focus
+      return () => {
+        // Pause when screen loses focus
+        audioActions.pause();
+      };
+    }, [audioActions])
+  );
 
   // Animation values
   const position = useRef(new Animated.ValueXY()).current;
@@ -180,7 +207,7 @@ export default function SwipeScreen() {
 
       console.log(`📱 Loaded ${filteredApiTracks.length} initial tracks.`);
       setTracks([instructionCard, ...filteredApiTracks]);
-      
+
       // Reset to first track (instruction card)
       setCurrentIndex(0);
     } catch (err: unknown) {
@@ -359,10 +386,37 @@ export default function SwipeScreen() {
       </View>
 
       <View style={styles.cardContainer}>
+        {/* Render next cards in background */}
+        {tracks.slice(currentIndex + 1, currentIndex + 3).map((track, index) => (
+          <View
+            key={track.id}
+            style={[
+              styles.card,
+              {
+                zIndex: -index - 1,
+                transform: [
+                  { scale: 0.95 - index * 0.02 },
+                  { translateY: (index + 1) * 8 },
+                ],
+                opacity: 0.8 - index * 0.2,
+              },
+            ]}
+          >
+            <TrackCard
+              track={track}
+              onPlayToggle={() => {}}
+              isPlaying={false}
+              isLoading={false}
+            />
+          </View>
+        ))}
+        
+        {/* Current card on top */}
         <Animated.View
           style={[
             styles.card,
             {
+              zIndex: 10,
               transform: [
                 {
                   rotate: rotate.interpolate({
@@ -434,9 +488,12 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    position: "relative",
   },
   card: {
     position: "absolute",
+    width: 300,
+    height: 400,
   },
   controls: {
     flexDirection: "row",
