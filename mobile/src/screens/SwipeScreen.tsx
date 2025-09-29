@@ -7,12 +7,8 @@ import {
   View,
   Text,
   TouchableOpacity,
-  Animated,
-  PanResponder,
-  Dimensions,
   StyleSheet,
   SafeAreaView,
-  Alert,
 } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../services/api-client';
@@ -21,15 +17,12 @@ import { useAudioPlayer } from '../hooks/useAudioPlayer';
 import TrackCard from '../components/TrackCard';
 import LoadingScreen from './LoadingScreen';
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
-const SWIPE_THRESHOLD = 120;
-
 // Instruction card for first-time users
 const instructionCard: Track = {
   id: 'instruction',
   title: '使い方',
   artist: 'otodoki2',
-  album: '右にスワイプでいいね！\n左にスワイプでスキップ',
+  album: 'ボタンを押して評価しましょう',
 };
 
 export default function SwipeScreen() {
@@ -55,102 +48,6 @@ export default function SwipeScreen() {
       console.warn('Playback error:', error, track);
     },
   });
-
-  // Animation values
-  const position = useRef(new Animated.ValueXY()).current;
-  const rotate = useRef(new Animated.Value(0)).current;
-  const opacity = useRef(new Animated.Value(1)).current;
-
-  // Pan responder for swipe gestures
-  const panResponder = PanResponder.create({
-    onStartShouldSetPanResponder: () => true,
-    onMoveShouldSetPanResponder: () => true,
-    onPanResponderMove: (_, gesture) => {
-      position.setValue({ x: gesture.dx, y: gesture.dy });
-      rotate.setValue(gesture.dx / screenWidth * 0.4);
-    },
-    onPanResponderRelease: (_, gesture) => {
-      if (Math.abs(gesture.dx) > SWIPE_THRESHOLD) {
-        const direction = gesture.dx > 0 ? 'right' : 'left';
-        forceSwipe(direction);
-      } else {
-        resetPosition();
-      }
-    },
-  });
-
-  const forceSwipe = (direction: 'left' | 'right') => {
-    const x = direction === 'right' ? screenWidth : -screenWidth;
-    Animated.parallel([
-      Animated.timing(position, {
-        toValue: { x, y: 0 },
-        duration: 250,
-        useNativeDriver: false,
-      }),
-      Animated.timing(opacity, {
-        toValue: 0,
-        duration: 250,
-        useNativeDriver: false,
-      }),
-    ]).start(() => onSwipeComplete(direction));
-  };
-
-  const resetPosition = () => {
-    Animated.parallel([
-      Animated.spring(position, {
-        toValue: { x: 0, y: 0 },
-        useNativeDriver: false,
-      }),
-      Animated.spring(rotate, {
-        toValue: 0,
-        useNativeDriver: false,
-      }),
-    ]).start();
-  };
-
-  const onSwipeComplete = async (direction: 'left' | 'right') => {
-    const currentTrack = tracks[currentIndex];
-    
-    if (currentTrack && currentTrack.id !== 'instruction') {
-      const status: EvaluationStatus = direction === 'right' ? 'like' : 'dislike';
-      
-      // Add to evaluated tracks
-      evaluatedTrackIdsRef.current.add(String(currentTrack.id));
-      
-      if (isAuthenticated) {
-        try {
-          await api.evaluations.create({
-            track: {
-              external_id: String(currentTrack.id),
-              title: currentTrack.title,
-              artist: currentTrack.artist,
-              album: currentTrack.album,
-              artwork_url: currentTrack.artwork_url,
-              preview_url: currentTrack.preview_url,
-              primary_genre: currentTrack.genre,
-              duration_ms: currentTrack.duration_ms,
-            },
-            status,
-            source: 'mobile_swipe',
-          });
-        } catch (error) {
-          console.warn('Failed to save evaluation:', error);
-        }
-      }
-    }
-
-    // Move to next track
-    position.setValue({ x: 0, y: 0 });
-    rotate.setValue(0);
-    opacity.setValue(1);
-    
-    setCurrentIndex(currentIndex + 1);
-    
-    // Fetch more tracks if needed
-    if (currentIndex >= tracks.length - 3 && !isFetchingMore && !noMoreTracks) {
-      fetchMoreTracks();
-    }
-  };
 
   // Fetch initial tracks
   const fetchInitialTracks = useCallback(async () => {
@@ -290,13 +187,52 @@ export default function SwipeScreen() {
     }
   };
 
-  // Manual swipe buttons
+  // Handle evaluation
+  const handleEvaluation = useCallback(async (status: EvaluationStatus) => {
+    const currentTrack = tracks[currentIndex];
+    
+    if (currentTrack && currentTrack.id !== 'instruction') {
+      // Add to evaluated tracks
+      evaluatedTrackIdsRef.current.add(String(currentTrack.id));
+      
+      if (isAuthenticated) {
+        try {
+          await api.evaluations.create({
+            track: {
+              external_id: String(currentTrack.id),
+              title: currentTrack.title,
+              artist: currentTrack.artist,
+              album: currentTrack.album,
+              artwork_url: currentTrack.artwork_url,
+              preview_url: currentTrack.preview_url,
+              primary_genre: currentTrack.genre,
+              duration_ms: currentTrack.duration_ms,
+            },
+            status,
+            source: 'mobile_button',
+          });
+        } catch (error) {
+          console.warn('Failed to save evaluation:', error);
+        }
+      }
+    }
+
+    // Move to next track
+    setCurrentIndex(currentIndex + 1);
+    
+    // Fetch more tracks if needed
+    if (currentIndex >= tracks.length - 3 && !isFetchingMore && !noMoreTracks) {
+      fetchMoreTracks();
+    }
+  }, [currentIndex, tracks, isAuthenticated, isFetchingMore, noMoreTracks, fetchMoreTracks]);
+
+  // Manual evaluation buttons
   const handleLike = () => {
-    forceSwipe('right');
+    handleEvaluation('like');
   };
 
   const handleDislike = () => {
-    forceSwipe('left');
+    handleEvaluation('dislike');
   };
 
   if (loading) {
@@ -323,17 +259,6 @@ export default function SwipeScreen() {
   const currentTrack = tracks[currentIndex];
   const isCurrentPlaying = audioState.isPlaying && audioState.currentTrack?.id === currentTrack.id;
 
-  const rotateAndTranslate = {
-    transform: [
-      { rotate: rotate.interpolate({ 
-        inputRange: [-1, 0, 1], 
-        outputRange: ['-30deg', '0deg', '30deg'] 
-      })},
-      ...position.getTranslateTransform(),
-    ],
-    opacity,
-  };
-
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -344,27 +269,22 @@ export default function SwipeScreen() {
       </View>
 
       <View style={styles.cardContainer}>
-        <Animated.View
-          style={[styles.card, rotateAndTranslate]}
-          {...(currentTrack.id !== 'instruction' ? panResponder.panHandlers : {})}
-        >
-          <TrackCard
-            track={currentTrack}
-            onPlayToggle={handlePlayToggle}
-            isPlaying={isCurrentPlaying}
-            isLoading={audioState.isLoading}
-          />
-        </Animated.View>
+        <TrackCard
+          track={currentTrack}
+          onPlayToggle={handlePlayToggle}
+          isPlaying={isCurrentPlaying}
+          isLoading={audioState.isLoading}
+        />
       </View>
 
       {currentTrack.id !== 'instruction' && (
         <View style={styles.controls}>
           <TouchableOpacity style={[styles.controlButton, styles.dislikeButton]} onPress={handleDislike}>
-            <Text style={styles.controlButtonText}>👎</Text>
+            <Text style={styles.controlButtonText}>✗</Text>
           </TouchableOpacity>
           
           <TouchableOpacity style={[styles.controlButton, styles.likeButton]} onPress={handleLike}>
-            <Text style={styles.controlButtonText}>👍</Text>
+            <Text style={styles.controlButtonText}>♥</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -402,9 +322,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  card: {
-    position: 'absolute',
-  },
   controls: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -412,9 +329,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 50,
   },
   controlButton: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     justifyContent: 'center',
     alignItems: 'center',
     marginHorizontal: 30,
@@ -428,13 +345,13 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   dislikeButton: {
-    backgroundColor: '#ff4757',
+    backgroundColor: '#ef4444',
   },
   likeButton: {
-    backgroundColor: '#2ed573',
+    backgroundColor: '#22c55e',
   },
   controlButtonText: {
-    fontSize: 30,
+    fontSize: 36,
   },
   endContainer: {
     flex: 1,

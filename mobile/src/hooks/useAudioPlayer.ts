@@ -3,10 +3,10 @@
  * Adapted from frontend/src/hooks/useAudioPlayer.ts
  */
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { Audio } from 'expo-av';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Track } from '../types/api';
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Audio } from "expo-av";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Track } from "../types/api";
 
 interface AudioPlayerState {
   isPlaying: boolean;
@@ -39,7 +39,7 @@ interface UseAudioPlayerOptions {
   onPlaybackError?: (error: string, track: Track) => void;
 }
 
-const PLAYBACK_RATE_KEY = 'playback_rate';
+const PLAYBACK_RATE_KEY = "playback_rate";
 
 export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
   const {
@@ -92,11 +92,11 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
         if (savedRate) {
           const rate = parseFloat(savedRate);
           if (rate >= 0.5 && rate <= 2.0) {
-            setState(prev => ({ ...prev, playbackRate: rate }));
+            setState((prev) => ({ ...prev, playbackRate: rate }));
           }
         }
       } catch (error) {
-        console.warn('Failed to initialize audio:', error);
+        console.warn("Failed to initialize audio:", error);
       }
     };
 
@@ -118,7 +118,7 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
       try {
         const status = await soundRef.current.getStatusAsync();
         if (status.isLoaded) {
-          setState(prev => ({
+          setState((prev) => ({
             ...prev,
             currentTime: status.positionMillis || 0,
             duration: status.durationMillis || 0,
@@ -126,12 +126,16 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
           }));
 
           // Check if track ended
-          if (status.didJustFinish && onTrackEndRef.current && state.currentTrack) {
+          if (
+            status.didJustFinish &&
+            onTrackEndRef.current &&
+            state.currentTrack
+          ) {
             onTrackEndRef.current(state.currentTrack);
           }
         }
       } catch (error) {
-        console.warn('Failed to get playback status:', error);
+        console.warn("Failed to get playback status:", error);
       }
     }
   }, []);
@@ -150,120 +154,130 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
   }, [state.isPlaying, updatePosition]);
 
   // Load track
-  const loadTrack = useCallback(async (track: Track) => {
-    if (!track.preview_url) {
-      setState(prev => ({
-        ...prev,
-        error: 'No preview URL available',
-        isLoading: false,
-      }));
-      return;
-    }
-
-    setState(prev => ({
-      ...prev,
-      isLoading: true,
-      error: null,
-    }));
-
-    try {
-      // Unload previous sound
-      if (soundRef.current) {
-        await soundRef.current.unloadAsync();
-        soundRef.current = null;
+  const loadTrack = useCallback(
+    async (track: Track) => {
+      if (!track.preview_url) {
+        setState((prev) => ({
+          ...prev,
+          error: "No preview URL available",
+          isLoading: false,
+        }));
+        return;
       }
 
-      const { sound } = await Audio.Sound.createAsync(
-        { uri: track.preview_url },
-        {
-          shouldPlay: false,
-          volume: state.isMuted ? 0 : state.volume,
-          rate: state.playbackRate,
-          shouldCorrectPitch: true,
-        }
-      );
-
-      soundRef.current = sound;
-
-      // Set up status update callback
-      sound.setOnPlaybackStatusUpdate((status) => {
-        if (status.isLoaded) {
-          setState(prev => ({
-            ...prev,
-            currentTime: status.positionMillis || 0,
-            duration: status.durationMillis || 0,
-            isPlaying: status.isPlaying || false,
-            isLoading: false,
-          }));
-
-          if (status.didJustFinish && onTrackEndRef.current) {
-            onTrackEndRef.current(track);
-          }
-        } else if (status.error) {
-          setState(prev => ({
-            ...prev,
-            error: `Playback error: ${status.error}`,
-            isLoading: false,
-            isPlaying: false,
-          }));
-          if (onPlaybackErrorRef.current) {
-            onPlaybackErrorRef.current(`Playback error: ${status.error}`, track);
-          }
-        }
-      });
-
-      setState(prev => ({
+      setState((prev) => ({
         ...prev,
-        currentTrack: track,
-        isLoading: false,
+        isLoading: true,
         error: null,
       }));
 
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to load track';
-      setState(prev => ({
-        ...prev,
-        error: errorMessage,
-        isLoading: false,
-        isPlaying: false,
-      }));
-      if (onPlaybackErrorRef.current) {
-        onPlaybackErrorRef.current(errorMessage, track);
+      try {
+        // Unload previous sound
+        if (soundRef.current) {
+          await soundRef.current.unloadAsync();
+          soundRef.current = null;
+        }
+
+        const { sound } = await Audio.Sound.createAsync(
+          { uri: track.preview_url },
+          {
+            shouldPlay: false,
+            volume: state.isMuted ? 0 : state.volume,
+            rate: state.playbackRate,
+            shouldCorrectPitch: true,
+          }
+        );
+
+        soundRef.current = sound;
+
+        // Set up status update callback
+        sound.setOnPlaybackStatusUpdate((status) => {
+          if (status.isLoaded) {
+            setState((prev) => ({
+              ...prev,
+              currentTime: status.positionMillis || 0,
+              duration: status.durationMillis || 0,
+              isPlaying: status.isPlaying || false,
+              isLoading: false,
+            }));
+
+            if (status.didJustFinish && onTrackEndRef.current) {
+              onTrackEndRef.current(track);
+            }
+          } else if (status.error) {
+            setState((prev) => ({
+              ...prev,
+              error: `Playback error: ${status.error}`,
+              isLoading: false,
+              isPlaying: false,
+            }));
+            if (onPlaybackErrorRef.current) {
+              onPlaybackErrorRef.current(
+                `Playback error: ${status.error}`,
+                track
+              );
+            }
+          }
+        });
+
+        setState((prev) => ({
+          ...prev,
+          currentTrack: track,
+          isLoading: false,
+          error: null,
+        }));
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : "Failed to load track";
+        setState((prev) => ({
+          ...prev,
+          error: errorMessage,
+          isLoading: false,
+          isPlaying: false,
+        }));
+        if (onPlaybackErrorRef.current) {
+          onPlaybackErrorRef.current(errorMessage, track);
+        }
       }
-    }
-  }, [state.volume, state.playbackRate, state.isMuted]);
+    },
+    [state.volume, state.playbackRate, state.isMuted]
+  );
 
   // Play
-  const play = useCallback(async (track?: Track) => {
-    if (track && track !== state.currentTrack) {
-      await loadTrack(track);
-    }
+  const play = useCallback(
+    async (track?: Track) => {
+      if (track && track !== state.currentTrack) {
+        await loadTrack(track);
+      }
 
-    if (!soundRef.current) {
-      return;
-    }
+      if (!soundRef.current) {
+        return;
+      }
 
-    try {
-      await soundRef.current.playAsync();
-      setState(prev => ({ ...prev, isPlaying: true, error: null }));
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to play';
-      setState(prev => ({
-        ...prev,
-        error: errorMessage,
-        isPlaying: false,
-      }));
-    }
-  }, [state.currentTrack, loadTrack]);
+      try {
+        await soundRef.current.playAsync();
+        setState((prev) => ({ ...prev, isPlaying: true, error: null }));
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : "Failed to play";
+        setState((prev) => ({
+          ...prev,
+          error: errorMessage,
+          isPlaying: false,
+        }));
+      }
+    },
+    [state.currentTrack, loadTrack]
+  );
 
   // Pause
   const pause = useCallback(async () => {
     if (soundRef.current) {
       try {
         await soundRef.current.pauseAsync();
-        setState(prev => ({ ...prev, isPlaying: false }));
+        setState((prev) => ({ ...prev, isPlaying: false }));
       } catch (error) {
-        console.warn('Failed to pause:', error);
+        console.warn("Failed to pause:", error);
       }
     }
   }, []);
@@ -273,13 +287,13 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
     if (soundRef.current) {
       try {
         await soundRef.current.stopAsync();
-        setState(prev => ({
+        setState((prev) => ({
           ...prev,
           isPlaying: false,
           currentTime: 0,
         }));
       } catch (error) {
-        console.warn('Failed to stop:', error);
+        console.warn("Failed to stop:", error);
       }
     }
   }, []);
@@ -289,34 +303,37 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
     if (soundRef.current) {
       try {
         await soundRef.current.setPositionAsync(position);
-        setState(prev => ({ ...prev, currentTime: position }));
+        setState((prev) => ({ ...prev, currentTime: position }));
       } catch (error) {
-        console.warn('Failed to seek:', error);
+        console.warn("Failed to seek:", error);
       }
     }
   }, []);
 
   // Set volume
-  const setVolume = useCallback((newVolume: number) => {
-    const clampedVolume = Math.max(0, Math.min(1, newVolume));
-    setState(prev => ({ ...prev, volume: clampedVolume }));
-    
-    if (soundRef.current && !state.isMuted) {
-      soundRef.current.setVolumeAsync(clampedVolume);
-    }
-  }, [state.isMuted]);
+  const setVolume = useCallback(
+    (newVolume: number) => {
+      const clampedVolume = Math.max(0, Math.min(1, newVolume));
+      setState((prev) => ({ ...prev, volume: clampedVolume }));
+
+      if (soundRef.current && !state.isMuted) {
+        soundRef.current.setVolumeAsync(clampedVolume);
+      }
+    },
+    [state.isMuted]
+  );
 
   // Set playback rate
   const setPlaybackRate = useCallback(async (rate: number) => {
     const clampedRate = Math.max(0.5, Math.min(2.0, rate));
-    setState(prev => ({ ...prev, playbackRate: clampedRate }));
-    
+    setState((prev) => ({ ...prev, playbackRate: clampedRate }));
+
     if (soundRef.current) {
       try {
         await soundRef.current.setRateAsync(clampedRate, true);
         await AsyncStorage.setItem(PLAYBACK_RATE_KEY, clampedRate.toString());
       } catch (error) {
-        console.warn('Failed to set playback rate:', error);
+        console.warn("Failed to set playback rate:", error);
       }
     }
   }, []);
@@ -324,13 +341,13 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
   // Toggle mute
   const toggleMute = useCallback(async () => {
     const newMuted = !state.isMuted;
-    setState(prev => ({ ...prev, isMuted: newMuted }));
-    
+    setState((prev) => ({ ...prev, isMuted: newMuted }));
+
     if (soundRef.current) {
       try {
         await soundRef.current.setVolumeAsync(newMuted ? 0 : state.volume);
       } catch (error) {
-        console.warn('Failed to toggle mute:', error);
+        console.warn("Failed to toggle mute:", error);
       }
     }
   }, [state.isMuted, state.volume]);
