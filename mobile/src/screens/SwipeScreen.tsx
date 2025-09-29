@@ -353,7 +353,7 @@ export default function SwipeScreen() {
                 },
                 ...position.getTranslateTransform(),
               ],
-              opacity,
+              opacity
             }}
           {...panResponder.panHandlers}
         >
