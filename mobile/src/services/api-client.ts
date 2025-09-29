@@ -3,7 +3,7 @@
  * Based on frontend/src/services/api-client.ts
  */
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   ApiResponse,
   ApiClientConfig,
@@ -25,10 +25,10 @@ import {
   PlayHistoryCreateRequest,
   PlayHistoryResponse,
   ErrorResponse,
-} from '../types/api';
+} from "../types/api";
 
 const DEFAULT_TIMEOUT = 30000; // 30 seconds
-const DEFAULT_BASE_URL = 'http://192.168.40.133:8000';
+const DEFAULT_BASE_URL = 'http://localhost:8000';
 
 export class ApiClient {
   private baseUrl: string;
@@ -43,19 +43,19 @@ export class ApiClient {
 
   private async loadTokenFromStorage() {
     try {
-      const token = await AsyncStorage.getItem('access_token');
+      const token = await AsyncStorage.getItem("access_token");
       this.accessToken = token;
     } catch (error) {
-      console.warn('Failed to load access token from storage:', error);
+      console.warn("Failed to load access token from storage:", error);
     }
   }
 
   setAccessToken(token: string | null | undefined) {
     this.accessToken = token || null;
     if (token) {
-      AsyncStorage.setItem('access_token', token);
+      AsyncStorage.setItem("access_token", token);
     } else {
-      AsyncStorage.removeItem('access_token');
+      AsyncStorage.removeItem("access_token");
     }
   }
 
@@ -68,7 +68,7 @@ export class ApiClient {
 
     try {
       const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         ...((options.headers as Record<string, string>) || {}),
       };
 
@@ -107,10 +107,10 @@ export class ApiClient {
       };
     } catch (error: unknown) {
       clearTimeout(timeoutId);
-      if (error instanceof Error && error.name === 'AbortError') {
+      if (error instanceof Error && error.name === "AbortError") {
         return {
           error: {
-            error: 'Request timeout',
+            error: "Request timeout",
             detail: `Request timed out after ${this.timeout}ms`,
           },
           status: 0,
@@ -118,7 +118,7 @@ export class ApiClient {
       }
       return {
         error: {
-          error: 'Network error',
+          error: "Network error",
           detail: error instanceof Error ? error.message : String(error),
         },
         status: 0,
@@ -161,7 +161,7 @@ export class ApiClient {
     return this.fetchWithTimeout<WorkerRefillResponse>(
       `${this.baseUrl}/worker/trigger-refill`,
       {
-        method: 'POST',
+        method: "POST",
       }
     );
   }
@@ -178,16 +178,16 @@ export class ApiClient {
     const searchParams = new URLSearchParams();
 
     if (params.limit !== undefined) {
-      searchParams.append('limit', params.limit.toString());
+      searchParams.append("limit", params.limit.toString());
     }
 
     if (params.excludeIds) {
-      searchParams.append('excludeIds', params.excludeIds);
+      searchParams.append("excludeIds", params.excludeIds);
     }
 
     const queryString = searchParams.toString();
     const url = `${this.baseUrl}/api/v1/tracks/suggestions${
-      queryString ? `?${queryString}` : ''
+      queryString ? `?${queryString}` : ""
     }`;
 
     return this.fetchWithTimeout<SuggestionsResponse>(url);
@@ -211,7 +211,7 @@ export class ApiClient {
     return this.fetchWithTimeout<TokenBundleResponse>(
       `${this.baseUrl}/api/v1/auth/register`,
       {
-        method: 'POST',
+        method: "POST",
         body: JSON.stringify(payload),
       }
     );
@@ -226,7 +226,7 @@ export class ApiClient {
     return this.fetchWithTimeout<TokenBundleResponse>(
       `${this.baseUrl}/api/v1/auth/login`,
       {
-        method: 'POST',
+        method: "POST",
         body: JSON.stringify(payload),
       }
     );
@@ -241,7 +241,7 @@ export class ApiClient {
     return this.fetchWithTimeout<TokenBundleResponse>(
       `${this.baseUrl}/api/v1/auth/refresh`,
       {
-        method: 'POST',
+        method: "POST",
         body: JSON.stringify(payload),
       }
     );
@@ -260,18 +260,18 @@ export class ApiClient {
     const searchParams = new URLSearchParams();
 
     if (params.status) {
-      searchParams.append('status', params.status);
+      searchParams.append("status", params.status);
     }
     if (params.limit !== undefined) {
-      searchParams.append('limit', params.limit.toString());
+      searchParams.append("limit", params.limit.toString());
     }
     if (params.offset !== undefined) {
-      searchParams.append('offset', params.offset.toString());
+      searchParams.append("offset", params.offset.toString());
     }
 
     const queryString = searchParams.toString();
     const url = `${this.baseUrl}/api/v1/evaluations${
-      queryString ? `?${queryString}` : ''
+      queryString ? `?${queryString}` : ""
     }`;
 
     return this.fetchWithTimeout<EvaluationListResponse>(url);
@@ -286,7 +286,7 @@ export class ApiClient {
     return this.fetchWithTimeout<EvaluationResponse>(
       `${this.baseUrl}/api/v1/evaluations`,
       {
-        method: 'POST',
+        method: "POST",
         body: JSON.stringify(payload),
       }
     );
@@ -297,9 +297,11 @@ export class ApiClient {
    */
   async deleteEvaluation(externalTrackId: string): Promise<ApiResponse<void>> {
     return this.fetchWithTimeout<void>(
-      `${this.baseUrl}/api/v1/evaluations/${encodeURIComponent(externalTrackId)}`,
+      `${this.baseUrl}/api/v1/evaluations/${encodeURIComponent(
+        externalTrackId
+      )}`,
       {
-        method: 'DELETE',
+        method: "DELETE",
       }
     );
   }
@@ -313,7 +315,7 @@ export class ApiClient {
     return this.fetchWithTimeout<PlayHistoryResponse>(
       `${this.baseUrl}/api/v1/history/played`,
       {
-        method: 'POST',
+        method: "POST",
         body: JSON.stringify(payload),
       }
     );
