@@ -20,6 +20,7 @@ import LoadingScreen from '../screens/LoadingScreen';
 
 export type RootStackParamList = {
   Main: undefined;
+  Auth: undefined;
   Login: undefined;
   Register: undefined;
 };

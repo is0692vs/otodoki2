@@ -126,8 +126,8 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
           }));
 
           // Check if track ended
-          if (status.didJustFinish && onTrackEndRef.current && prev.currentTrack) {
-            onTrackEndRef.current(prev.currentTrack);
+          if (status.didJustFinish && onTrackEndRef.current && state.currentTrack) {
+            onTrackEndRef.current(state.currentTrack);
           }
         }
       } catch (error) {

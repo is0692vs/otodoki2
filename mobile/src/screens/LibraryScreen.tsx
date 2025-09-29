@@ -31,11 +31,11 @@ function evaluationToTrack(evaluation: EvaluationResponse): Track {
     id: evaluation.external_track_id,
     title: evaluation.track?.title || FALLBACK_TITLE,
     artist: evaluation.track?.artist || FALLBACK_ARTIST,
-    album: evaluation.track?.album,
-    artwork_url: evaluation.track?.artwork_url,
-    preview_url: evaluation.track?.preview_url,
-    genre: evaluation.track?.primary_genre,
-    duration_ms: evaluation.track?.duration_ms,
+    album: evaluation.track?.album || undefined,
+    artwork_url: evaluation.track?.artwork_url || undefined,
+    preview_url: evaluation.track?.preview_url || undefined,
+    genre: evaluation.track?.primary_genre || undefined,
+    duration_ms: evaluation.track?.duration_ms || undefined,
   };
 }
 
