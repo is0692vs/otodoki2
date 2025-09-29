@@ -79,14 +79,14 @@ export default function SwipeScreen() {
   // Handle navigation focus
   useFocusEffect(
     useCallback(() => {
-      // Resume playback when screen comes into focus
+      // Return a cleanup function to run when the screen loses focus (blurs).
       return () => {
-        // Pause when screen loses focus
-        if (audioState.isPlaying) {
-          audioActions.pause();
+        // Use the ref to get the latest playing state without causing a re-render.
+        if (audioStateRef.current.isPlaying) {
+          audioActionsRef.current.pause();
         }
       };
-    }, [audioActions, audioState.isPlaying])
+    }, []) // Empty dependency array ensures this callback is created only once.
   );
 
   // Animation values
