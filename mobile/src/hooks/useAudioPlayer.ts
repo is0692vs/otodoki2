@@ -3,7 +3,7 @@
  * Adapted from frontend/src/hooks/useAudioPlayer.ts
  */
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Audio } from "expo-av";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Track } from "../types/api";
@@ -28,11 +28,10 @@ interface AudioPlayerActions {
   setVolume: (volume: number) => void;
   setPlaybackRate: (rate: number) => void;
   toggleMute: () => void;
-  loadTrack: (track: Track) => Promise<void>;
+  loadTrack: (track: Track, shouldPlay?: boolean) => Promise<void>;
 }
 
 interface UseAudioPlayerOptions {
-  autoPlay?: boolean;
   defaultMuted?: boolean;
   volume?: number;
   isLooping?: boolean;
@@ -44,7 +43,6 @@ const PLAYBACK_RATE_KEY = "playback_rate";
 
 export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
   const {
-    autoPlay = true,
     defaultMuted = false,
     volume = 0.7,
     isLooping = false,
@@ -54,7 +52,7 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
 
   const [state, setState] = useState<AudioPlayerState>({
     isPlaying: false,
-    isLoading: false,
+    isLoading: true, // Start with loading true until audio is configured
     currentTime: 0,
     duration: 0,
     volume,
@@ -68,7 +66,7 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
   const onTrackEndRef = useRef(onTrackEnd);
   const onPlaybackErrorRef = useRef(onPlaybackError);
 
-  // Update refs when props change
+  // Update callback refs
   useEffect(() => {
     onTrackEndRef.current = onTrackEnd;
   }, [onTrackEnd]);
@@ -77,7 +75,7 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
     onPlaybackErrorRef.current = onPlaybackError;
   }, [onPlaybackError]);
 
-  // Initialize audio mode
+  // Initialize audio mode and load saved settings
   useEffect(() => {
     const initializeAudio = async () => {
       try {
@@ -89,7 +87,6 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
           playThroughEarpieceAndroid: false,
         });
 
-        // Load saved playback rate
         const savedRate = await AsyncStorage.getItem(PLAYBACK_RATE_KEY);
         if (savedRate) {
           const rate = parseFloat(savedRate);
@@ -99,6 +96,8 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
         }
       } catch (error) {
         console.warn("Failed to initialize audio:", error);
+      } finally {
+        setState((prev) => ({ ...prev, isLoading: false }));
       }
     };
 
@@ -108,59 +107,13 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (soundRef.current) {
-        soundRef.current.unloadAsync();
-      }
+      soundRef.current?.unloadAsync();
     };
   }, []);
 
-  // Update position
-  const updatePosition = useCallback(async () => {
-    if (soundRef.current) {
-      try {
-        const status = await soundRef.current.getStatusAsync();
-        if (status.isLoaded) {
-          setState((prev) => ({
-            ...prev,
-            currentTime: status.positionMillis || 0,
-            duration: status.durationMillis || 0,
-            isPlaying: status.isPlaying || false,
-          }));
-
-          // Check if track ended
-          if (
-            status.didJustFinish &&
-            onTrackEndRef.current &&
-            state.currentTrack
-          ) {
-            onTrackEndRef.current(state.currentTrack);
-          }
-        }
-      } catch (error) {
-        console.warn("Failed to get playback status:", error);
-      }
-    }
-  }, []);
-
-  // Set up position polling
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (state.isPlaying) {
-      interval = setInterval(updatePosition, 500);
-    }
-    return () => {
-      if (interval) {
-        clearInterval(interval);
-      }
-    };
-  }, [state.isPlaying, updatePosition]);
-
-  // Load track
+  // Main track loading logic
   const loadTrack = useCallback(
     async (track: Track, shouldPlayAfterLoad = false) => {
-      console.log(
-        `[useAudioPlayer] loadTrack start id=${track.id} shouldPlay=${shouldPlayAfterLoad}`
-      );
       if (!track.preview_url) {
         setState((prev) => ({
           ...prev,
@@ -170,151 +123,97 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
         return;
       }
 
-      setState((prev) => ({
-        ...prev,
-        isLoading: true,
-        error: null,
-      }));
+      setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
       try {
-        // Unload previous sound
         if (soundRef.current) {
-          console.log("[useAudioPlayer] unloading previous sound");
           await soundRef.current.unloadAsync();
           soundRef.current = null;
         }
 
-        const { sound } = await Audio.Sound.createAsync(
+        const { sound, status } = await Audio.Sound.createAsync(
           { uri: track.preview_url },
           {
             shouldPlay: shouldPlayAfterLoad,
-            volume: state.isMuted ? 0 : state.volume,
+            volume: state.volume,
             rate: state.playbackRate,
-            shouldCorrectPitch: true,
+            isMuted: state.isMuted,
             isLooping,
           }
         );
-        console.log("[useAudioPlayer] createAsync completed, sound created");
         soundRef.current = sound;
 
-        // Set up status update callback
         sound.setOnPlaybackStatusUpdate((status) => {
-          console.log("[useAudioPlayer] statusUpdate:", {
-            isLoaded: status.isLoaded,
-            isPlaying: status.isPlaying,
-            didJustFinish: status.didJustFinish,
-            error: status.error,
-          });
-          if (status.isLoaded) {
-            setState((prev) => ({
-              ...prev,
-              currentTime: status.positionMillis || 0,
-              duration: status.durationMillis || 0,
-              isPlaying: status.isPlaying || false,
-              isLoading: false,
-            }));
+          if (!status.isLoaded) {
+            if (status.error) {
+              const errorMessage = `Playback error: ${status.error}`;
+              setState((prev) => ({
+                ...prev,
+                error: errorMessage,
+                isLoading: false,
+                isPlaying: false,
+              }));
+              onPlaybackErrorRef.current?.(errorMessage, track);
+            }
+            return;
+          }
 
-            if (status.didJustFinish && onTrackEndRef.current) {
-              console.log(
-                "[useAudioPlayer] didJustFinish triggering onTrackEnd"
-              );
-              onTrackEndRef.current(track);
-            }
-          } else if (status.error) {
-            setState((prev) => ({
-              ...prev,
-              error: `Playback error: ${status.error}`,
-              isLoading: false,
-              isPlaying: false,
-            }));
-            if (onPlaybackErrorRef.current) {
-              onPlaybackErrorRef.current(
-                `Playback error: ${status.error}`,
-                track
-              );
-            }
+          setState((prev) => ({
+            ...prev,
+            currentTime: status.positionMillis,
+            duration: status.durationMillis || 0,
+            isPlaying: status.isPlaying,
+            isLoading: false,
+          }));
+
+          if (status.didJustFinish) {
+            onTrackEndRef.current?.(track);
           }
         });
 
         setState((prev) => ({
           ...prev,
           currentTrack: track,
+          duration: status.isLoaded ? status.durationMillis || 0 : 0,
+          isPlaying: shouldPlayAfterLoad,
           isLoading: false,
-          error: null,
         }));
-
-        // If the caller requested playback immediately after load and
-        // Sound.createAsync didn't start playing (some platforms require
-        // explicit play), ensure we start playback here.
-        if (shouldPlayAfterLoad && soundRef.current) {
-          try {
-            const status = await soundRef.current.getStatusAsync();
-            console.log("[useAudioPlayer] post-create status:", status);
-            if (status.isLoaded && !status.isPlaying) {
-              console.log("[useAudioPlayer] starting playback after load");
-              await soundRef.current.playAsync();
-              setState((prev) => ({ ...prev, isPlaying: true }));
-            }
-          } catch (err) {
-            console.warn(
-              "[useAudioPlayer] error starting playback after load",
-              err
-            );
-            // ignore; status/update callbacks will handle errors
-          }
-        }
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : "Failed to load track";
+        console.warn(`[useAudioPlayer] ${errorMessage}`);
         setState((prev) => ({
           ...prev,
           error: errorMessage,
           isLoading: false,
           isPlaying: false,
         }));
-        if (onPlaybackErrorRef.current) {
-          onPlaybackErrorRef.current(errorMessage, track);
-        }
+        onPlaybackErrorRef.current?.(errorMessage, track);
       }
     },
-    [state.volume, state.playbackRate, state.isMuted]
+    [isLooping, state.isMuted, state.playbackRate, state.volume]
   );
 
-  // Play
   const play = useCallback(
     async (track?: Track) => {
-      if (track && track !== state.currentTrack) {
-        // Load and start playback once loaded to avoid race conditions
-        console.log(`[useAudioPlayer] play requested for id=${track.id}`);
+      if (track && track.id !== state.currentTrack?.id) {
+        console.log(`[Player] Playing: ${track.title} (${track.id})`);
         await loadTrack(track, true);
         return;
       }
 
-      if (!soundRef.current) {
-        return;
-      }
-
-      try {
-        console.log(
-          "[useAudioPlayer] play: calling playAsync on existing sound"
-        );
-        await soundRef.current.playAsync();
-        setState((prev) => ({ ...prev, isPlaying: true, error: null }));
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : "Failed to play";
-        console.warn("[useAudioPlayer] playAsync failed:", errorMessage);
-        setState((prev) => ({
-          ...prev,
-          error: errorMessage,
-          isPlaying: false,
-        }));
+      if (soundRef.current) {
+        try {
+          await soundRef.current.playAsync();
+          setState((prev) => ({ ...prev, isPlaying: true }));
+        } catch (error) {
+          console.warn("[useAudioPlayer] playAsync failed:", error);
+        }
       }
     },
-    [state.currentTrack, loadTrack]
+    [loadTrack, state.currentTrack]
   );
 
-  // Pause
   const pause = useCallback(async () => {
     if (soundRef.current) {
       try {
@@ -326,7 +225,6 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
     }
   }, []);
 
-  // Stop
   const stop = useCallback(async () => {
     if (soundRef.current) {
       try {
@@ -345,7 +243,6 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
     }
   }, []);
 
-  // Seek
   const seek = useCallback(async (position: number) => {
     if (soundRef.current) {
       try {
@@ -357,24 +254,18 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
     }
   }, []);
 
-  // Set volume
   const setVolume = useCallback(
     (newVolume: number) => {
       const clampedVolume = Math.max(0, Math.min(1, newVolume));
-      setState((prev) => ({ ...prev, volume: clampedVolume }));
-
-      if (soundRef.current && !state.isMuted) {
-        soundRef.current.setVolumeAsync(clampedVolume);
-      }
+      setState((prev) => ({ ...prev, volume: clampedVolume, isMuted: false }));
+      soundRef.current?.setVolumeAsync(clampedVolume);
     },
-    [state.isMuted]
+    []
   );
 
-  // Set playback rate
   const setPlaybackRate = useCallback(async (rate: number) => {
     const clampedRate = Math.max(0.5, Math.min(2.0, rate));
     setState((prev) => ({ ...prev, playbackRate: clampedRate }));
-
     if (soundRef.current) {
       try {
         await soundRef.current.setRateAsync(clampedRate, true);
@@ -385,30 +276,34 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
     }
   }, []);
 
-  // Toggle mute
   const toggleMute = useCallback(async () => {
     const newMuted = !state.isMuted;
     setState((prev) => ({ ...prev, isMuted: newMuted }));
+    soundRef.current?.setIsMutedAsync(newMuted);
+  }, [state.isMuted]);
 
-    if (soundRef.current) {
-      try {
-        await soundRef.current.setVolumeAsync(newMuted ? 0 : state.volume);
-      } catch (error) {
-        console.warn("Failed to toggle mute:", error);
-      }
-    }
-  }, [state.isMuted, state.volume]);
-
-  const actions: AudioPlayerActions = {
-    play,
-    pause,
-    stop,
-    seek,
-    setVolume,
-    setPlaybackRate,
-    toggleMute,
-    loadTrack,
-  };
+  const actions: AudioPlayerActions = useMemo(
+    () => ({
+      play,
+      pause,
+      stop,
+      seek,
+      setVolume,
+      setPlaybackRate,
+      toggleMute,
+      loadTrack,
+    }),
+    [
+      play,
+      pause,
+      stop,
+      seek,
+      setVolume,
+      setPlaybackRate,
+      toggleMute,
+      loadTrack,
+    ]
+  );
 
   return [state, actions] as const;
 }

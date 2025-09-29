@@ -73,14 +73,11 @@ export default function SwipeScreen() {
   // Handle navigation focus
   useFocusEffect(
     useCallback(() => {
-      // Resume playback when screen comes into focus
+      // Cleanup function for when the screen loses focus
       return () => {
-        // Pause when screen loses focus
-        if (audioState.isPlaying) {
-          audioActions.pause();
-        }
+        audioActions.pause();
       };
-    }, [audioActions, audioState.isPlaying])
+    }, [audioActions])
   );
 
   // Animation values
@@ -334,27 +331,13 @@ export default function SwipeScreen() {
       currentTrack.preview_url;
 
     if (isPlayable) {
-      const isSameTrackPlaying =
-        audioState.currentTrack?.id === currentTrack.id && audioState.isPlaying;
-
-      if (!isSameTrackPlaying) {
-        console.log(
-          `[SwipeScreen] Auto-play check: track=${currentTrack.id}, isPlaying=${audioState.isPlaying}, currentTrack=${audioState.currentTrack?.id}`
-        );
-        audioActions.play(currentTrack);
-      }
+      // The stable `play` action will handle not re-playing the same track.
+      audioActions.play(currentTrack);
     } else {
-      // If not playable (e.g., instruction card), ensure audio is paused
-      if (audioState.isPlaying) {
-        console.log(
-          `[SwipeScreen] Pausing audio for non-playable track: ${
-            currentTrack?.id || "N/A"
-          }`
-        );
-        audioActions.pause();
-      }
+      // If the track is not playable, ensure any existing audio is stopped.
+      audioActions.pause();
     }
-  }, [currentIndex, tracks, audioState, audioActions]);
+  }, [currentIndex, tracks, audioActions]);
 
   // Handle play/pause
   const handlePlayToggle = () => {
