@@ -7,6 +7,9 @@ import {
   View,
   Text,
   TouchableOpacity,
+  Animated,
+  PanResponder,
+  Dimensions,
   StyleSheet,
   SafeAreaView,
 } from "react-native";
@@ -17,12 +20,15 @@ import { useAudioPlayer } from "../hooks/useAudioPlayer";
 import TrackCard from "../components/TrackCard";
 import LoadingScreen from "./LoadingScreen";
 
+const { width: screenWidth } = Dimensions.get("window");
+const SWIPE_THRESHOLD = 120;
+
 // Instruction card for first-time users
 const instructionCard: Track = {
   id: "instruction",
   title: "使い方",
   artist: "otodoki2",
-  album: "ボタンを押して評価しましょう",
+  album: "左右にスワイプするか、下のボタンで評価を始めましょう",
 };
 
 export default function SwipeScreen() {
@@ -48,6 +54,103 @@ export default function SwipeScreen() {
       console.warn("Playback error:", error, track);
     },
   });
+
+  // Animation values
+  const position = useRef(new Animated.ValueXY()).current;
+  const rotate = useRef(new Animated.Value(0)).current;
+  const opacity = useRef(new Animated.Value(1)).current;
+
+  // Pan responder for swipe gestures
+  const panResponder = PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder: () => true,
+    onPanResponderMove: (_, gesture) => {
+      position.setValue({ x: gesture.dx, y: gesture.dy });
+      rotate.setValue((gesture.dx / screenWidth) * 0.4);
+    },
+    onPanResponderRelease: (_, gesture) => {
+      if (Math.abs(gesture.dx) > SWIPE_THRESHOLD) {
+        const direction = gesture.dx > 0 ? "right" : "left";
+        forceSwipe(direction);
+      } else {
+        resetPosition();
+      }
+    },
+  });
+
+  const forceSwipe = (direction: "left" | "right") => {
+    const x = direction === "right" ? screenWidth : -screenWidth;
+    Animated.parallel([
+      Animated.timing(position, {
+        toValue: { x, y: 0 },
+        duration: 250,
+        useNativeDriver: false,
+      }),
+      Animated.timing(opacity, {
+        toValue: 0,
+        duration: 250,
+        useNativeDriver: false,
+      }),
+    ]).start(() => onSwipeComplete(direction));
+  };
+
+  const resetPosition = () => {
+    Animated.parallel([
+      Animated.spring(position, {
+        toValue: { x: 0, y: 0 },
+        useNativeDriver: false,
+      }),
+      Animated.spring(rotate, {
+        toValue: 0,
+        useNativeDriver: false,
+      }),
+    ]).start();
+  };
+
+  const onSwipeComplete = async (direction: "left" | "right") => {
+    const currentTrack = tracks[currentIndex];
+
+    if (currentTrack && currentTrack.id !== "instruction") {
+      const status: EvaluationStatus =
+        direction === "right" ? "like" : "dislike";
+
+      // Add to evaluated tracks
+      evaluatedTrackIdsRef.current.add(String(currentTrack.id));
+
+      if (isAuthenticated) {
+        try {
+          await api.evaluations.create({
+            track: {
+              external_id: String(currentTrack.id),
+              title: currentTrack.title,
+              artist: currentTrack.artist,
+              album: currentTrack.album,
+              artwork_url: currentTrack.artwork_url,
+              preview_url: currentTrack.preview_url,
+              primary_genre: currentTrack.genre,
+              duration_ms: currentTrack.duration_ms,
+            },
+            status,
+            source: "mobile_swipe",
+          });
+        } catch (error) {
+          console.warn("Failed to save evaluation:", error);
+        }
+      }
+    }
+
+    // Move to next track
+    position.setValue({ x: 0, y: 0 });
+    rotate.setValue(0);
+    opacity.setValue(1);
+
+    setCurrentIndex(currentIndex + 1);
+
+    // Fetch more tracks if needed
+    if (currentIndex >= tracks.length - 3 && !isFetchingMore && !noMoreTracks) {
+      fetchMoreTracks();
+    }
+  };
 
   // Fetch initial tracks
   const fetchInitialTracks = useCallback(async () => {
@@ -190,66 +293,13 @@ export default function SwipeScreen() {
     }
   };
 
-  // Handle evaluation
-  const handleEvaluation = useCallback(
-    async (status: EvaluationStatus) => {
-      const currentTrack = tracks[currentIndex];
-
-      if (currentTrack && currentTrack.id !== "instruction") {
-        // Add to evaluated tracks
-        evaluatedTrackIdsRef.current.add(String(currentTrack.id));
-
-        if (isAuthenticated) {
-          try {
-            await api.evaluations.create({
-              track: {
-                external_id: String(currentTrack.id),
-                title: currentTrack.title,
-                artist: currentTrack.artist,
-                album: currentTrack.album,
-                artwork_url: currentTrack.artwork_url,
-                preview_url: currentTrack.preview_url,
-                primary_genre: currentTrack.genre,
-                duration_ms: currentTrack.duration_ms,
-              },
-              status,
-              source: "mobile_button",
-            });
-          } catch (error) {
-            console.warn("Failed to save evaluation:", error);
-          }
-        }
-      }
-
-      // Move to next track
-      setCurrentIndex(currentIndex + 1);
-
-      // Fetch more tracks if needed
-      if (
-        currentIndex >= tracks.length - 3 &&
-        !isFetchingMore &&
-        !noMoreTracks
-      ) {
-        fetchMoreTracks();
-      }
-    },
-    [
-      currentIndex,
-      tracks,
-      isAuthenticated,
-      isFetchingMore,
-      noMoreTracks,
-      fetchMoreTracks,
-    ]
-  );
-
-  // Manual evaluation buttons
+  // Manual swipe buttons
   const handleLike = () => {
-    handleEvaluation("like");
+    forceSwipe("right");
   };
 
   const handleDislike = () => {
-    handleEvaluation("dislike");
+    forceSwipe("left");
   };
 
   if (loading) {
@@ -290,31 +340,47 @@ export default function SwipeScreen() {
       </View>
 
       <View style={styles.cardContainer}>
-        <TrackCard
-          track={currentTrack}
-          onPlayToggle={handlePlayToggle}
-          isPlaying={isCurrentPlaying}
-          isLoading={audioState.isLoading}
-        />
+        <Animated.View
+          style={[
+            styles.card,
+            {
+              transform: [
+                {
+                  rotate: rotate.interpolate({
+                    inputRange: [-1, 0, 1],
+                    outputRange: ["-30deg", "0deg", "30deg"],
+                  }),
+                },
+                ...position.getTranslateTransform(),
+              ],
+              opacity,
+            }}
+          {...panResponder.panHandlers}
+        >
+          <TrackCard
+            track={currentTrack}
+            onPlayToggle={handlePlayToggle}
+            isPlaying={isCurrentPlaying}
+            isLoading={audioState.isLoading}
+          />
+        </Animated.View>
       </View>
 
-      {currentTrack.id !== "instruction" && (
-        <View style={styles.controls}>
-          <TouchableOpacity
-            style={[styles.controlButton, styles.dislikeButton]}
-            onPress={handleDislike}
-          >
-            <Text style={styles.controlButtonText}>✗</Text>
-          </TouchableOpacity>
+      <View style={styles.controls}>
+        <TouchableOpacity
+          style={[styles.controlButton, styles.dislikeButton]}
+          onPress={handleDislike}
+        >
+          <Text style={styles.controlButtonText}>✗</Text>
+        </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[styles.controlButton, styles.likeButton]}
-            onPress={handleLike}
-          >
-            <Text style={styles.controlButtonText}>♥</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+        <TouchableOpacity
+          style={[styles.controlButton, styles.likeButton]}
+          onPress={handleLike}
+        >
+          <Text style={styles.controlButtonText}>♥</Text>
+        </TouchableOpacity>
+      </View>
 
       {error && (
         <View style={styles.errorContainer}>
@@ -348,6 +414,9 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+  },
+  card: {
+    position: "absolute",
   },
   controls: {
     flexDirection: "row",
