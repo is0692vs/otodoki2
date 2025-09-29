@@ -353,8 +353,9 @@ export default function SwipeScreen() {
                 },
                 ...position.getTranslateTransform(),
               ],
-              opacity,
-            }}
+              opacity: opacity,
+            },
+          ]}
           {...panResponder.panHandlers}
         >
           <TrackCard
