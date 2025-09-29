@@ -395,9 +395,9 @@ export default function SwipeScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>otodoki2</Text>
-        <Text style={styles.headerSubtitle}>
+        {/* <Text style={styles.headerSubtitle}>
           {currentIndex + 1} / {tracks.length}
-        </Text>
+        </Text> */}
       </View>
 
       <View style={styles.cardContainer}>
