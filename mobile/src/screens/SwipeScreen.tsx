@@ -110,6 +110,9 @@ export default function SwipeScreen() {
   const onSwipeComplete = async (direction: "left" | "right") => {
     const currentTrack = tracks[currentIndex];
 
+    // Stop current audio before moving to next track
+    audioActions.stop();
+
     if (currentTrack && currentTrack.id !== "instruction") {
       const status: EvaluationStatus =
         direction === "right" ? "like" : "dislike";
@@ -144,10 +147,11 @@ export default function SwipeScreen() {
     rotate.setValue(0);
     opacity.setValue(1);
 
-    setCurrentIndex(currentIndex + 1);
+    const nextIndex = currentIndex + 1;
+    setCurrentIndex(nextIndex);
 
     // Fetch more tracks if needed
-    if (currentIndex >= tracks.length - 3 && !isFetchingMore && !noMoreTracks) {
+    if (nextIndex >= tracks.length - 3 && !isFetchingMore && !noMoreTracks) {
       fetchMoreTracks();
     }
   };
@@ -176,11 +180,15 @@ export default function SwipeScreen() {
 
       console.log(`📱 Loaded ${filteredApiTracks.length} initial tracks.`);
       setTracks([instructionCard, ...filteredApiTracks]);
+      
+      // Reset to first track (instruction card)
+      setCurrentIndex(0);
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : String(err);
       setError(`Error loading tracks: ${errorMessage}`);
       // Use instruction card as fallback
       setTracks([instructionCard]);
+      setCurrentIndex(0);
     } finally {
       setLoading(false);
     }
@@ -277,6 +285,17 @@ export default function SwipeScreen() {
       fetchInitialTracks();
     });
   }, [syncEvaluatedTracks, fetchInitialTracks]);
+
+  // Auto-play current track when index changes
+  useEffect(() => {
+    const currentTrack = tracks[currentIndex];
+    if (currentTrack && currentTrack.id !== "instruction" && !loading) {
+      // Auto-play the current track
+      audioActions.play(currentTrack).catch((error) => {
+        console.warn("Failed to auto-play track:", error);
+      });
+    }
+  }, [currentIndex, tracks, audioActions, loading]);
 
   // Handle play/pause
   const handlePlayToggle = () => {
