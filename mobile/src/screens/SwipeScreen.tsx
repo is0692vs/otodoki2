@@ -54,12 +54,6 @@ export default function SwipeScreen() {
       console.warn("Playback error:", error, track);
     },
   });
-  const audioStateRef = useRef(audioState);
-  const audioActionsRef = useRef(audioActions);
-  useEffect(() => {
-    audioStateRef.current = audioState;
-    audioActionsRef.current = audioActions;
-  });
 
   // Handle app state changes
   useEffect(() => {
@@ -79,14 +73,11 @@ export default function SwipeScreen() {
   // Handle navigation focus
   useFocusEffect(
     useCallback(() => {
-      // Return a cleanup function to run when the screen loses focus (blurs).
+      // Cleanup function for when the screen loses focus
       return () => {
-        // Use the ref to get the latest playing state without causing a re-render.
-        if (audioStateRef.current.isPlaying) {
-          audioActionsRef.current.pause();
-        }
+        audioActions.pause();
       };
-    }, []) // Empty dependency array ensures this callback is created only once.
+    }, [audioActions])
   );
 
   // Animation values
@@ -340,29 +331,13 @@ export default function SwipeScreen() {
       currentTrack.preview_url;
 
     if (isPlayable) {
-      const { currentTrack: currentAudioTrack, isPlaying } =
-        audioStateRef.current;
-      const isSameTrackPlaying =
-        currentAudioTrack?.id === currentTrack.id && isPlaying;
-
-      if (!isSameTrackPlaying) {
-        console.log(
-          `[SwipeScreen] Auto-play check: track=${currentTrack.id}, isPlaying=${isPlaying}, currentTrack=${currentAudioTrack?.id}`
-        );
-        audioActionsRef.current.play(currentTrack);
-      }
+      // The stable `play` action will handle not re-playing the same track.
+      audioActions.play(currentTrack);
     } else {
-      // If not playable (e.g., instruction card), ensure audio is paused
-      if (audioStateRef.current.isPlaying) {
-        console.log(
-          `[SwipeScreen] Pausing audio for non-playable track: ${
-            currentTrack?.id || "N/A"
-          }`
-        );
-        audioActionsRef.current.pause();
-      }
+      // If the track is not playable, ensure any existing audio is stopped.
+      audioActions.pause();
     }
-  }, [currentIndex, tracks]);
+  }, [currentIndex, tracks, audioActions]);
 
   // Handle play/pause
   const handlePlayToggle = () => {
