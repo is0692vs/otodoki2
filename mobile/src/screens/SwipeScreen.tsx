@@ -138,9 +138,6 @@ export default function SwipeScreen() {
   const onSwipeComplete = async (direction: "left" | "right") => {
     const currentTrack = tracks[currentIndex];
 
-    // Stop current audio before moving to next track
-    audioActions.stop();
-
     if (currentTrack && currentTrack.id !== "instruction") {
       const status: EvaluationStatus =
         direction === "right" ? "like" : "dislike";
