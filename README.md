@@ -2,7 +2,7 @@
 
 ## otodoki2 について
 
-otodoki2 は、マッチングアプリのようなスワイプ UI で楽曲を評価・収集できる Web アプリケーションです。FastAPI + SQLModel で構成されたバックエンド API と Next.js (App Router) のフロントエンドにより、リアルタイムでキューを補充しながら新しい楽曲に出会えます。2025 年 2 月より、PostgreSQL を利用した永続化とユーザー認証 (メール + パスワード, JWT) をサポートしました。
+otodoki2 は、マッチングアプリのようなスワイプ UI で楽曲を評価・収集できる Web アプリケーションです。FastAPI + SQLModel で構成されたバックエンド API と Next.js (App Router) のフロントエンド、そして React Native によるモバイルアプリにより、リアルタイムでキューを補充しながら新しい楽曲に出会えます。2025 年 2 月より、PostgreSQL を利用した永続化とユーザー認証 (メール + パスワード, JWT) をサポートしました。
 
 ## 主な機能
 
@@ -19,6 +19,7 @@ otodoki2 は、マッチングアプリのようなスワイプ UI で楽曲を�
 otodoki2/
 ├── backend/           # FastAPI アプリケーションとテストコード
 ├── frontend/          # Next.js フロントエンド (App Router)
+├── mobile/            # React Native モバイルアプリ (Expo)
 ├── docs/              # 設計ドキュメント
 ├── scripts/           # 開発・検証スクリプト
 ├── docker-compose.yml # コンテナオーケストレーション
@@ -45,6 +46,7 @@ docker compose up -d --build
 
 - フロントエンド: [http://localhost:3000](http://localhost:3000)
 - バックエンド API: [http://localhost:8000](http://localhost:8000)
+- モバイル開発環境: [http://localhost:19000](http://localhost:19000)
 
 API コンテナ起動時に Alembic を使用したデータベースマイグレーションが自動実行されます。手動でマイグレーションを実行する必要はありません。
 
@@ -91,6 +93,45 @@ API コンテナ起動時に Alembic を使用したデータベースマイグ�
   すべてのテストは 2025-02 時点で 61 件成功しています。
 - **マイグレーション**: Alembic を使用します。新しいモデルを追加したら `alembic revision --autogenerate -m "message"` を実行し、`alembic upgrade head` で反映します。
 - **ログ確認**: `docker compose logs --tail=200 api` や `docker compose logs -f worker` でバックエンドとキュー補充ワーカーの状態を追跡できます。
+
+## モバイル開発
+
+React Native + Expo を使用したモバイルアプリケーションが `mobile/` ディレクトリに含まれています。
+
+### モバイルアプリの特徴
+- **クロスプラットフォーム**: iOS と Android 両対応
+- **共通 API**: Web フロントエンドと同じバックエンド API を使用
+- **オフライン対応**: AsyncStorage による認証情報の永続化
+- **ネイティブ UI**: プラットフォームに最適化されたユーザーインターフェース
+
+### モバイル開発環境の構築
+
+```bash
+# Docker を使用する場合
+docker compose up mobile
+
+# ローカル開発の場合
+cd mobile
+npm install
+npm start
+```
+
+### モバイルアプリのテスト
+
+1. **Expo Go アプリ** (iOS/Android)
+   - App Store/Google Play から Expo Go をインストール
+   - QR コードをスキャンして接続
+
+2. **iOS シミュレーター** (macOS のみ)
+   - Xcode をインストール
+   - `npm run ios` で起動
+
+3. **Android エミュレーター**
+   - Android Studio をインストール
+   - `npm run android` で起動
+
+4. **Web プレビュー**
+   - `npm run web` でブラウザでプレビュー
 
 ## よくあるトラブル
 
