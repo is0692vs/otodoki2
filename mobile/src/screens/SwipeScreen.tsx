@@ -54,6 +54,12 @@ export default function SwipeScreen() {
       console.warn("Playback error:", error, track);
     },
   });
+  const audioStateRef = useRef(audioState);
+  const audioActionsRef = useRef(audioActions);
+  useEffect(() => {
+    audioStateRef.current = audioState;
+    audioActionsRef.current = audioActions;
+  });
 
   // Handle app state changes
   useEffect(() => {
@@ -334,27 +340,29 @@ export default function SwipeScreen() {
       currentTrack.preview_url;
 
     if (isPlayable) {
+      const { currentTrack: currentAudioTrack, isPlaying } =
+        audioStateRef.current;
       const isSameTrackPlaying =
-        audioState.currentTrack?.id === currentTrack.id && audioState.isPlaying;
+        currentAudioTrack?.id === currentTrack.id && isPlaying;
 
       if (!isSameTrackPlaying) {
         console.log(
-          `[SwipeScreen] Auto-play check: track=${currentTrack.id}, isPlaying=${audioState.isPlaying}, currentTrack=${audioState.currentTrack?.id}`
+          `[SwipeScreen] Auto-play check: track=${currentTrack.id}, isPlaying=${isPlaying}, currentTrack=${currentAudioTrack?.id}`
         );
-        audioActions.play(currentTrack);
+        audioActionsRef.current.play(currentTrack);
       }
     } else {
       // If not playable (e.g., instruction card), ensure audio is paused
-      if (audioState.isPlaying) {
+      if (audioStateRef.current.isPlaying) {
         console.log(
           `[SwipeScreen] Pausing audio for non-playable track: ${
             currentTrack?.id || "N/A"
           }`
         );
-        audioActions.pause();
+        audioActionsRef.current.pause();
       }
     }
-  }, [currentIndex, tracks, audioState, audioActions]);
+  }, [currentIndex, tracks]);
 
   // Handle play/pause
   const handlePlayToggle = () => {
