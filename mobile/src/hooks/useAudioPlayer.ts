@@ -35,6 +35,7 @@ interface UseAudioPlayerOptions {
   autoPlay?: boolean;
   defaultMuted?: boolean;
   volume?: number;
+  isLooping?: boolean;
   onTrackEnd?: (track: Track) => void;
   onPlaybackError?: (error: string, track: Track) => void;
 }
@@ -46,6 +47,7 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
     autoPlay = true,
     defaultMuted = false,
     volume = 0.7,
+    isLooping = false,
     onTrackEnd,
     onPlaybackError,
   } = options;
@@ -185,7 +187,7 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
             volume: state.isMuted ? 0 : state.volume,
             rate: state.playbackRate,
             shouldCorrectPitch: true,
-            isLooping: false, // Disable looping to avoid conflicts
+            isLooping,
           }
         );
 

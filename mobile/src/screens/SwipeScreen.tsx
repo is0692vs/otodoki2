@@ -47,13 +47,7 @@ export default function SwipeScreen() {
 
   const [audioState, audioActions] = useAudioPlayer({
     autoPlay: false,
-    onTrackEnd: (track) => {
-      // Loop the current track instead of advancing
-      console.log("Track ended, looping:", track.title);
-      if (audioState.currentTrack) {
-        audioActions.play(audioState.currentTrack);
-      }
-    },
+    isLooping: true,
     onPlaybackError: (error, track) => {
       console.warn("Playback error:", error, track);
     },
@@ -67,7 +61,10 @@ export default function SwipeScreen() {
       }
     };
 
-    const subscription = AppState.addEventListener("change", handleAppStateChange);
+    const subscription = AppState.addEventListener(
+      "change",
+      handleAppStateChange
+    );
     return () => subscription?.remove();
   }, [audioActions]);
 
@@ -111,7 +108,7 @@ export default function SwipeScreen() {
       Animated.timing(position, {
         toValue: { x, y: 0 },
         duration: 250,
-        useNativeDriver: false,
+        useNativeDriver: true,
       }),
       Animated.timing(opacity, {
         toValue: 0,
@@ -125,11 +122,11 @@ export default function SwipeScreen() {
     Animated.parallel([
       Animated.spring(position, {
         toValue: { x: 0, y: 0 },
-        useNativeDriver: false,
+        useNativeDriver: true,
       }),
       Animated.spring(rotate, {
         toValue: 0,
-        useNativeDriver: false,
+        useNativeDriver: true,
       }),
     ]).start();
   };
@@ -387,30 +384,32 @@ export default function SwipeScreen() {
 
       <View style={styles.cardContainer}>
         {/* Render next cards in background */}
-        {tracks.slice(currentIndex + 1, currentIndex + 3).map((track, index) => (
-          <View
-            key={track.id}
-            style={[
-              styles.card,
-              {
-                zIndex: -index - 1,
-                transform: [
-                  { scale: 0.95 - index * 0.02 },
-                  { translateY: (index + 1) * 8 },
-                ],
-                opacity: 0.8 - index * 0.2,
-              },
-            ]}
-          >
-            <TrackCard
-              track={track}
-              onPlayToggle={() => {}}
-              isPlaying={false}
-              isLoading={false}
-            />
-          </View>
-        ))}
-        
+        {tracks
+          .slice(currentIndex + 1, currentIndex + 3)
+          .map((track, index) => (
+            <View
+              key={track.id}
+              style={[
+                styles.card,
+                {
+                  zIndex: -index - 1,
+                  transform: [
+                    { scale: 0.95 - index * 0.02 },
+                    { translateY: (index + 1) * 8 },
+                  ],
+                  opacity: 0.8 - index * 0.2,
+                },
+              ]}
+            >
+              <TrackCard
+                track={track}
+                onPlayToggle={() => {}}
+                isPlaying={false}
+                isLoading={false}
+              />
+            </View>
+          ))}
+
         {/* Current card on top */}
         <Animated.View
           style={[
@@ -494,6 +493,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     width: 300,
     height: 400,
+    left: (screenWidth - 300) / 2,
   },
   controls: {
     flexDirection: "row",
