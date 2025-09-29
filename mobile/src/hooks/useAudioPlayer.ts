@@ -1,5 +1,5 @@
 /**
- * Audio Player hook for React Native using Expo AV
+ * Audio Player hook for React Native using Expo Audio
  * Adapted from frontend/src/hooks/useAudioPlayer.ts
  */
 
@@ -67,6 +67,99 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
   const soundRef = useRef<Audio.Sound | null>(null);
   const onTrackEndRef = useRef(onTrackEnd);
   const onPlaybackErrorRef = useRef(onPlaybackError);
+
+  // Track play retry attempts to handle transient buffering that toggles isPlaying
+  // We retry a few times before giving up to make playback more robust on mobile
+  const playRetriesRef = useRef<{
+    attempts: number;
+    timer?: ReturnType<typeof setTimeout>;
+  }>({ attempts: 0 });
+
+  // Token to ensure only the most recent load affects state
+  const loadTokenRef = useRef<number>(0);
+  // Timer for delayed unload when stop() is called to avoid racing with
+  // immediate new loads (graceful stop)
+  const unloadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Helper: attempt to play with a few retries to survive transient buffering
+  const attemptPlay = useCallback(async (token?: number) => {
+    const MAX_ATTEMPTS = 3;
+    const RETRY_MS = 400;
+
+    // clear any existing retry timer first
+    if (playRetriesRef.current.timer) {
+      clearTimeout(playRetriesRef.current.timer);
+      playRetriesRef.current.timer = undefined;
+    }
+
+    playRetriesRef.current.attempts = 0;
+
+    const tryOnce = async () => {
+      // If a token was provided and it no longer matches the active load, abort
+      if (typeof token === "number" && token !== loadTokenRef.current) {
+        console.log(
+          "[useAudioPlayer] attemptPlay aborted due to stale token",
+          token
+        );
+        return;
+      }
+      if (!soundRef.current) return;
+      playRetriesRef.current.attempts += 1;
+      const attempt = playRetriesRef.current.attempts;
+      try {
+        // Cancel any pending unload scheduled by a recent stop()
+        if (unloadTimerRef.current) {
+          clearTimeout(unloadTimerRef.current);
+          unloadTimerRef.current = null;
+        }
+        console.log(`[useAudioPlayer] attemptPlay try #${attempt}`);
+        await soundRef.current.playAsync();
+        setState((prev) => ({ ...prev, isPlaying: true, error: null }));
+      } catch (err) {
+        console.warn(`[useAudioPlayer] attemptPlay failed #${attempt}:`, err);
+      }
+
+      // schedule check after a short delay to confirm isPlaying
+      playRetriesRef.current.timer = setTimeout(async () => {
+        playRetriesRef.current.timer = undefined;
+        if (!soundRef.current) return;
+        // If a token was provided and it no longer matches the active load, abort
+        if (typeof token === "number" && token !== loadTokenRef.current) {
+          console.log(
+            "[useAudioPlayer] attemptPlay status check aborted due to stale token",
+            token
+          );
+          return;
+        }
+        try {
+          const status = await soundRef.current.getStatusAsync();
+          console.log(
+            `[useAudioPlayer] attemptPlay status after #${attempt}:`,
+            { isPlaying: status.isPlaying, isLoaded: status.isLoaded }
+          );
+          if (status.isLoaded && status.isPlaying) {
+            // success
+            playRetriesRef.current.attempts = 0;
+            return;
+          }
+          if (attempt < MAX_ATTEMPTS) {
+            // retry
+            tryOnce();
+          } else {
+            // give up
+            setState((prev) => ({ ...prev, isPlaying: false }));
+          }
+        } catch (err) {
+          console.warn(
+            "[useAudioPlayer] attemptPlay status check failed:",
+            err
+          );
+        }
+      }, RETRY_MS);
+    };
+
+    tryOnce();
+  }, []);
 
   // Update refs when props change
   useEffect(() => {
@@ -144,7 +237,7 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
 
   // Set up position polling
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: ReturnType<typeof setInterval> | undefined;
     if (state.isPlaying) {
       interval = setInterval(updatePosition, 500);
     }
@@ -157,7 +250,12 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
 
   // Load track
   const loadTrack = useCallback(
-    async (track: Track) => {
+    async (track: Track, shouldPlayAfterLoad = false) => {
+      // mark this load with a new token so earlier loads' callbacks are ignored
+      const myToken = ++loadTokenRef.current;
+      console.log(
+        `[useAudioPlayer] loadTrack start id=${track.id} shouldPlay=${shouldPlayAfterLoad}`
+      );
       if (!track.preview_url) {
         setState((prev) => ({
           ...prev,
@@ -174,13 +272,23 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
       }));
 
       try {
-        // Unload previous sound
-        if (soundRef.current) {
-          await soundRef.current.unloadAsync();
-          soundRef.current = null;
+        // Capture reference to previous sound but do NOT unload it yet.
+        // We'll only unload it after the new sound is confirmed ready to
+        // avoid a race where unloading the previous sound interrupts
+        // playback or causes transient state toggles.
+        const previousSound = soundRef.current;
+
+        // Clear any pending play retries
+        if (playRetriesRef.current.timer) {
+          clearTimeout(playRetriesRef.current.timer);
+          playRetriesRef.current.timer = undefined;
+          playRetriesRef.current.attempts = 0;
         }
 
-        const { sound } = await Audio.Sound.createAsync(
+        // Double-buffered load: create a new sound instance but do NOT start
+        // playback immediately via createAsync. We'll control playback after
+        // swapping the sound in to avoid overlapping actions.
+        const { sound: newSound } = await Audio.Sound.createAsync(
           { uri: track.preview_url },
           {
             shouldPlay: false,
@@ -190,45 +298,100 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
             isLooping,
           }
         );
+        console.log("[useAudioPlayer] createAsync completed, newSound created");
 
-        soundRef.current = sound;
-
-        // Set up status update callback
-        sound.setOnPlaybackStatusUpdate((status) => {
-          if (status.isLoaded) {
-            setState((prev) => ({
-              ...prev,
-              currentTime: status.positionMillis || 0,
-              duration: status.durationMillis || 0,
-              isPlaying: status.isPlaying || false,
-              isLoading: false,
-            }));
-
-            if (status.didJustFinish && onTrackEndRef.current) {
-              onTrackEndRef.current(track);
+        // previousSound was captured above
+        // Status callback for the new sound. It will swap into active use
+        // only if its token matches (i.e., it's the most recent load), and
+        // when it is loaded and (if requested) playing.
+        let hasAttemptedPlay = false;
+        newSound.setOnPlaybackStatusUpdate(async (status) => {
+          try {
+            if (myToken !== loadTokenRef.current) {
+              // stale update from previous load; ignore
+              return;
             }
-          } else if (status.error) {
-            setState((prev) => ({
-              ...prev,
-              error: `Playback error: ${status.error}`,
-              isLoading: false,
-              isPlaying: false,
-            }));
-            if (onPlaybackErrorRef.current) {
-              onPlaybackErrorRef.current(
-                `Playback error: ${status.error}`,
-                track
-              );
+            console.log("[useAudioPlayer] newSound statusUpdate:", {
+              isLoaded: status.isLoaded,
+              isPlaying: status.isPlaying,
+              didJustFinish: status.didJustFinish,
+              error: status.error,
+            });
+
+            if (status.isLoaded) {
+              // At this point the newSound is loaded. Swap it in as the active
+              // sound, then unload the previous sound to free resources.
+              // Unload previous sound after we've confirmed newSound is active
+              if (previousSound) {
+                try {
+                  await previousSound.unloadAsync();
+                } catch (e) {
+                  console.warn("Failed to unload previous sound:", e);
+                }
+              }
+
+              // Set the new sound as active and update state
+              soundRef.current = newSound;
+              setState((prev) => ({
+                ...prev,
+                currentTrack: track,
+                isLoading: false,
+                error: null,
+                isPlaying: status.isPlaying || false,
+                currentTime: status.positionMillis || 0,
+                duration: status.durationMillis || 0,
+              }));
+
+              // If playback was requested, start playback directly without retry
+              // to match web version's simple approach
+              if (shouldPlayAfterLoad && !hasAttemptedPlay) {
+                hasAttemptedPlay = true;
+                try {
+                  await newSound.playAsync();
+                  setState((prev) => ({ ...prev, isPlaying: true }));
+                } catch (playError) {
+                  console.warn("[useAudioPlayer] playAsync failed:", playError);
+                  setState((prev) => ({ ...prev, isPlaying: false }));
+                }
+              }
+
+              if (status.didJustFinish && onTrackEndRef.current) {
+                console.log(
+                  "[useAudioPlayer] didJustFinish triggering onTrackEnd"
+                );
+                onTrackEndRef.current(track);
+              }
+            } else if (status.error) {
+              setState((prev) => ({
+                ...prev,
+                error: `Playback error: ${status.error}`,
+                isLoading: false,
+                isPlaying: false,
+              }));
+              if (onPlaybackErrorRef.current) {
+                onPlaybackErrorRef.current(
+                  `Playback error: ${status.error}`,
+                  track
+                );
+              }
+            } else {
+              // Still buffering; update UI fields so the app knows we're loaded
+              setState((prev) => ({
+                ...prev,
+                currentTime: status.positionMillis || 0,
+                duration: status.durationMillis || 0,
+                isPlaying: status.isPlaying || false,
+                isLoading: true,
+              }));
             }
+          } catch (e) {
+            console.warn("[useAudioPlayer] status callback error:", e);
           }
         });
 
-        setState((prev) => ({
-          ...prev,
-          currentTrack: track,
-          isLoading: false,
-          error: null,
-        }));
+        // No immediate outer attemptPlay here; playback is started from the
+        // status callback after the swap to ensure the new sound is active
+        // before attempting to play.
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : "Failed to load track";
@@ -250,7 +413,10 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
   const play = useCallback(
     async (track?: Track) => {
       if (track && track !== state.currentTrack) {
-        await loadTrack(track);
+        // Load and start playback once loaded to avoid race conditions
+        console.log(`[useAudioPlayer] play requested for id=${track.id}`);
+        await loadTrack(track, true);
+        return;
       }
 
       if (!soundRef.current) {
@@ -258,11 +424,13 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
       }
 
       try {
-        await soundRef.current.playAsync();
-        setState((prev) => ({ ...prev, isPlaying: true, error: null }));
+        console.log("[useAudioPlayer] play requested for existing sound");
+        // Use retrying play to be robust against brief buffering pauses
+        await attemptPlay();
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : "Failed to play";
+        console.warn("[useAudioPlayer] playAsync failed:", errorMessage);
         setState((prev) => ({
           ...prev,
           error: errorMessage,
@@ -287,17 +455,55 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
 
   // Stop
   const stop = useCallback(async () => {
+    console.log("[useAudioPlayer] stop() called (graceful)");
+    // Invalidate any pending loads/retries so callbacks won't affect new loads
+    loadTokenRef.current += 1;
+    if (playRetriesRef.current.timer) {
+      clearTimeout(playRetriesRef.current.timer);
+      playRetriesRef.current.timer = undefined;
+      playRetriesRef.current.attempts = 0;
+    }
+
+    // Pause immediately to stop audio output, then schedule an unload after
+    // a short delay. If a new load starts before the delay expires, the
+    // unload will be canceled.
+    const UNLOAD_DELAY_MS = 500;
+
     if (soundRef.current) {
       try {
-        await soundRef.current.stopAsync();
-        setState((prev) => ({
-          ...prev,
-          isPlaying: false,
-          currentTime: 0,
-        }));
+        await soundRef.current.pauseAsync();
+        setState((prev) => ({ ...prev, isPlaying: false }));
       } catch (error) {
-        console.warn("Failed to stop:", error);
+        console.warn("Failed to pause during stop():", error);
       }
+
+      // schedule unload
+      if (unloadTimerRef.current) {
+        clearTimeout(unloadTimerRef.current);
+        unloadTimerRef.current = null;
+      }
+      unloadTimerRef.current = setTimeout(async () => {
+        if (!soundRef.current) return;
+        try {
+          console.log("[useAudioPlayer] delayed unload executing");
+          await soundRef.current.stopAsync();
+          await soundRef.current.unloadAsync();
+          soundRef.current = null;
+          setState((prev) => ({
+            ...prev,
+            isPlaying: false,
+            currentTime: 0,
+            currentTrack: null,
+          }));
+        } catch (error) {
+          console.warn("Failed to unload during delayed stop:", error);
+        } finally {
+          if (unloadTimerRef.current) {
+            clearTimeout(unloadTimerRef.current);
+            unloadTimerRef.current = null;
+          }
+        }
+      }, UNLOAD_DELAY_MS);
     }
   }, []);
 

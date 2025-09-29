@@ -11,11 +11,11 @@ import {
   PanResponder,
   Dimensions,
   StyleSheet,
-  SafeAreaView,
   AppState,
   AppStateStatus,
   useWindowDimensions,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { useAuth } from "../contexts/AuthContext";
 import { api } from "../services/api-client";
@@ -46,6 +46,7 @@ export default function SwipeScreen() {
 
   const { isAuthenticated } = useAuth();
   const evaluatedTrackIdsRef = useRef<Set<string>>(new Set());
+  const lastAdvanceRef = useRef<number | null>(null);
 
   const [audioState, audioActions] = useAudioPlayer({
     autoPlay: false,
@@ -76,9 +77,11 @@ export default function SwipeScreen() {
       // Resume playback when screen comes into focus
       return () => {
         // Pause when screen loses focus
-        audioActions.pause();
+        if (audioState.isPlaying) {
+          audioActions.pause();
+        }
       };
-    }, [audioActions])
+    }, [audioActions, audioState.isPlaying])
   );
 
   // Animation values
@@ -115,7 +118,7 @@ export default function SwipeScreen() {
       Animated.timing(opacity, {
         toValue: 0,
         duration: 250,
-        useNativeDriver: false,
+        useNativeDriver: true,
       }),
     ]).start(() => onSwipeComplete(direction));
   };
@@ -136,8 +139,14 @@ export default function SwipeScreen() {
   const onSwipeComplete = async (direction: "left" | "right") => {
     const currentTrack = tracks[currentIndex];
 
-    // Stop current audio before moving to next track
-    audioActions.stop();
+    // Pause current audio before moving to next track to avoid an unload
+    // race that can cause the new track to immediately stop.
+    audioActions.pause();
+    console.log("[SwipeScreen] onSwipeComplete: paused audio before advancing");
+
+    // record the time of this advance so auto-play can wait briefly
+    // to avoid racing with pause/unload
+    lastAdvanceRef.current = Date.now();
 
     if (currentTrack && currentTrack.id !== "instruction") {
       const status: EvaluationStatus =
@@ -169,9 +178,23 @@ export default function SwipeScreen() {
     }
 
     // Move to next track
-    position.setValue({ x: 0, y: 0 });
-    rotate.setValue(0);
-    opacity.setValue(1);
+    Animated.timing(position, {
+      toValue: { x: 0, y: 0 },
+      duration: 0,
+      useNativeDriver: true,
+    }).start();
+
+    Animated.timing(rotate, {
+      toValue: 0,
+      duration: 0,
+      useNativeDriver: true,
+    }).start();
+
+    Animated.timing(opacity, {
+      toValue: 1,
+      duration: 0,
+      useNativeDriver: true,
+    }).start();
 
     const nextIndex = currentIndex + 1;
     setCurrentIndex(nextIndex);
@@ -315,13 +338,36 @@ export default function SwipeScreen() {
   // Auto-play current track when index changes
   useEffect(() => {
     const currentTrack = tracks[currentIndex];
-    if (currentTrack && currentTrack.id !== "instruction" && !loading) {
-      // Auto-play the current track
-      audioActions.play(currentTrack).catch((error) => {
-        console.warn("Failed to auto-play track:", error);
-      });
+    // Only auto-play when we have a preview URL, the player isn't already
+    // playing this same track, and the audio player isn't currently loading.
+    if (!currentTrack || currentTrack.id === "instruction") return;
+    if (!currentTrack.preview_url) return;
+
+    const isSameTrackPlaying =
+      audioState.currentTrack?.id === currentTrack.id && audioState.isPlaying;
+    if (isSameTrackPlaying) return;
+
+    // If the player is loading or has a different currentTrack, request play
+    console.log(
+      `[SwipeScreen] Auto-play check: track=${currentTrack.id}, isPlaying=${audioState.isPlaying}, currentTrack=${audioState.currentTrack?.id}`
+    );
+
+    // If we just advanced the card, wait a short window to avoid racing
+    // with the pause/unload triggered by the swipe.
+    const lastAdvance = lastAdvanceRef.current;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const DELAY_MS = 350;
+    if (lastAdvance && Date.now() - lastAdvance < DELAY_MS) {
+      const wait = DELAY_MS - (Date.now() - lastAdvance);
+      timer = setTimeout(() => audioActions.play(currentTrack), wait);
+    } else {
+      audioActions.play(currentTrack);
     }
-  }, [currentIndex, tracks, audioActions, loading]);
+
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [currentIndex, tracks]);
 
   // Handle play/pause
   const handlePlayToggle = () => {
