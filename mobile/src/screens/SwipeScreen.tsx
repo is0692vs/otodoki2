@@ -46,7 +46,6 @@ export default function SwipeScreen() {
 
   const { isAuthenticated } = useAuth();
   const evaluatedTrackIdsRef = useRef<Set<string>>(new Set());
-  const lastAdvanceRef = useRef<number | null>(null);
 
   const [audioState, audioActions] = useAudioPlayer({
     autoPlay: false,
@@ -139,14 +138,8 @@ export default function SwipeScreen() {
   const onSwipeComplete = async (direction: "left" | "right") => {
     const currentTrack = tracks[currentIndex];
 
-    // Pause current audio before moving to next track to avoid an unload
-    // race that can cause the new track to immediately stop.
-    audioActions.pause();
-    console.log("[SwipeScreen] onSwipeComplete: paused audio before advancing");
-
-    // record the time of this advance so auto-play can wait briefly
-    // to avoid racing with pause/unload
-    lastAdvanceRef.current = Date.now();
+    // Stop current audio before moving to next track
+    audioActions.stop();
 
     if (currentTrack && currentTrack.id !== "instruction") {
       const status: EvaluationStatus =
@@ -351,22 +344,7 @@ export default function SwipeScreen() {
     console.log(
       `[SwipeScreen] Auto-play check: track=${currentTrack.id}, isPlaying=${audioState.isPlaying}, currentTrack=${audioState.currentTrack?.id}`
     );
-
-    // If we just advanced the card, wait a short window to avoid racing
-    // with the pause/unload triggered by the swipe.
-    const lastAdvance = lastAdvanceRef.current;
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const DELAY_MS = 350;
-    if (lastAdvance && Date.now() - lastAdvance < DELAY_MS) {
-      const wait = DELAY_MS - (Date.now() - lastAdvance);
-      timer = setTimeout(() => audioActions.play(currentTrack), wait);
-    } else {
-      audioActions.play(currentTrack);
-    }
-
-    return () => {
-      if (timer) clearTimeout(timer);
-    };
+    audioActions.play(currentTrack);
   }, [currentIndex, tracks]);
 
   // Handle play/pause
