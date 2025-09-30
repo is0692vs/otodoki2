@@ -23,6 +23,11 @@ import { Track, EvaluationStatus } from "../types/api";
 import { useAudioPlayer } from "../hooks/useAudioPlayer";
 import TrackCard from "../components/TrackCard";
 import LoadingScreen from "./LoadingScreen";
+import {
+  INITIAL_TRACKS_LIMIT,
+  REFILL_TRACKS_LIMIT,
+  REFILL_THRESHOLD,
+} from "../constants";
 
 export default function SwipeScreen() {
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
@@ -187,7 +192,11 @@ export default function SwipeScreen() {
     setCurrentIndex(nextIndex);
 
     // Fetch more tracks if needed
-    if (nextIndex >= tracks.length - 3 && !isFetchingMore && !noMoreTracks) {
+    if (
+      tracks.length - nextIndex <= REFILL_THRESHOLD &&
+      !isFetchingMore &&
+      !noMoreTracks
+    ) {
       fetchMoreTracks();
     }
   };
