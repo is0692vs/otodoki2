@@ -4,11 +4,28 @@
 
 ## ドキュメント一覧
 
+### 📘 主要ドキュメント
+
+- [VISUAL_GUIDE.md](./VISUAL_GUIDE.md) - **ビジュアルガイド** (スクリーンショット・動画付き)
+- [MEDIA_GUIDE.md](./MEDIA_GUIDE.md) - **メディアファイル追加クイックガイド**
+- [CONTRIBUTING_DOCS.md](./CONTRIBUTING_DOCS.md) - **ドキュメント貢献ガイド**
+
+### 🔧 技術ドキュメント
+
 - [WORKER_README.md](./WORKER_README.md) - iTunes API 非同期補充ワーカーのドキュメント
 - [API.md](./API.md) - API 仕様ドキュメント（予定）
-- [DEPLOYMENT.md](./DEPLOYMENT.md) - デプロイメントガイド
 - [AUDIO_PREVIEW_IMPLEMENTATION.md](./AUDIO_PREVIEW_IMPLEMENTATION.md) - オーディオプレビュー実装ドキュメント
 - [mobile-implementation.md](./mobile-implementation.md) - モバイルアプリ実装ドキュメント
+
+### 🚀 運用ドキュメント
+
+- [DEPLOYMENT.md](./DEPLOYMENT.md) - デプロイメントガイド
+
+### 📁 メディアファイル
+
+- [images/](./images/) - 図・ダイアグラム
+- [screenshots/](./screenshots/) - スクリーンショット
+- [videos/](./videos/) - デモ動画・GIF
 
 ## プロジェクト構造
 

@@ -4,6 +4,8 @@
 
 otodoki2 は、マッチングアプリのようなスワイプ UI で楽曲を評価・収集できる Web アプリケーションです。FastAPI + SQLModel で構成されたバックエンド API と Next.js (App Router) のフロントエンド、そして React Native によるモバイルアプリにより、リアルタイムでキューを補充しながら新しい楽曲に出会えます。2025 年 2 月より、PostgreSQL を利用した永続化とユーザー認証 (メール + パスワード, JWT) をサポートしました。
 
+📖 **[ビジュアルガイド](./docs/VISUAL_GUIDE.md)**: スクリーンショットと動画で機能を確認できます。
+
 ## 主な機能
 
 - **ユーザー登録 / ログイン**: `/register` と `/login` ページからユーザーを作成し、アクセストークン + リフレッシュトークンでセッション管理します。
@@ -138,6 +140,17 @@ npm start
 - **トークンが保持されない**: ブラウザの `localStorage` がブロックされていないか、`NEXT_PUBLIC_API_URL` が正しく設定されているか確認してください。
 - **pytest が失敗する**: `DATABASE_URL` が PostgreSQL を指しているか、`pip install -r backend/requirements.txt` が完了しているかを確認してください。
 - **フロントとバックを別々に起動する場合**: バックエンドを `uvicorn backend.app.main:app --reload` で起動し、フロントエンドを `npm run dev` で起動します。この場合でも `.env` の `NEXT_PUBLIC_API_URL` がバックエンドを指している必要があります。
+
+## ドキュメント
+
+詳細なドキュメントは [docs/](./docs/) ディレクトリにあります：
+
+- 📖 [ビジュアルガイド](./docs/VISUAL_GUIDE.md) - スクリーンショットと動画で機能を確認
+- 📝 [ドキュメント貢献ガイド](./docs/CONTRIBUTING_DOCS.md) - ドキュメントへの貢献方法
+- 🔧 [ワーカードキュメント](./docs/WORKER_README.md) - バックグラウンドワーカーの詳細
+- 🚀 [デプロイメントガイド](./docs/DEPLOYMENT.md) - 本番環境へのデプロイ方法
+- 📱 [モバイル実装](./docs/mobile-implementation.md) - モバイルアプリの実装詳細
+- 🎵 [オーディオプレビュー実装](./docs/AUDIO_PREVIEW_IMPLEMENTATION.md) - 音声機能の実装
 
 ## ライセンス
 
