@@ -5,6 +5,7 @@ import logging
 from datetime import datetime
 from contextlib import asynccontextmanager
 from typing import Optional
+import os
 
 from .api.routes import (
     auth_router,
@@ -93,12 +94,12 @@ async def logging_middleware(request: Request, call_next):
     return response
 
 # CORS設定（開発環境用）
+origins_str = os.getenv("ORIGINS",
+                        "http://localhost:3000,http://localhost:8081")
+origins = [origin.strip() for origin in origins_str.split(",")]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "exp://192.168.40.133:8081",   # Expo開発サーバー
-        "http://192.168.40.133:8081",  # Web版
-    ],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

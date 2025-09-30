@@ -22,7 +22,6 @@ const fallbackTracks: Track[] = [
     id: "demo-1",
     title: "Bohemian Rhapsody",
     artist: "Queen",
-    artwork_url: "https://via.placeholder.com/300x300/1f2937/ffffff?text=Queen",
     album: "A Night at the Opera",
     duration_ms: 355000,
     genre: "Rock",
@@ -31,8 +30,6 @@ const fallbackTracks: Track[] = [
     id: "demo-2",
     title: "Imagine",
     artist: "John Lennon",
-    artwork_url:
-      "https://via.placeholder.com/300x300/3b82f6/ffffff?text=Imagine",
     album: "Imagine",
     duration_ms: 183000,
     genre: "Pop",
@@ -49,8 +46,6 @@ const fallbackTracks: Track[] = [
     id: "demo-4",
     title: "Hotel California",
     artist: "Eagles",
-    artwork_url:
-      "https://via.placeholder.com/300x300/059669/ffffff?text=Eagles",
     album: "Hotel California",
     duration_ms: 391000,
     genre: "Rock",
