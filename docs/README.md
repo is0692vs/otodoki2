@@ -7,7 +7,9 @@
 ### 📘 主要ドキュメント
 
 - [VISUAL_GUIDE.md](./VISUAL_GUIDE.md) - **ビジュアルガイド** (スクリーンショット・動画付き)
+- [ARCHITECTURE.md](./ARCHITECTURE.md) - **システムアーキテクチャ** (図解付き)
 - [MEDIA_GUIDE.md](./MEDIA_GUIDE.md) - **メディアファイル追加クイックガイド**
+- [SCREENSHOT_TEMPLATE.md](./SCREENSHOT_TEMPLATE.md) - **スクリーンショット撮影テンプレート**
 - [CONTRIBUTING_DOCS.md](./CONTRIBUTING_DOCS.md) - **ドキュメント貢献ガイド**
 
 ### 🔧 技術ドキュメント

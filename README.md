@@ -146,6 +146,7 @@ npm start
 詳細なドキュメントは [docs/](./docs/) ディレクトリにあります：
 
 - 📖 [ビジュアルガイド](./docs/VISUAL_GUIDE.md) - スクリーンショットと動画で機能を確認
+- 🏗️ [システムアーキテクチャ](./docs/ARCHITECTURE.md) - アーキテクチャの詳細図解
 - 📝 [ドキュメント貢献ガイド](./docs/CONTRIBUTING_DOCS.md) - ドキュメントへの貢献方法
 - 🔧 [ワーカードキュメント](./docs/WORKER_README.md) - バックグラウンドワーカーの詳細
 - 🚀 [デプロイメントガイド](./docs/DEPLOYMENT.md) - 本番環境へのデプロイ方法
