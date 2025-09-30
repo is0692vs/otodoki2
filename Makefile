@@ -5,6 +5,10 @@ up:
 	@echo "\nBackend server started at http://localhost:8000\n"
 	@echo "Frontend server started at http://localhost:3000\n"
 
+up-backend:
+	docker-compose up --build api db
+	@echo "\nBackend server started at http://localhost:8000\n"
+
 logs:
 	docker-compose logs -f api
 
