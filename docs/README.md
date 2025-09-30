@@ -2,10 +2,15 @@
 
 このディレクトリには、otodoki2 プロジェクトのドキュメントが含まれています。
 
+## 🚀 初めての方へ
+
+ドキュメントにスクリーンショットや動画を追加したい方は、まず [QUICK_START_VISUALS.md](./QUICK_START_VISUALS.md) をご覧ください！
+
 ## ドキュメント一覧
 
 ### 📘 主要ドキュメント
 
+- [QUICK_START_VISUALS.md](./QUICK_START_VISUALS.md) - **ビジュアルコンテンツ追加クイックスタート** 🌟
 - [VISUAL_GUIDE.md](./VISUAL_GUIDE.md) - **ビジュアルガイド** (スクリーンショット・動画付き)
 - [ARCHITECTURE.md](./ARCHITECTURE.md) - **システムアーキテクチャ** (図解付き)
 - [MEDIA_GUIDE.md](./MEDIA_GUIDE.md) - **メディアファイル追加クイックガイド**
