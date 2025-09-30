@@ -12,6 +12,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Text, View } from 'react-native';
 
 // Screens
+import HomeScreen from '../screens/HomeScreen';
 import SwipeScreen from '../screens/SwipeScreen';
 import LibraryScreen from '../screens/LibraryScreen';
 import LoginScreen from '../screens/LoginScreen';
@@ -26,6 +27,7 @@ export type RootStackParamList = {
 };
 
 export type MainTabParamList = {
+  Home: undefined;
   Swipe: undefined;
   Library: undefined;
 };
