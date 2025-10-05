@@ -117,6 +117,62 @@ class TestiTunesApiClient:
         tracks_second = client.clean_and_filter_tracks(raw_tracks)
         assert len(tracks_second) == 0
     
+    def test_clean_and_filter_tracks_cross_album_duplicate_removal(self):
+        """別アルバムの同じ曲の重複排除のテスト"""
+        client = iTunesApiClient()
+        
+        # 異なるIDだが同じ曲名・アーティスト名のトラック（別アルバム）
+        raw_tracks = [
+            {
+                "trackId": 11111,
+                "trackName": "Same Song",
+                "artistName": "Same Artist",
+                "previewUrl": "https://example.com/preview1.m4a",
+                "artworkUrl100": "https://example.com/artwork1.jpg",
+                "collectionName": "Album A"
+            },
+            {
+                "trackId": 22222,  # 異なるID
+                "trackName": "Same Song",  # 同じ曲名
+                "artistName": "Same Artist",  # 同じアーティスト
+                "previewUrl": "https://example.com/preview2.m4a",
+                "artworkUrl100": "https://example.com/artwork2.jpg",
+                "collectionName": "Album B"  # 異なるアルバム
+            },
+            {
+                "trackId": 33333,  # 異なるID
+                "trackName": "  Same Song  ",  # 前後に空白があるが同じ曲
+                "artistName": "  SAME ARTIST  ",  # 大文字・空白が異なるが同じアーティスト
+                "previewUrl": "https://example.com/preview3.m4a",
+                "artworkUrl100": "https://example.com/artwork3.jpg",
+                "collectionName": "Album C"  # さらに異なるアルバム
+            }
+        ]
+        
+        tracks = client.clean_and_filter_tracks(raw_tracks)
+        
+        # 最初のトラックのみが返される（2番目と3番目は重複として排除）
+        assert len(tracks) == 1
+        assert tracks[0].title == "Same Song"
+        assert tracks[0].id == "11111"
+        assert tracks[0].album == "Album A"
+        
+        # 異なる曲は追加される
+        different_track = [
+            {
+                "trackId": 44444,
+                "trackName": "Different Song",
+                "artistName": "Same Artist",
+                "previewUrl": "https://example.com/preview4.m4a",
+                "artworkUrl100": "https://example.com/artwork4.jpg"
+            }
+        ]
+        
+        tracks_different = client.clean_and_filter_tracks(different_track)
+        assert len(tracks_different) == 1
+        assert tracks_different[0].title == "Different Song"
+
+    
     @pytest.mark.asyncio
     async def test_search_tracks_success(self):
         """iTunes API検索成功のテスト"""

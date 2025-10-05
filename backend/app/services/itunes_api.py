@@ -36,6 +36,8 @@ class iTunesApiClient:
 
         # 重複排除用のIDセット（最近取得したトラックID）
         self._recent_track_ids: Set[str] = set()
+        # 別アルバムの同じ曲を検出するための(title, artist)のセット
+        self._recent_track_signatures: Set[tuple[str, str]] = set()
         self._track_id_cleanup_interval = timedelta(minutes=1) # 1分間に変更
         self._last_cleanup = datetime.now()
 
@@ -173,10 +175,21 @@ class iTunesApiClient:
                     skipped_count += 1
                     continue
 
-                # 重複チェック
+                # 重複チェック（trackIdベース）
                 track_id_str = str(track_id)
                 if track_id_str in self._recent_track_ids:
                     duplicate_count += 1
+                    continue
+
+                # 別アルバムの同じ曲を検出（title + artistベース）
+                # 正規化：小文字化、前後の空白削除
+                normalized_title = track_name.strip().lower()
+                normalized_artist = artist_name.strip().lower()
+                track_signature = (normalized_title, normalized_artist)
+                
+                if track_signature in self._recent_track_signatures:
+                    duplicate_count += 1
+                    logger.debug(f"Skipped duplicate song from different album: '{track_name}' by '{artist_name}'")
                     continue
 
                 # アートワークURLの高解像度化
@@ -196,6 +209,7 @@ class iTunesApiClient:
 
                 cleaned_tracks.append(track)
                 self._recent_track_ids.add(track_id_str)
+                self._recent_track_signatures.add(track_signature)
 
             except Exception as e:
                 logger.warning(f"Failed to process track data: {e}")
@@ -230,12 +244,14 @@ class iTunesApiClient:
         return artwork_url if artwork_url else ""
 
     def _cleanup_track_ids(self) -> None:
-        """古いトラックIDをクリーンアップ"""
+        """古いトラックIDと楽曲シグネチャをクリーンアップ"""
         current_time = datetime.now()
         if (current_time - self._last_cleanup) >= self._track_id_cleanup_interval:
             # 簡単な実装：一定時間後に全てクリア
-            old_count = len(self._recent_track_ids)
+            old_id_count = len(self._recent_track_ids)
+            old_sig_count = len(self._recent_track_signatures)
             self._recent_track_ids.clear()
+            self._recent_track_signatures.clear()
             self._last_cleanup = current_time
-            if old_count > 0:
-                logger.debug(f"Cleaned up {old_count} track IDs from memory")
+            if old_id_count > 0 or old_sig_count > 0:
+                logger.debug(f"Cleaned up {old_id_count} track IDs and {old_sig_count} track signatures from memory")
