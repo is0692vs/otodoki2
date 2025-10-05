@@ -2,13 +2,37 @@
 
 このディレクトリには、otodoki2 プロジェクトのドキュメントが含まれています。
 
+## 🚀 初めての方へ
+
+ドキュメントにスクリーンショットや動画を追加したい方は、まず [QUICK_START_VISUALS.md](./QUICK_START_VISUALS.md) をご覧ください！
+
 ## ドキュメント一覧
+
+### 📘 主要ドキュメント
+
+- [QUICK_START_VISUALS.md](./QUICK_START_VISUALS.md) - **ビジュアルコンテンツ追加クイックスタート** 🌟
+- [VISUAL_GUIDE.md](./VISUAL_GUIDE.md) - **ビジュアルガイド** (スクリーンショット・動画付き)
+- [ARCHITECTURE.md](./ARCHITECTURE.md) - **システムアーキテクチャ** (図解付き)
+- [MEDIA_GUIDE.md](./MEDIA_GUIDE.md) - **メディアファイル追加クイックガイド**
+- [SCREENSHOT_TEMPLATE.md](./SCREENSHOT_TEMPLATE.md) - **スクリーンショット撮影テンプレート**
+- [CONTRIBUTING_DOCS.md](./CONTRIBUTING_DOCS.md) - **ドキュメント貢献ガイド**
+
+### 🔧 技術ドキュメント
 
 - [WORKER_README.md](./WORKER_README.md) - iTunes API 非同期補充ワーカーのドキュメント
 - [API.md](./API.md) - API 仕様ドキュメント（予定）
-- [DEPLOYMENT.md](./DEPLOYMENT.md) - デプロイメントガイド
 - [AUDIO_PREVIEW_IMPLEMENTATION.md](./AUDIO_PREVIEW_IMPLEMENTATION.md) - オーディオプレビュー実装ドキュメント
 - [mobile-implementation.md](./mobile-implementation.md) - モバイルアプリ実装ドキュメント
+
+### 🚀 運用ドキュメント
+
+- [DEPLOYMENT.md](./DEPLOYMENT.md) - デプロイメントガイド
+
+### 📁 メディアファイル
+
+- [images/](./images/) - 図・ダイアグラム
+- [screenshots/](./screenshots/) - スクリーンショット
+- [videos/](./videos/) - デモ動画・GIF
 
 ## プロジェクト構造
 
