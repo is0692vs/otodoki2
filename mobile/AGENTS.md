@@ -51,6 +51,11 @@ mobile/
 - **SwipeScreen**: カードベースのスワイプインターフェース
 - **PanResponder**: ジェスチャーハンドリング
 - **Animated API**: スムーズなアニメーション効果
+- **楽曲読み込み戦略**: 
+  - 初期ロード: 20曲 (`INITIAL_TRACKS_LIMIT`)
+  - 追加ロード: 10曲 (`REFILL_TRACKS_LIMIT`)
+  - 補充トリガー: 残り5曲以下 (`REFILL_THRESHOLD`)
+  - 定数は `src/constants.ts` で一元管理
 
 ### オーディオ再生
 - **useAudioPlayer**: Expo AV を使用したオーディオプレーヤー
