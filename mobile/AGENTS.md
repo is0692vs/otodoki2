@@ -25,6 +25,7 @@ mobile/
 │   ├── navigation/     # ナビゲーション設定
 │   │   └── Navigation.tsx
 │   ├── screens/        # 画面コンポーネント
+│   │   ├── HomeScreen.tsx
 │   │   ├── LoadingScreen.tsx
 │   │   ├── LoginScreen.tsx
 │   │   ├── RegisterScreen.tsx
@@ -41,6 +42,14 @@ mobile/
 ```
 
 ## 主要な機能
+
+### ホーム画面
+- **HomeScreen**: Web版と同様のトップページ
+- **おすすめ楽曲**: APIから取得した楽曲の横スクロール表示
+- **人気楽曲**: 最近人気の楽曲セクション
+- **ジャンル選択**: 8つのジャンルボタン
+- **検索バー**: 楽曲やアーティストの検索（基本実装）
+- **プルトゥリフレッシュ**: データの再取得
 
 ### 認証システム
 - **AuthContext**: JWT ベースの認証状態管理
