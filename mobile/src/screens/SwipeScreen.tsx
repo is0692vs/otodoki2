@@ -209,7 +209,7 @@ export default function SwipeScreen() {
 
     try {
       const response = await api.tracks.suggestions({
-        limit: 20,
+        limit: INITIAL_TRACKS_LIMIT,
         excludeIds: Array.from(evaluatedTrackIdsRef.current).join(","),
       });
 
@@ -257,7 +257,10 @@ export default function SwipeScreen() {
         ])
       ).join(",");
 
-      const response = await api.tracks.suggestions({ limit: 10, excludeIds });
+      const response = await api.tracks.suggestions({
+        limit: REFILL_TRACKS_LIMIT,
+        excludeIds,
+      });
 
       if (response.error) {
         throw new Error(response.error.error);

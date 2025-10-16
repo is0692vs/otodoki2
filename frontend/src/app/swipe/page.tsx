@@ -10,6 +10,10 @@ import { ArrowLeft } from "lucide-react";
 import { api, type Track } from "@/services";
 import { useAuth } from "@/contexts/AuthContext";
 import type { EvaluationStatus } from "@/services/types";
+import {
+  INITIAL_TRACKS_LIMIT,
+  REFILL_TRACKS_LIMIT,
+} from "@/lib/constants";
 
 const instructionCard: Track = {
   id: "instruction-card",
@@ -99,7 +103,7 @@ export default function SwipePage() {
     try {
       const excludeIds = Array.from(evaluatedTrackIdsRef.current);
       const response = await api.tracks.suggestions({
-        limit: 20,
+        limit: INITIAL_TRACKS_LIMIT,
         excludeIds: excludeIds.join(","),
       });
       if (response.error) throw new Error(response.error.error);
@@ -140,7 +144,10 @@ export default function SwipePage() {
         ])
       ).join(",");
 
-      const response = await api.tracks.suggestions({ limit: 10, excludeIds });
+      const response = await api.tracks.suggestions({
+        limit: REFILL_TRACKS_LIMIT,
+        excludeIds,
+      });
       if (response.error) throw new Error(response.error.error);
 
       const newApiTracks = response.data?.data || [];

@@ -17,6 +17,10 @@
 - `src/contexts/`: グローバルな状態管理。`AuthContext` が JWT を介したログイン状態を提供します。
 - `src/hooks/`: カスタム React フック。
 - `src/lib/`: ユーティリティ関数や設定ファイル。
+  - `constants.ts`: アプリケーション全体の定数定義
+    - `INITIAL_TRACKS_LIMIT`: 初期ロード曲数 (20曲)
+    - `REFILL_TRACKS_LIMIT`: 追加ロード曲数 (10曲)
+    - `REFILL_THRESHOLD`: 補充トリガー閾値 (残り5曲)
 - `src/services/`: バックエンド API との連携を行うクライアントコード。
 
 ## テストと検証のポイント
