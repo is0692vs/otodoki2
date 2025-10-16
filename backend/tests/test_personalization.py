@@ -1,5 +1,6 @@
 """Tests for personalization and preference analysis services."""
 import pytest
+import pytest_asyncio
 from uuid import uuid4
 
 from app.db.models import Evaluation, EvaluationStatus, TrackCache, User
@@ -8,7 +9,7 @@ from app.services.preference_analyzer import PreferenceAnalyzer
 from app.models.track import Track
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def test_user(async_session):
     """Create a test user."""
     user = User(
@@ -23,7 +24,7 @@ async def test_user(async_session):
     return user
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def test_tracks(async_session):
     """Create test tracks in the database."""
     tracks = [
@@ -75,7 +76,7 @@ async def test_tracks(async_session):
     return tracks
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def test_evaluations(async_session, test_user, test_tracks):
     """Create test evaluations."""
     # Like first 3 tracks (2 Rock, 1 Pop)
@@ -115,6 +116,7 @@ async def test_evaluations(async_session, test_user, test_tracks):
 class TestPreferenceAnalyzer:
     """Test PreferenceAnalyzer service."""
     
+    @pytest.mark.asyncio
     async def test_analyze_preferences_with_sufficient_data(
         self, async_session, test_user, test_evaluations
     ):
@@ -138,6 +140,7 @@ class TestPreferenceAnalyzer:
         top_artists = preferences.get_top_artists(limit=2)
         assert "Rock Band" in top_artists or "Pop Artist" in top_artists
     
+    @pytest.mark.asyncio
     async def test_analyze_preferences_insufficient_data(
         self, async_session, test_user
     ):
@@ -151,6 +154,7 @@ class TestPreferenceAnalyzer:
         # Should return None when insufficient data
         assert preferences is None
     
+    @pytest.mark.asyncio
     async def test_genre_counting(self, async_session, test_user, test_evaluations):
         """Test genre counting accuracy."""
         analyzer = PreferenceAnalyzer(async_session)
@@ -173,6 +177,7 @@ class TestPreferenceAnalyzer:
 class TestPersonalizationService:
     """Test PersonalizationService."""
     
+    @pytest.mark.asyncio
     async def test_personalize_tracks_with_preferences(
         self, async_session, test_user, test_evaluations
     ):
@@ -217,12 +222,14 @@ class TestPersonalizationService:
         assert personalized[0].genre == "Rock"
         assert personalized[-1].genre == "Jazz"
     
+    @pytest.mark.asyncio
     async def test_personalize_empty_tracks(self, async_session, test_user):
         """Test personalization with empty track list."""
         service = PersonalizationService(async_session)
         personalized = await service.personalize_tracks([], test_user)
         assert personalized == []
     
+    @pytest.mark.asyncio
     async def test_personalize_without_preferences(self, async_session, test_user):
         """Test personalization when user has no preferences."""
         service = PersonalizationService(async_session)
@@ -254,6 +261,7 @@ class TestPersonalizationService:
         )
         assert personalized == tracks
     
+    @pytest.mark.asyncio
     async def test_track_scoring(self, async_session, test_user, test_evaluations):
         """Test track scoring logic."""
         service = PersonalizationService(async_session)
