@@ -182,7 +182,7 @@ async def get_track_suggestions(
     excludeIds: Optional[str] = Query(None, description="除外する楽曲IDのカンマ区切り文字列"),
     queue_manager: QueueManager = Depends(get_queue_manager),
     user: Optional[User] = Depends(get_optional_user),
-    session: Optional[AsyncSession] = Depends(get_db_session) if user else None,
+    session: AsyncSession = Depends(get_db_session),
 ) -> SuggestionsResponse:
     """楽曲提供APIエンドポイント
 
