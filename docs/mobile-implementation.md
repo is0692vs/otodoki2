@@ -26,11 +26,12 @@ mobile/
 │   ├── navigation/       # App navigation structure
 │   │   └── Navigation.tsx # Tab and stack navigation setup
 │   ├── screens/          # Screen components
-│   │   ├── LoadingScreen.tsx     # Loading state
-│   │   ├── LoginScreen.tsx       # User authentication
-│   │   ├── RegisterScreen.tsx    # User registration
-│   │   ├── SwipeScreen.tsx       # Track evaluation interface
-│   │   └── LibraryScreen.tsx     # Liked/disliked tracks
+│   │   ├── HomeScreen.tsx          # Home page with featured tracks
+│   │   ├── LoadingScreen.tsx       # Loading state
+│   │   ├── LoginScreen.tsx         # User authentication
+│   │   ├── RegisterScreen.tsx      # User registration
+│   │   ├── SwipeScreen.tsx         # Track evaluation interface
+│   │   └── LibraryScreen.tsx       # Liked/disliked tracks
 │   ├── services/         # API integration layer
 │   │   └── api-client.ts # HTTP client adapted for React Native
 │   └── types/            # TypeScript type definitions
@@ -43,14 +44,24 @@ mobile/
 
 ## Core Features Implemented
 
-### 1. Authentication System
+### 1. Home Screen (NEW)
+- **Featured Tracks**: Horizontal scrollable list of recommended tracks
+- **Recent/Trending Tracks**: Additional track discovery section
+- **Genre Categories**: 8 genre buttons for browsing by style
+- **Search Bar**: Basic search interface for artists and tracks
+- **Quick Actions**: Navigation buttons to Swipe and Library screens
+- **Pull-to-Refresh**: Reload featured and recent tracks
+- **Audio Preview**: Play tracks directly from home screen
+- **Mobile-First Design**: Optimized layout matching web frontend style
+
+### 2. Authentication System
 - **Login/Register**: Email and password authentication
 - **JWT Tokens**: Access and refresh token management
 - **Persistent Storage**: AsyncStorage for offline authentication
 - **Auto-Refresh**: Automatic token renewal every 25 minutes
 - **Secure Logout**: Complete session cleanup
 
-### 2. Track Discovery (Swipe Interface)
+### 3. Track Discovery (Swipe Interface)
 - **Card-Based UI**: Large track cards with artwork
 - **Gesture Control**: Swipe left (dislike) or right (like)
 - **Smooth Animations**: Native animations using Animated API
@@ -58,14 +69,14 @@ mobile/
 - **Queue Management**: Automatic prefetching of new tracks
 - **Evaluation Tracking**: Persistent like/dislike preferences
 
-### 3. Music Library
+### 4. Music Library
 - **Tabbed Interface**: Separate views for liked and disliked tracks
 - **Pull-to-Refresh**: Manual data synchronization
 - **Track Management**: Remove tracks from disliked list
 - **Audio Playback**: Integrated audio controls
 - **Empty States**: User-friendly messaging for empty libraries
 
-### 4. Audio Player
+### 5. Audio Player
 - **Preview Playback**: 30-second track previews
 - **Playback Controls**: Play, pause, seek functionality
 - **Speed Control**: Adjustable playback rate (0.5x - 2.0x)

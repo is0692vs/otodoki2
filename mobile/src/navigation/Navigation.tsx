@@ -36,13 +36,26 @@ const Stack = createStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
 function TabIcon({ name, focused }: { name: string; focused: boolean }) {
+  const getIcon = () => {
+    switch (name) {
+      case 'Home':
+        return '🏠';
+      case 'Swipe':
+        return '🎵';
+      case 'Library':
+        return '📚';
+      default:
+        return '❓';
+    }
+  };
+
   return (
     <View style={{ alignItems: 'center', justifyContent: 'center' }}>
       <Text style={{ 
         fontSize: 24, 
         color: focused ? '#007AFF' : '#8E8E93'
       }}>
-        {name === 'Swipe' ? '🎵' : '📚'}
+        {getIcon()}
       </Text>
       <Text style={{ 
         fontSize: 12, 
@@ -68,6 +81,13 @@ function MainTabs() {
         },
       }}
     >
+      <Tab.Screen 
+        name="Home" 
+        component={HomeScreen}
+        options={{
+          tabBarIcon: ({ focused }) => <TabIcon name="Home" focused={focused} />,
+        }}
+      />
       <Tab.Screen 
         name="Swipe" 
         component={SwipeScreen}
