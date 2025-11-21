@@ -117,7 +117,7 @@ jobs:
       - name: "Run Gemini issue analysis"
         id: "gemini_analysis"
         if: |-
-          ${{ steps.get_labels.outputs.available_labels != '' && (inputs.issues_to_triage == '' || inputs.issues_to_triage == null) }}
+          ${{ secrets.GEMINI_API_KEY != '' && steps.get_labels.outputs.available_labels != '' && (inputs.issues_to_triage == '' || inputs.issues_to_triage == null) }}
         uses: "google-github-actions/run-gemini-cli@v0" # ratchet:exclude
         env:
           GITHUB_TOKEN: "" # Do NOT pass any auth tokens here since this runs on untrusted inputs

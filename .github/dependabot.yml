@@ -2,7 +2,7 @@ version: 2
 updates:
   # npm パッケージの監視
   - package-ecosystem: "npm"
-    directory: "/packages/web-app-vercel"
+    directory: "/frontend"
     schedule:
       interval: "weekly"
       time: "10:00"
@@ -15,6 +15,23 @@ updates:
       include: "scope"
     groups:
       npm-dependencies:
+        patterns:
+          - "*"
+  # Monitor the mobile app dependencies (React Native / Expo)
+  - package-ecosystem: "npm"
+    directory: "/mobile"
+    schedule:
+      interval: "weekly"
+      time: "10:00"
+      timezone: "Asia/Tokyo"
+    reviewers:
+      - "is0692vs"
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+    groups:
+      mobile-npm-dependencies:
         patterns:
           - "*"
 

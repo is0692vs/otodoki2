@@ -58,8 +58,9 @@ jobs:
                       core.info(`Found ${labelNames.length} labels: ${labelNames.join(', ')}`);
                       return labelNames;
 
-            - name: "Run Gemini Issue Analysis (bulk)"
+              - name: "Run Gemini Issue Analysis (bulk)"
               id: "gemini_issue_analysis"
+              if: ${{ secrets.GEMINI_API_KEY != '' }}
               uses: "google-github-actions/run-gemini-cli@v0" # ratchet:exclude
               env:
                   GITHUB_TOKEN: "${{ github.token }}"

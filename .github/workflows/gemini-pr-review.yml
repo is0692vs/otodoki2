@@ -26,6 +26,7 @@ jobs:
       pull-requests: "write"
     steps:
       - name: "Run Gemini pull request review"
+        if: ${{ secrets.GEMINI_API_KEY != '' }}
         uses: "google-github-actions/run-gemini-cli@v0" # ratchet:exclude
         id: "gemini_pr_review"
         continue-on-error: true

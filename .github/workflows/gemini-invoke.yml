@@ -43,6 +43,7 @@ jobs:
           fi
 
       - name: "Run Gemini CLI"
+        if: ${{ secrets.GEMINI_API_KEY != '' }}
         uses: "google-github-actions/run-gemini-cli@v0" # ratchet:exclude
         id: "gemini_invoke"
         env:
