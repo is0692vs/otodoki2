@@ -27,6 +27,8 @@ defaults:
 jobs:
   invoke:
     runs-on: "ubuntu-latest"
+    env:
+      GEMINI_API_KEY: "${{ secrets.GEMINI_API_KEY }}"
     steps:
       - name: "Checkout repository"
         uses: "actions/checkout@v3"
@@ -43,7 +45,7 @@ jobs:
           fi
 
       - name: "Run Gemini CLI"
-        if: ${{ secrets.GEMINI_API_KEY != '' }}
+        if: ${{ env.GEMINI_API_KEY != '' }}
         uses: "google-github-actions/run-gemini-cli@v0" # ratchet:exclude
         id: "gemini_invoke"
         env:

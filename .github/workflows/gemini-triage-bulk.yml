@@ -1,128 +1,130 @@
 name: "📋 Gemini Bulk Triage"
 
 on:
-    workflow_call:
-        inputs:
-            issues_to_triage:
-                type: "string"
-                description: "JSON array of issues to triage"
-                required: true
-            additional_context:
-                type: "string"
-                description: "Any additional context from the request"
-                required: false
-            language:
-                type: "string"
-                description: "Response language (default: 'ja' — JP)."
-                default: "ja"
-            gemini_model:
-                type: "string"
-                description: "Gemini model override"
-                required: false
-                default: ""
-        secrets:
-          GEMINI_API_KEY:
-            required: true
+  workflow_call:
+    inputs:
+      issues_to_triage:
+        type: "string"
+        description: "JSON array of issues to triage"
+        required: true
+      additional_context:
+        type: "string"
+        description: "Any additional context from the request"
+        required: false
+      language:
+        type: "string"
+        description: "Response language (default: 'ja' — JP)."
+        default: "ja"
+      gemini_model:
+        type: "string"
+        description: "Gemini model override"
+        required: false
+        default: ""
+    secrets:
+      GEMINI_API_KEY:
+        required: true
 
 defaults:
-    run:
-        shell: "bash"
+  run:
+    shell: "bash"
 
 jobs:
-    triage_bulk:
-        runs-on: "ubuntu-slim"
-        permissions:
-          contents: "read"
-          issues: "read"
-          pull-requests: "read"
-        outputs:
-            available_labels: "${{ steps.get_labels.outputs.available_labels }}"
-            triaged_issues: "${{ steps.collect_outputs.outputs.triaged_issues }}"
-        steps:
-            - name: "Get repository labels"
-              id: "get_labels"
-              uses: "actions/github-script@v7"
-              with:
-                  script: |-
-                      const { data: labels } = await github.rest.issues.listLabelsForRepo({
-                        owner: context.repo.owner,
-                        repo: context.repo.repo,
-                      });
+  triage_bulk:
+    runs-on: "ubuntu-slim"
+    env:
+      GEMINI_API_KEY: "${{ secrets.GEMINI_API_KEY }}"
+    permissions:
+      contents: "read"
+      issues: "read"
+      pull-requests: "read"
+    outputs:
+      available_labels: "${{ steps.get_labels.outputs.available_labels }}"
+      triaged_issues: "${{ steps.collect_outputs.outputs.triaged_issues }}"
+    steps:
+      - name: "Get repository labels"
+        id: "get_labels"
+        uses: "actions/github-script@v7"
+        with:
+          script: |-
+            const { data: labels } = await github.rest.issues.listLabelsForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
 
-                      if (!labels || labels.length === 0) {
-                        core.setFailed('There are no issue labels in this repository.')
-                      }
+            if (!labels || labels.length === 0) {
+              core.setFailed('There are no issue labels in this repository.')
+            }
 
-                      const labelNames = labels.map(label => label.name).sort();
-                      core.setOutput('available_labels', labelNames.join(','));
-                      core.info(`Found ${labelNames.length} labels: ${labelNames.join(', ')}`);
-                      return labelNames;
+            const labelNames = labels.map(label => label.name).sort();
+            core.setOutput('available_labels', labelNames.join(','));
+            core.info(`Found ${labelNames.length} labels: ${labelNames.join(', ')}`);
+            return labelNames;
 
-              - name: "Run Gemini Issue Analysis (bulk)"
-              id: "gemini_issue_analysis"
-              if: ${{ secrets.GEMINI_API_KEY != '' }}
-              uses: "google-github-actions/run-gemini-cli@v0" # ratchet:exclude
-              env:
-                  GITHUB_TOKEN: "${{ github.token }}"
-                  ISSUES_TO_TRIAGE: "${{ inputs.issues_to_triage }}"
-                  REPOSITORY: "${{ github.repository }}"
-                  AVAILABLE_LABELS: "${{ steps.get_labels.outputs.available_labels }}"
-                  GEMINI_API_KEY: "${{ secrets.GEMINI_API_KEY }}"
-              with:
-                  # No GCP fields - using API key only
-                  gemini_api_key: "${{ secrets.GEMINI_API_KEY }}"
-                  gemini_model: "${{ inputs.gemini_model || vars.GEMINI_MODEL || '' }}"
-                  settings: |-
-                      {
-                        "model": {
-                          "maxSessionTurns": 25
-                        },
-                        "telemetry": {
-                          "enabled": false
-                        },
-                        "tools": {
-                          "core": [
-                            "run_shell_command(echo)",
-                            "run_shell_command(jq)",
-                            "run_shell_command(printenv)"
-                          ]
-                        },
-                        "mcpServers": {
-                          "github": {
-                            "command": "docker",
-                              "args": [
-                              "run",
-                              "-i",
-                              "--rm",
-                              "-e",
-                              "GITHUB_PERSONAL_ACCESS_TOKEN",
-                              "ghcr.io/github/github-mcp-server:v0.18.0"
-                            ],
-                            "includeTools": [
-                              "issue_read",
-                              "list_issues",
-                              "search_issues"
-                            ],
-                            "env": {
-                              "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
-                            }
-                          }
-                        }
-                      }
-                  prompt: |-
-                      出力は必ず日本語で行ってください。
-                      応答言語: ${{ inputs.language }}
-                      ## Role
-                      You are a highly efficient Issue Triage Engineer. Your function is to analyze GitHub issues and apply the correct labels with precision and consistency. You operate autonomously and produce only the specified JSON output. Your task is to triage and label a list of GitHub issues.
+      - name: "Run Gemini Issue Analysis (bulk)"
+        id: "gemini_issue_analysis"
+        if: ${{ env.GEMINI_API_KEY != '' }}
+        uses: "google-github-actions/run-gemini-cli@v0" # ratchet:exclude
+        env:
+          GITHUB_TOKEN: "${{ github.token }}"
+          ISSUES_TO_TRIAGE: "${{ inputs.issues_to_triage }}"
+          REPOSITORY: "${{ github.repository }}"
+          AVAILABLE_LABELS: "${{ steps.get_labels.outputs.available_labels }}"
+          GEMINI_API_KEY: "${{ secrets.GEMINI_API_KEY }}"
+        with:
+          # No GCP fields - using API key only
+          gemini_api_key: "${{ secrets.GEMINI_API_KEY }}"
+          gemini_model: "${{ inputs.gemini_model || vars.GEMINI_MODEL || '' }}"
+          settings: |-
+            {
+              "model": {
+                "maxSessionTurns": 25
+              },
+              "telemetry": {
+                "enabled": false
+              },
+              "tools": {
+                "core": [
+                  "run_shell_command(echo)",
+                  "run_shell_command(jq)",
+                  "run_shell_command(printenv)"
+                ]
+              },
+              "mcpServers": {
+                "github": {
+                  "command": "docker",
+                    "args": [
+                    "run",
+                    "-i",
+                    "--rm",
+                    "-e",
+                    "GITHUB_PERSONAL_ACCESS_TOKEN",
+                    "ghcr.io/github/github-mcp-server:v0.18.0"
+                  ],
+                  "includeTools": [
+                    "issue_read",
+                    "list_issues",
+                    "search_issues"
+                  ],
+                  "env": {
+                    "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
+                  }
+                }
+              }
+            }
+          prompt: |-
+            出力は必ず日本語で行ってください。
+            応答言語: ${{ inputs.language }}
+            ## Role
+            You are a highly efficient Issue Triage Engineer. Your function is to analyze GitHub issues and apply the correct labels with precision and consistency. You operate autonomously and produce only the specified JSON output. Your task is to triage and label a list of GitHub issues.
 
-                      ## Primary Directive
+            ## Primary Directive
 
-                      You will retrieve issue data and available labels from environment variables, analyze the issues, and assign the most relevant labels. You will then generate a single JSON array containing your triage decisions and write it to the file path specified by the `${GITHUB_ENV}` environment variable.
+            You will retrieve issue data and available labels from environment variables, analyze the issues, and assign the most relevant labels. You will then generate a single JSON array containing your triage decisions and write it to the file path specified by the `${GITHUB_ENV}` environment variable.
 
-            - name: "Collect outputs"
-              id: "collect_outputs"
-              uses: "actions/github-script@v7"
-              with:
-                  script: |-
-                      // read TRIAGED_ISSUES from environment and set as step output
-                      core.setOutput('triaged_issues', process.env.TRIAGED_ISSUES || '');
+      - name: "Collect outputs"
+        id: "collect_outputs"
+        uses: "actions/github-script@v7"
+        with:
+          script: |-
+            // read TRIAGED_ISSUES from environment and set as step output
+            core.setOutput('triaged_issues', process.env.TRIAGED_ISSUES || '');
