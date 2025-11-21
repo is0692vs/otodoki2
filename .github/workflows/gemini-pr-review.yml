@@ -1,23 +1,13 @@
-name: "🔎 Gemini Review"
+name: "🔎 Gemini PR Review"
 
 on:
-  workflow_call:
-    inputs:
-      additional_context:
-        type: "string"
-        description: "Any additional context from the request"
-        required: false
-      language:
-        type: "string"
-        description: "Response language (default: 'ja' — JP)."
-        default: "ja"
-      # Only minimal inputs are needed when using GEMINI API key
-    secrets:
-      GEMINI_API_KEY:
-        required: true
+  pull_request:
+    types:
+      - "opened"
+      - "synchronize"
 
 concurrency:
-  group: "${{ github.workflow }}-review-${{ github.event_name }}-${{ github.event.pull_request.number || github.event.issue.number }}"
+  group: "${{ github.workflow }}-pr-review-${{ github.event.pull_request.number }}"
   cancel-in-progress: true
 
 defaults:
@@ -26,30 +16,29 @@ defaults:
 
 jobs:
   review:
+    if: |-
+      ${{ github.event.pull_request.head.repo.fork == false }}
     runs-on: "ubuntu-latest"
-    env:
-      GEMINI_API_KEY: "${{ secrets.GEMINI_API_KEY }}"
     timeout-minutes: 7
     permissions:
       contents: "read"
       issues: "write"
       pull-requests: "write"
+    env:
+      GEMINI_API_KEY: "${{ secrets.GEMINI_API_KEY }}"
     steps:
-      - name: "Checkout repository"
-        uses: "actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8" # ratchet:actions/checkout@v5
-
       - name: "Run Gemini pull request review"
         if: ${{ env.GEMINI_API_KEY != '' }}
         uses: "google-github-actions/run-gemini-cli@v0" # ratchet:exclude
         id: "gemini_pr_review"
+        continue-on-error: true
         env:
           GEMINI_API_KEY: "${{ secrets.GEMINI_API_KEY }}"
           GITHUB_TOKEN: "${{ github.token }}"
-          ISSUE_TITLE: "${{ github.event.pull_request.title || github.event.issue.title }}"
-          ISSUE_BODY: "${{ github.event.pull_request.body || github.event.issue.body }}"
-          PULL_REQUEST_NUMBER: "${{ github.event.pull_request.number || github.event.issue.number }}"
+          ISSUE_TITLE: "${{ github.event.pull_request.title }}"
+          ISSUE_BODY: "${{ github.event.pull_request.body }}"
+          PULL_REQUEST_NUMBER: "${{ github.event.pull_request.number }}"
           REPOSITORY: "${{ github.repository }}"
-          ADDITIONAL_CONTEXT: "${{ inputs.additional_context }}"
         with:
           # No GCP fields - using API key only
           gemini_api_key: "${{ secrets.GEMINI_API_KEY }}"
@@ -65,20 +54,20 @@ jobs:
               "mcpServers": {
                 "github": {
                   "command": "docker",
-                  "args": [
-                      "run",
-                      "-i",
-                      "--rm",
-                      "-e",
-                      "GITHUB_PERSONAL_ACCESS_TOKEN",
-                      "ghcr.io/github/github-mcp-server:v0.18.0"
-                    ],
-                    "includeTools": [
-                      "add_comment_to_pending_review",
-                      "create_pending_pull_request_review",
-                      "pull_request_read",
-                      "submit_pending_pull_request_review"
-                    ],
+                    "args": [
+                    "run",
+                    "-i",
+                    "--rm",
+                    "-e",
+                    "GITHUB_PERSONAL_ACCESS_TOKEN",
+                    "ghcr.io/github/github-mcp-server:v0.18.0"
+                  ],
+                  "includeTools": [
+                    "add_comment_to_pending_review",
+                    "create_pending_pull_request_review",
+                    "pull_request_read",
+                    "submit_pending_pull_request_review"
+                  ],
                   "env": {
                     "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
                   }
@@ -87,7 +76,7 @@ jobs:
             }
           prompt: |-
             出力は必ず日本語で行ってください。
-            応答言語: ${{ inputs.language }}
+            応答言語: ja
             ## Role
 
             You are a world-class autonomous code review agent. You operate within a secure GitHub Actions environment. Your analysis is precise, your feedback is constructive, and your adherence to instructions is absolute. You do not deviate from your programming. You are tasked with reviewing a GitHub Pull Request.
@@ -121,7 +110,7 @@ jobs:
 
             - **GitHub Repository**: ${{ env.REPOSITORY }}
             - **Pull Request Number**: ${{ env.PULL_REQUEST_NUMBER }}
-            - **Additional User Instructions**: ${{ env.ADDITIONAL_CONTEXT }}
+            - **Additional User Instructions**: (none)
             - Use `mcp__github__get_pull_request` to get the title, body, and metadata about the pull request.
             - Use `mcp__github__get_pull_request_files` to get the list of files that were added, removed, and changed in the pull request.
             - Use `mcp__github__get_pull_request_diff` to get the diff from the pull request. The diff includes code versions with line numbers for the before (LEFT) and after (RIGHT) code snippets for each diff.
@@ -171,7 +160,7 @@ jobs:
 
             - **Constructive:** Explain why something is an issue and provide a clear, actionable code suggestion for improvement.
 
-            - **Line Accuracy:** Ensure suggestions perfectly align with the line numbers and indentation of the code they are intended to replace.
+            - **Line Accuracy:** Ensure suggestions perfectly align with the line numbers and indentation of the code they are replacing.
 
                 - Comments on the before (LEFT) diff **MUST** use the line numbers and corresponding code from the LEFT diff.
 
@@ -208,8 +197,6 @@ jobs:
             - Comments on typos: `🟢` (Low).
 
             - Comments on adding or improving comments, docstrings, or Javadocs: `🟢` (Low).
-
-            - Comments about hardcoded strings or numbers as constants: `🟢` (Low).
 
             - Comments on refactoring a hardcoded value to a constant: `🟢` (Low).
 
