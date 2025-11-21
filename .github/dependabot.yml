@@ -3,14 +3,14 @@ updates:
   # npm パッケージの監視
   - package-ecosystem: "npm"
     directory: "/frontend"
-    schedule:
+    schedule: &weekly-schedule
       interval: "weekly"
       time: "10:00"
       timezone: "Asia/Tokyo"
-    reviewers:
+    reviewers: &default-reviewers
       - "is0692vs"
-    open-pull-requests-limit: 10
-    commit-message:
+    open-pull-requests-limit: &default-open-pr-limit 10
+    commit-message: &default-commit-message
       prefix: "chore(deps)"
       include: "scope"
     groups:
@@ -20,16 +20,10 @@ updates:
   # Monitor the mobile app dependencies (React Native / Expo)
   - package-ecosystem: "npm"
     directory: "/mobile"
-    schedule:
-      interval: "weekly"
-      time: "10:00"
-      timezone: "Asia/Tokyo"
-    reviewers:
-      - "is0692vs"
-    open-pull-requests-limit: 10
-    commit-message:
-      prefix: "chore(deps)"
-      include: "scope"
+    schedule: *weekly-schedule
+    reviewers: *default-reviewers
+    open-pull-requests-limit: *default-open-pr-limit
+    commit-message: *default-commit-message
     groups:
       mobile-npm-dependencies:
         patterns:
@@ -42,12 +36,9 @@ updates:
       interval: "monthly"
       time: "10:00"
       timezone: "Asia/Tokyo"
-    reviewers:
-      - "is0692vs"
-    open-pull-requests-limit: 10
-    commit-message:
-      prefix: "chore(deps)"
-      include: "scope"
+    reviewers: *default-reviewers
+    open-pull-requests-limit: *default-open-pr-limit
+    commit-message: *default-commit-message
     groups:
       actions-dependencies:
         patterns:
