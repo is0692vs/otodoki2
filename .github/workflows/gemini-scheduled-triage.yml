@@ -3,12 +3,6 @@ name: "📋 Gemini Scheduled Issue Triage"
 on:
   schedule:
     - cron: "0 * * * *" # Runs every hour
-  pull_request:
-    branches:
-      - "main"
-      - "release/**/*"
-    paths:
-      - ".github/workflows/gemini-scheduled-triage.yml"
   push:
     branches:
       - "main"
@@ -27,11 +21,10 @@ defaults:
 
 jobs:
   triage:
-    runs-on: "ubuntu-latest"
+    runs-on: "ubuntu-slim"
     timeout-minutes: 7
     permissions:
       contents: "read"
-      id-token: "write"
       issues: "read"
       pull-requests: "read"
     outputs:
@@ -64,7 +57,7 @@ jobs:
         id: "find_issues"
         env:
           GITHUB_REPOSITORY: "${{ github.repository }}"
-          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN || github.token }}"
+          GITHUB_TOKEN: "${{ github.token }}"
         run: |-
           echo '🔍 Finding unlabeled issues and issues marked for triage...'
           ISSUES="$(gh issue list \
@@ -87,16 +80,16 @@ jobs:
     permissions:
       contents: "read"
       issues: "write"
-      id-token: "write"
       pull-requests: "read"
     with:
       additional_context: "Scheduled triage run"
       issues_to_triage: "${{ needs.triage.outputs.issues_to_triage }}"
       language: "ja"
+      gemini_model: "gemini-2.5-flash-lite"
     secrets: "inherit"
 
   label:
-    runs-on: "ubuntu-latest"
+    runs-on: "ubuntu-slim"
     needs:
       - "call_triage"
     if: |-
@@ -109,18 +102,6 @@ jobs:
       issues: "write"
       pull-requests: "write"
     steps:
-      - name: "Mint identity token"
-        id: "mint_identity_token"
-        if: |-
-          ${{ vars.APP_ID }}
-        uses: "actions/create-github-app-token@a8d616148505b5069dccd32f177bb87d7f39123b" # ratchet:actions/create-github-app-token@v2
-        with:
-          app-id: "${{ vars.APP_ID }}"
-          private-key: "${{ secrets.APP_PRIVATE_KEY }}"
-          permission-contents: "read"
-          permission-issues: "write"
-          permission-pull-requests: "write"
-
       - name: "Apply labels"
         env:
           AVAILABLE_LABELS: "${{ needs.call_triage.outputs.available_labels }}"
@@ -129,7 +110,7 @@ jobs:
         with:
           # Use the provided token so that the "gemini-cli" is the actor in the
           # log for what changed the labels.
-          github-token: "${{ steps.mint_identity_token.outputs.token || secrets.GITHUB_TOKEN || github.token }}"
+          github-token: "${{ github.token }}"
           script: |-
             // Parse the available labels
             const availableLabels = (process.env.AVAILABLE_LABELS || '').split(',')
