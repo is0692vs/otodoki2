@@ -3,6 +3,14 @@
  */
 
 /**
+ * API Configuration
+ */
+// Default to localhost for development
+// For Dev Containers, set EXPO_PUBLIC_API_URL environment variable to host machine's IP
+// Example: EXPO_PUBLIC_API_URL=http://192.168.1.100:8000 npx expo start --tunnel
+export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
+
+/**
  * Swipe screen loading strategy constants
  */
 

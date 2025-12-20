@@ -58,15 +58,15 @@ docker compose up -d --build
 
 ## バックエンド環境変数
 
-| 変数名                             | 説明                                                                     | デフォルト         |
-| :--------------------------------- | :----------------------------------------------------------------------- | :----------------- |
-| `DATABASE_URL`                     | PostgreSQL 接続文字列。Docker Compose 環境では `.env` の値が使用されます。 | `.env` 参照        |
-| `POSTGRES_DB`                      | PostgreSQL データベース名。                                              | `otodoki2`         |
-| `POSTGRES_USER`                    | PostgreSQL ユーザー名。                                                  | `otodoki`          |
-| `POSTGRES_PASSWORD`                | PostgreSQL パスワード。                                                  | `otodoki-password` |
-| `JWT_SECRET_KEY`                   | アクセストークン署名用のシークレットキー。                               | (必須)             |
-| `JWT_REFRESH_SECRET_KEY`           | リフレッシュトークン署名用シークレット。                                 | (必須)             |
-| `GEMINI_API_KEY`                   | Gemini を利用したキーワード生成に使用します。                            | `changeme`         |
+| 変数名                   | 説明                                                                       | デフォルト         |
+| :----------------------- | :------------------------------------------------------------------------- | :----------------- |
+| `DATABASE_URL`           | PostgreSQL 接続文字列。Docker Compose 環境では `.env` の値が使用されます。 | `.env` 参照        |
+| `POSTGRES_DB`            | PostgreSQL データベース名。                                                | `otodoki2`         |
+| `POSTGRES_USER`          | PostgreSQL ユーザー名。                                                    | `otodoki`          |
+| `POSTGRES_PASSWORD`      | PostgreSQL パスワード。                                                    | `otodoki-password` |
+| `JWT_SECRET_KEY`         | アクセストークン署名用のシークレットキー。                                 | (必須)             |
+| `JWT_REFRESH_SECRET_KEY` | リフレッシュトークン署名用シークレット。                                   | (必須)             |
+| `GEMINI_API_KEY`         | Gemini を利用したキーワード生成に使用します。                              | `changeme`         |
 
 その他の変数の詳細は `backend/app/core/config.py` を参照してください。
 
@@ -77,6 +77,7 @@ docker compose up -d --build
 ## 開発ワークフロー
 
 ### テスト
+
 バックエンドのテストは、データベースコンテナを起動した状態で実行します。
 
 ```bash
@@ -90,6 +91,7 @@ PYTHONPATH=./backend pytest backend/tests/
 ```
 
 ### マイグレーション
+
 モデルの変更後にマイグレーションファイルを生成・適用します。
 
 ```bash
@@ -101,6 +103,7 @@ alembic upgrade head
 ```
 
 ### ログ確認
+
 `docker compose logs -f <service_name>` で各サービスのログをリアルタイムで確認できます (例: `api`, `web`, `mobile`)。
 
 ## モバイル開発
@@ -124,6 +127,58 @@ npm start
 - **iOS シミュレーター**: `npm run ios` (macOS のみ)
 - **Android エミュレーター**: `npm run android`
 - **Web プレビュー**: `npm run web`
+
+### トラブルシューティング
+
+#### Dev Containers 環境での実機アクセス
+
+Dev Containers 内で Expo を起動する場合、ネットワーク制限により iPhone などの実機から直接アクセスできないことがあります。
+
+**Expo サーバーへのアクセス**:
+
+- **トンネリングを使用** (推奨):
+
+  ```bash
+  # ngrok を使用したトンネリング (Expo CLI が自動で設定)
+  npx expo start --tunnel
+  ```
+
+- **LAN IP を指定して起動**:
+  ```bash
+  # ホストの LAN IP を確認 (例: 192.168.1.100)
+  ip route get 1 | awk '{print $7}'
+  # Expo を LAN IP で起動
+  npx expo start --host lan --lan-ip <ホストIP>
+  ```
+
+**バックエンド API へのアクセス**:
+
+Dev Containers 内のバックエンド API (`localhost:8000`) には、モバイルデバイスから直接アクセスできません。以下の方法で設定してください。
+
+1. **ホストマシンの LAN IP を確認**:
+
+   ```bash
+   # Linux/macOS
+   ip route get 1 | awk '{print $7}'
+   # または
+   ifconfig | grep "inet " | grep -v 127.0.0.1
+   ```
+
+2. **環境変数を設定して Expo を起動**:
+
+   ```bash
+   cd mobile
+   # 例: ホストIPが 192.168.1.100 の場合
+   EXPO_PUBLIC_API_URL=http://192.168.1.100:8000 npx expo start --tunnel
+   ```
+
+3. **Docker Compose で API ポートがホストに公開されていることを確認**:
+   ```yaml
+   # docker-compose.yml
+   api:
+     ports:
+       - "8000:8000" # ホストの 8000 番ポートに公開
+   ```
 
 ## ドキュメント
 
