@@ -26,9 +26,9 @@ import {
   PlayHistoryResponse,
   ErrorResponse,
 } from '../types/api';
+import { API_BASE_URL } from '../constants';
 
 const DEFAULT_TIMEOUT = 30000; // 30 seconds
-const DEFAULT_BASE_URL = 'http://localhost:8000';
 
 export class ApiClient {
   private baseUrl: string;
@@ -36,7 +36,7 @@ export class ApiClient {
   private accessToken: string | null = null;
 
   constructor(config: ApiClientConfig = {}) {
-    this.baseUrl = config.baseUrl ?? DEFAULT_BASE_URL;
+    this.baseUrl = config.baseUrl ?? API_BASE_URL;
     this.timeout = config.timeout ?? DEFAULT_TIMEOUT;
     this.loadTokenFromStorage();
   }
@@ -186,9 +186,8 @@ export class ApiClient {
     }
 
     const queryString = searchParams.toString();
-    const url = `${this.baseUrl}/api/v1/tracks/suggestions${
-      queryString ? `?${queryString}` : ''
-    }`;
+    const url = `${this.baseUrl}/api/v1/tracks/suggestions${queryString ? `?${queryString}` : ''
+      }`;
 
     return this.fetchWithTimeout<SuggestionsResponse>(url);
   }
@@ -270,9 +269,8 @@ export class ApiClient {
     }
 
     const queryString = searchParams.toString();
-    const url = `${this.baseUrl}/api/v1/evaluations${
-      queryString ? `?${queryString}` : ''
-    }`;
+    const url = `${this.baseUrl}/api/v1/evaluations${queryString ? `?${queryString}` : ''
+      }`;
 
     return this.fetchWithTimeout<EvaluationListResponse>(url);
   }

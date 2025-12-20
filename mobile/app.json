@@ -31,10 +31,6 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": [
-      [
-        "expo-av"
-      ]
-    ]
+    "plugins": [["expo-audio"]]
   }
 }
